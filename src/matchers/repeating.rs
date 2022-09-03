@@ -1,6 +1,9 @@
-pub struct RepeatingMatcher {
-    name: string,
+use std::rc::Rc;
+use super::Matcher;
+
+pub struct RepeatingMatcher<'a> {
+    name: String,
     min: usize,
     max: usize,
-    child: Rc<&dyn Matcher>,
+    child: Rc<&'a dyn Matcher>,
 }

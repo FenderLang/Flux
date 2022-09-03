@@ -1,5 +1,7 @@
+use super::MatcherRef;
+
 pub struct ChoiceMatcher {
-    name: string,
+    name: String,
     min_length: usize,
     children: Vec<MatcherRef>,
 }

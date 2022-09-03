@@ -7,7 +7,7 @@ pub type MatcherRef = Rc<dyn Matcher>;
 pub trait Matcher {
     fn apply(&self, source: Vec<char>, pos: usize) -> Result<Token>;
     fn min_length(&self) -> usize;
-    fn name(&self) -> String;
+    fn name(&self) -> &str;
     fn children(&self) -> Vec<MatcherRef>;
 }
 
