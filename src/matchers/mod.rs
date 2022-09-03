@@ -1,5 +1,5 @@
-use std::rc::Rc;
 use crate::tokens::Token;
+use std::rc::Rc;
 
 pub type MatcherRef = Rc<dyn Matcher>;
 
