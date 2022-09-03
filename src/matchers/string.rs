@@ -1,6 +1,6 @@
-use super::{Matcher, MatcherChildren, MatcherRef};
+use super::{Matcher};
 use crate::{error::FluxError, tokens::Token};
-use std::{cell::RefCell, ops::Deref, rc::Rc};
+use std::{rc::Rc};
 
 pub struct StringMatcher {
     name: Rc<String>,
@@ -29,7 +29,7 @@ impl Matcher for StringMatcher {
                 false => a.eq_ignore_ascii_case(&b),
             } {
                 return Err(FluxError::new_matcher(
-                    "failed to match string".into(),
+                    "failed to match string",
                     pos,
                     self.name.clone(),
                 ));

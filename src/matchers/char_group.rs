@@ -1,6 +1,6 @@
 use super::Matcher;
 use crate::{error::FluxError, tokens::Token};
-use std::{ops::Deref, rc::Rc, vec};
+use std::{rc::Rc, vec};
 
 #[derive(Clone)]
 pub struct CharGroupMatcher {
@@ -29,11 +29,11 @@ impl Matcher for CharGroupMatcher {
                 range: pos..pos + 1,
             }),
             None => Err(FluxError::new_matcher(
-                "expected single char but no characters remaining".into(),
+                "expected single char but no characters remaining",
                 pos,
                 self.name.clone(),
             )),
-            Some(c) => Err(FluxError::new_matcher(
+            Some(_) => Err(FluxError::new_matcher(
                 "expected character matcher",
                 pos,
                 self.name.clone(),

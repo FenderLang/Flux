@@ -1,6 +1,6 @@
 use super::{Matcher, MatcherChildren, MatcherRef};
 use crate::{error::FluxError, tokens::Token};
-use std::{cell::RefCell, ops::Deref, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 pub struct ListMatcher {
     name: Rc<String>,
@@ -43,7 +43,7 @@ impl Matcher for ListMatcher {
             range: (pos..children.iter().last().unwrap().range.end),
             children,
             matcher_name: self.name.clone(),
-            source: source.clone(),
+            source,
         })
     }
 

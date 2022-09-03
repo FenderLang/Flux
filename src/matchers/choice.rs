@@ -31,7 +31,7 @@ impl Matcher for ChoiceMatcher {
         }
 
         Err(FluxError::new_matcher(
-            "in ChoiceMatcher all children failed".into(),
+            "in ChoiceMatcher all children failed",
             pos,
             self.name.clone(),
         ))

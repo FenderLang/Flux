@@ -1,6 +1,6 @@
 use super::{Matcher, MatcherChildren, MatcherRef};
 use crate::{error::FluxError, tokens::Token};
-use std::{cell::RefCell, ops::Deref, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 pub struct RepeatingMatcher {
     name: Rc<String>,
@@ -47,7 +47,7 @@ impl Matcher for RepeatingMatcher {
 
         if children.len() < self.min {
             Err(FluxError::new_matcher(
-                "failed in repeating matcher did not match required number of times".into(),
+                "failed in repeating matcher did not match required number of times",
                 pos,
                 self.name.clone(),
             ))
@@ -56,7 +56,7 @@ impl Matcher for RepeatingMatcher {
                 range: (pos..children.iter().last().unwrap().range.end),
                 children,
                 matcher_name: self.name.clone(),
-                source: source.clone(),
+                source,
             })
         }
     }
