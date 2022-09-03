@@ -2,12 +2,12 @@ use std::{cell::RefCell, ops::Deref, rc::Rc};
 
 use crate::{error::FluxError, tokens::Token};
 
-use super::{Matcher, MatcherRef};
+use super::{Matcher, MatcherRef, MatcherChildren};
 
 pub struct ListMatcher {
     name: Rc<String>,
     min_length: RefCell<Option<usize>>,
-    children: Vec<RefCell<MatcherRef>>,
+    children: MatcherChildren,
 }
 
 impl ListMatcher {
