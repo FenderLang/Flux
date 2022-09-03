@@ -6,7 +6,7 @@ use super::{Matcher, MatcherRef};
 
 pub struct ChoiceMatcher {
     name: String,
-    min_length: usize,
+    min_length: RefCell<Option<usize>>,
     children: Vec<RefCell<MatcherRef>>,
 }
 
@@ -14,11 +14,7 @@ impl ChoiceMatcher {
     pub fn new<S: ToString>(name: S, children: Vec<RefCell<MatcherRef>>) -> ChoiceMatcher {
         ChoiceMatcher {
             name: name.to_string(),
-            min_length: children
-                .iter()
-                .map(|child| child.borrow().min_length())
-                .min()
-                .unwrap_or_default(),
+            min_length: RefCell::new(None),
             children,
         }
     }
@@ -44,7 +40,18 @@ impl Matcher for ChoiceMatcher {
     }
 
     fn min_length(&self) -> usize {
-        self.min_length
+        if let Some(len) = *self.min_length.borrow() {
+            len
+        } else {
+            let len = self
+                .children
+                .iter()
+                .map(|child| child.borrow().min_length())
+                .min()
+                .unwrap_or_default();
+            *self.min_length.borrow_mut() = Some(len);
+            len
+        }
     }
 
     fn name(&self) -> &str {
