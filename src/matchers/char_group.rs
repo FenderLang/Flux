@@ -1,4 +1,4 @@
-use std::{collections::btree_map::Range, ops::Deref, rc::Rc};
+use std::{collections::btree_map::Range, ops::Deref, rc::Rc, vec};
 
 use super::Matcher;
 use crate::{error::FluxError, tokens::Token};
@@ -46,9 +46,5 @@ impl Matcher for CharGroupMatcher {
 
     fn name(&self) -> &str {
         &self.name
-    }
-
-    fn children(&self) -> Vec<super::MatcherRef> {
-        vec![]
     }
 }
