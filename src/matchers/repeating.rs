@@ -37,9 +37,9 @@ impl Matcher for RepeatingMatcher {
                 Ok(child_token) => children.push(child_token),
                 Err(_) => {
                     return Err(FluxError::new_matcher(
-                        "failed in repeating matcher".into(),
+                        "failed in repeating matcher",
                         pos,
-                        self.name.deref().clone(),
+                        self.name.clone(),
                     ))
                 } //TODO don't remember to fix later
             }
@@ -49,7 +49,7 @@ impl Matcher for RepeatingMatcher {
             Err(FluxError::new_matcher(
                 "failed in repeating matcher did not match required number of times".into(),
                 pos,
-                self.name.deref().clone(),
+                self.name.clone(),
             ))
         } else {
             Ok(Token {

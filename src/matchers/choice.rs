@@ -1,9 +1,9 @@
 use super::{Matcher, MatcherRef};
 use crate::error::FluxError;
-use std::cell::RefCell;
+use std::{cell::RefCell, rc::Rc};
 
 pub struct ChoiceMatcher {
-    name: String,
+    name: Rc<String>,
     min_length: RefCell<Option<usize>>,
     children: Vec<RefCell<MatcherRef>>,
 }
@@ -11,7 +11,7 @@ pub struct ChoiceMatcher {
 impl ChoiceMatcher {
     pub fn new<S: ToString>(name: S, children: Vec<RefCell<MatcherRef>>) -> ChoiceMatcher {
         ChoiceMatcher {
-            name: name.to_string(),
+            name: Rc::new(name.to_string()),
             min_length: RefCell::new(None),
             children,
         }

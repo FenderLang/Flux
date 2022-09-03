@@ -23,3 +23,5 @@ pub mod choice;
 pub mod list;
 pub mod repeating;
 pub mod string;
+pub mod placeholder;
+pub mod inverter;

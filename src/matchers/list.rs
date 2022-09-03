@@ -31,9 +31,9 @@ impl Matcher for ListMatcher {
                 Ok(child_token) => children.push(child_token),
                 Err(_) => {
                     return Err(FluxError::new_matcher(
-                        "failed in list matcher".into(),
+                        "failed in list matcher",
                         pos,
-                        self.name.deref().clone(),
+                        self.name.clone(),
                     ))
                 } //TODO don't remember to fix later
             }

@@ -31,15 +31,12 @@ impl Matcher for CharGroupMatcher {
             None => Err(FluxError::new_matcher(
                 "expected single char but no characters remaining".into(),
                 pos,
-                self.name.deref().clone(),
+                self.name.clone(),
             )),
             Some(c) => Err(FluxError::new_matcher(
-                format!(
-                    "expected character between {} and {} but found {}",
-                    self.min, self.max, c
-                ),
+                "expected character matcher",
                 pos,
-                self.name.deref().clone(),
+                self.name.clone(),
             )),
         }
     }

@@ -31,7 +31,7 @@ impl Matcher for StringMatcher {
                 return Err(FluxError::new_matcher(
                     "failed to match string".into(),
                     pos,
-                    self.name.deref().clone(),
+                    self.name.clone(),
                 ));
             }
         }
