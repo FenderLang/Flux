@@ -5,14 +5,14 @@ use crate::error::Result;
 pub type MatcherRef = Rc<dyn Matcher>;
 
 pub trait Matcher {
-    fn apply(&self, source: Vec<char>, pos: usize) -> Result<Token>;
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token>;
     fn min_length(&self) -> usize;
     fn name(&self) -> &str;
     fn children(&self) -> Vec<MatcherRef>;
 }
 
-mod char_group;
-mod choice;
-mod list;
-mod repeating;
-mod string;
+pub mod char_group;
+pub mod choice;
+pub mod list;
+pub mod repeating;
+pub mod string;

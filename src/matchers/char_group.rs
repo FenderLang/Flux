@@ -1,52 +1,43 @@
-use std::rc::Rc;
+use std::{collections::btree_map::Range, ops::Deref, rc::Rc};
 
 use super::Matcher;
 use crate::{error::FluxError, tokens::Token};
 
 #[derive(Clone)]
 pub struct CharGroupMatcher {
-    name: String,
+    name: Rc<String>,
     min: char,
     max: char,
 }
 
-impl Matcher for CharGroupMatcher {
-    fn apply(&self, source: Vec<char>, pos: usize) -> crate::error::Result<Token> {
-        todo!()
-    }
-
-    fn min_length(&self) -> usize {
-        todo!()
-    }
-
-    fn name(&self) -> &str {
-        todo!()
-    }
-
-    fn children(&self) -> Vec<super::MatcherRef> {
-        todo!()
+impl CharGroupMatcher {
+    pub fn new<S: ToString>(name: S, min: char, max: char) -> CharGroupMatcher {
+        CharGroupMatcher {
+            name: Rc::new(name.to_string()),
+            max,
+            min,
+        }
     }
 }
 
-impl Matcher for Rc<CharGroupMatcher> {
-    fn apply(&self, source: Vec<char>, pos: usize) -> crate::error::Result<Token> {
+impl Matcher for CharGroupMatcher {
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> crate::error::Result<Token> {
         let check_char = match source.get(pos) {
             Some(c) => c,
             None => {
                 return Err(FluxError::new_matcher(
                     "expected single char but no characters remaining".into(),
                     pos,
-                    self.name.clone(),
-                ))
+                    self.name.deref().clone(),
+                ));
             }
         };
-        let tmp = Token{
-            matcher: self.clone(),
-            children: todo!(),
-            source: todo!(),
-            range: todo!(),
-        };
-        todo!()
+        Ok(Token {
+            matcher_name: self.name.clone(),
+            children: vec![],
+            source: source.clone(),
+            range: pos..pos + 1,
+        })
     }
 
     fn min_length(&self) -> usize {
