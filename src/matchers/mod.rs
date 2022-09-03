@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use crate::tokens::Token;
 
-type MatcherRef = Rc<dyn Matcher>;
+pub type MatcherRef = Rc<dyn Matcher>;
 
 pub trait Matcher {
     fn apply(&self, source: Vec<char>, pos: usize) -> Option<Token>;
