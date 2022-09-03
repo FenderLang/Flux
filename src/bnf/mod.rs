@@ -1,8 +1,8 @@
 use crate::matchers::MatcherRef;
 
 pub struct BNFParser {
-    source: Vec<char>,
-    pos: usize,
+    pub source: Vec<char>,
+    pub pos: usize,
 }
 
 impl BNFParser {
