@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, cell::RefCell};
+use std::cell::RefCell;
 
 use crate::error::FluxError;
 
@@ -30,14 +30,17 @@ impl Matcher for ChoiceMatcher {
         source: std::rc::Rc<Vec<char>>,
         pos: usize,
     ) -> crate::error::Result<crate::tokens::Token> {
-
-        for child in &self.children{
-            if let Ok(token) =  child.borrow().apply(source.clone(), pos){
+        for child in &self.children {
+            if let Ok(token) = child.borrow().apply(source.clone(), pos) {
                 return Ok(token);
             }
         }
 
-        Err(FluxError::new_matcher("in ChoiceMatcher all children failed", pos, self.name.clone()))
+        Err(FluxError::new_matcher(
+            "in ChoiceMatcher all children failed".into(),
+            pos,
+            self.name.clone(),
+        ))
     }
 
     fn min_length(&self) -> usize {
