@@ -1,8 +1,6 @@
-use std::{cell::RefCell, ops::Deref, rc::Rc};
-
+use super::{Matcher, MatcherChildren, MatcherRef};
 use crate::{error::FluxError, tokens::Token};
-
-use super::{Matcher, MatcherRef, MatcherChildren};
+use std::{cell::RefCell, ops::Deref, rc::Rc};
 
 pub struct ListMatcher {
     name: Rc<String>,

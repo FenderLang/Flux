@@ -1,7 +1,6 @@
-use std::{ops::Deref, rc::Rc, vec};
-
 use super::Matcher;
 use crate::{error::FluxError, tokens::Token};
+use std::{ops::Deref, rc::Rc, vec};
 
 #[derive(Clone)]
 pub struct CharGroupMatcher {
@@ -35,7 +34,10 @@ impl Matcher for CharGroupMatcher {
                 self.name.deref().clone(),
             )),
             Some(c) => Err(FluxError::new_matcher(
-                format!("expected character between {} and {} but found {}", self.min, self.max, c),
+                format!(
+                    "expected character between {} and {} but found {}",
+                    self.min, self.max, c
+                ),
                 pos,
                 self.name.deref().clone(),
             )),

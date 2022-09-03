@@ -1,8 +1,6 @@
-use std::cell::RefCell;
-
-use crate::error::FluxError;
-
 use super::{Matcher, MatcherRef};
+use crate::error::FluxError;
+use std::cell::RefCell;
 
 pub struct ChoiceMatcher {
     name: String,
