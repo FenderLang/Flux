@@ -18,7 +18,7 @@ pub trait Matcher {
     }
 }
 
-pub mod char_group;
+pub mod char_range;
 pub mod choice;
 pub mod list;
 pub mod repeating;

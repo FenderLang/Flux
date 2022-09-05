@@ -3,15 +3,15 @@ use crate::{error::FluxError, tokens::Token};
 use std::{rc::Rc, vec};
 
 #[derive(Clone)]
-pub struct CharGroupMatcher {
+pub struct CharRangeMatcher {
     name: Rc<String>,
     min: char,
     max: char,
 }
 
-impl CharGroupMatcher {
-    pub fn new<S: ToString>(name: S, min: char, max: char) -> CharGroupMatcher {
-        CharGroupMatcher {
+impl CharRangeMatcher {
+    pub fn new<S: ToString>(name: S, min: char, max: char) -> CharRangeMatcher {
+        CharRangeMatcher {
             name: Rc::new(name.to_string()),
             max,
             min,
@@ -19,7 +19,7 @@ impl CharGroupMatcher {
     }
 }
 
-impl Matcher for CharGroupMatcher {
+impl Matcher for CharRangeMatcher {
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> crate::error::Result<Token> {
         match source.get(pos) {
             Some(c) if c >= &self.min && c <= &self.max => Ok(Token {
