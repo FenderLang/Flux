@@ -19,6 +19,7 @@ pub trait Matcher {
 }
 
 pub mod char_range;
+pub mod char_set;
 pub mod choice;
 pub mod list;
 pub mod repeating;
