@@ -2,18 +2,18 @@ use std::rc::Rc;
 
 use super::{Matcher, MatcherRef};
 
-pub struct Inverter {
+pub struct InvertedMatcher {
     name: Option<Rc<String>>,
     child: MatcherRef,
 }
 
-impl Inverter {
+impl InvertedMatcher {
     pub fn new(child: MatcherRef) -> Self {
         Self { name: None, child }
     }
 }
 
-impl Matcher for Inverter {
+impl Matcher for InvertedMatcher {
     fn apply(
         &self,
         source: Rc<Vec<char>>,

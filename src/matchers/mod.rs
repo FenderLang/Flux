@@ -22,7 +22,7 @@ pub trait Matcher {
 pub mod char_range;
 pub mod char_set;
 pub mod choice;
-pub mod inverter;
+pub mod inverted;
 pub mod list;
 pub mod placeholder;
 pub mod repeating;
