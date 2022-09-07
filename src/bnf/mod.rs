@@ -20,13 +20,13 @@ impl BNFParserState {
     }
 
     pub fn peek(&self) -> Option<char> {
-        self.source.get(self.pos).map(|c| *c)
+        self.source.get(self.pos).copied()
     }
 
     pub fn advance(&mut self) -> Option<char> {
         let c = self.peek();
         self.pos += 1;
-        return c;
+        c
     }
 
     pub fn assert_char(&mut self, match_char: char) -> Result<()> {
@@ -167,7 +167,7 @@ impl BNFParserState {
         if list.len() == 1 {
             list.remove(0)
         } else {
-            let children = list.into_iter().map(|m| RefCell::new(m)).collect();
+            let children = list.into_iter().map(RefCell::new).collect();
             let list_matcher = ListMatcher::new(children);
             Rc::new(list_matcher)
         }
@@ -191,7 +191,7 @@ impl BNFParserState {
         if !choice.is_empty() {
             let list_matcher = self.maybe_list(list);
             choice.push(list_matcher);
-            let choice = choice.into_iter().map(|m| RefCell::new(m)).collect();
+            let choice = choice.into_iter().map(RefCell::new).collect();
             let choice_matcher = ChoiceMatcher::new(choice);
             Ok(Rc::new(choice_matcher))
         } else {
