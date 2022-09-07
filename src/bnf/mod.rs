@@ -21,9 +21,9 @@ impl BNFParserState {
         self.consume_line_break();
         let mut rules = Vec::new();
         while self.pos < self.source.len() {
-            rules.extend(self.parse_rule().into_iter());
+            rules.extend(self.parse_rule());
         }
-        
+
         todo!()
     }
 
