@@ -6,13 +6,23 @@ use std::{collections::HashSet, rc::Rc};
 pub struct CharSetMatcher {
     name: Rc<String>,
     matching_set: HashSet<char>,
+    inverted: bool,
 }
 
 impl CharSetMatcher {
-    pub fn new<S: ToString>(name: S, matching_set: HashSet<char>) -> Self {
+    pub fn new<S: ToString>(name: S, matching_set: HashSet<char>, inverted: bool) -> Self {
         Self {
             name: Rc::new(name.to_string()),
             matching_set,
+            inverted,
+        }
+    }
+
+    pub fn check_char(&self, check_char: &char) -> bool {
+        if self.inverted {
+            !self.matching_set.contains(check_char)
+        } else {
+            self.matching_set.contains(check_char)
         }
     }
 }
@@ -25,7 +35,7 @@ impl Matcher for CharSetMatcher {
     ) -> crate::error::Result<crate::tokens::Token> {
         match source.get(pos) {
             Some(c) => {
-                if self.matching_set.contains(c) {
+                if self.check_char(c) {
                     Ok(Token {
                         children: vec![],
                         matcher_name: self.name.clone(),
