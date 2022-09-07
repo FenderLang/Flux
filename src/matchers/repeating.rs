@@ -10,7 +10,7 @@ pub struct RepeatingMatcher {
 }
 
 impl RepeatingMatcher {
-    pub fn new<S: ToString>(name: Option<S>, min: usize, max: usize, child: MatcherRef) -> Self {
+    pub fn new(name: Option<String>, min: usize, max: usize, child: MatcherRef) -> Self {
         Self {
             name: name.map(|name| Rc::new(name.to_string())),
             min,

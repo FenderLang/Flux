@@ -9,7 +9,7 @@ pub struct ChoiceMatcher {
 }
 
 impl ChoiceMatcher {
-    pub fn new<S: ToString>(name: Option<S>, children: Vec<RefCell<MatcherRef>>) -> ChoiceMatcher {
+    pub fn new(name: Option<String>, children: Vec<RefCell<MatcherRef>>) -> ChoiceMatcher {
         ChoiceMatcher {
             name: name.map(|name| Rc::new(name.to_string())),
             min_length: RefCell::new(None),

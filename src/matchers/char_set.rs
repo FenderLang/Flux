@@ -10,7 +10,7 @@ pub struct CharSetMatcher {
 }
 
 impl CharSetMatcher {
-    pub fn new<S: ToString>(name: Option<S>, matching_set: HashSet<char>, inverted: bool) -> Self {
+    pub fn new(name: Option<String>, matching_set: HashSet<char>, inverted: bool) -> Self {
         Self {
             name: name.map(|name| Rc::new(name.to_string())),
             matching_set,

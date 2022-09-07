@@ -9,7 +9,7 @@ pub struct StringMatcher {
 }
 
 impl StringMatcher {
-    pub fn new<S: ToString>(name: Option<S>, to_match: String, case_sensitive: bool) -> Self {
+    pub fn new(name: Option<String>, to_match: String, case_sensitive: bool) -> Self {
         Self {
             name: name.map(|name| Rc::new(name.to_string())),
             to_match,

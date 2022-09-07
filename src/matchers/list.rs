@@ -9,7 +9,7 @@ pub struct ListMatcher {
 }
 
 impl ListMatcher {
-    pub fn new<S: ToString>(name: Option<S>, children: Vec<RefCell<MatcherRef>>) -> ListMatcher {
+    pub fn new(name: Option<String>, children: Vec<RefCell<MatcherRef>>) -> ListMatcher {
         ListMatcher {
             name: name.map(|name| Rc::new(name.to_string())),
             min_length: RefCell::new(None),

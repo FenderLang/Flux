@@ -11,8 +11,8 @@ pub struct CharRangeMatcher {
 }
 
 impl CharRangeMatcher {
-    pub fn new<S: ToString>(
-        name: Option<S>,
+    pub fn new(
+        name: Option<String>,
         min: char,
         max: char,
         inverted: bool,
