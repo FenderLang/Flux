@@ -4,6 +4,7 @@ use std::rc::Rc;
 use crate::matchers::char_range::CharRangeMatcher;
 use crate::matchers::choice::ChoiceMatcher;
 use crate::matchers::list::ListMatcher;
+use crate::matchers::repeating::RepeatingMatcher;
 use crate::matchers::string::StringMatcher;
 use crate::matchers::{MatcherRef, char_set::CharSetMatcher};
 use crate::error::{Result, FluxError};
@@ -104,66 +105,98 @@ impl BNFParserState {
         Ok(out)
     }
 
-    pub fn parse_matcher(&mut self, name: Option<String>) -> Result<MatcherRef> {
+    pub fn parse_matcher_with_modifiers(&mut self) -> Result<MatcherRef> {
         let negated = self.check_char('!');
+        let mut matcher = self.parse_matcher()?;
+        if self.check_char('+') {
+            RepeatingMatcher::new(1, usize::MAX, matcher);
+        }
         todo!()
     }
 
-    pub fn parse_char_range(&mut self, name: Option<String>) -> Result<MatcherRef> {
+    pub fn parse_matcher(&mut self) -> Result<MatcherRef> {
+        match self.peek() {
+            Some('(') => {
+                self.assert_char('(')?;
+                let list = self.parse_list()?;
+                self.assert_char(')')?;
+                Ok(list)
+            }
+            Some('[') => {
+                let pos = self.pos;
+                self.parse_char_range().or_else(|_| {
+                    self.pos = pos;
+                    self.parse_char_set()
+                })?;
+                todo!()
+            }
+            Some('"') => self.parse_string(),
+            _ => Err(FluxError::new("", self.pos))
+        }
+    }
+
+    pub fn parse_char_range(&mut self) -> Result<MatcherRef> {
         self.assert_char('[')?;
         let inverted = self.check_char('^');
         let low = self.parse_char_or_escape_seq()?;
         self.assert_char('-')?;
         let high = self.parse_char_or_escape_seq()?;
         self.assert_char(']')?;
-        let matcher = CharRangeMatcher::new(name, low, high, inverted);
+        let matcher = CharRangeMatcher::new(low, high, inverted);
         Ok(Rc::new(matcher))
     }
 
-    pub fn parse_char_set(&mut self, name: Option<String>) -> Result<MatcherRef> {
+    pub fn parse_char_set(&mut self) -> Result<MatcherRef> {
         self.assert_char('[')?;
         let inverted = self.check_char('^');
         let chars = self.parse_str_chars(']')?;
         self.assert_char(']')?;
-        let matcher = CharSetMatcher::new(name, chars.chars().collect(), inverted);
+        let matcher = CharSetMatcher::new(chars.chars().collect(), inverted);
         Ok(Rc::new(matcher))
     }
 
-    pub fn parse_string(&mut self, name: Option<String>) -> Result<MatcherRef> {
+    pub fn parse_string(&mut self) -> Result<MatcherRef> {
         let case_sensitive = !self.check_char('i');
         self.assert_char('"')?;
         let chars = self.parse_str_chars('"')?;
         self.assert_char('"')?;
-        let matcher = StringMatcher::new(name, chars, case_sensitive);
+        let matcher = StringMatcher::new(chars, case_sensitive);
         Ok(Rc::new(matcher))
     }
 
-    pub fn parse_list(&mut self, name: Option<String>) -> Result<MatcherRef> {
+    pub fn maybe_list(&mut self, mut list: Vec<MatcherRef>) -> MatcherRef {
+        if list.len() == 1 {
+            list.remove(0)
+        } else {
+            let children = list.into_iter().map(|m| RefCell::new(m)).collect();
+            let list_matcher = ListMatcher::new(children);
+            Rc::new(list_matcher)
+        }
+    }
+
+    pub fn parse_list(&mut self) -> Result<MatcherRef> {
         let mut list = Vec::new();
         let mut choice = Vec::<MatcherRef>::new();
         while self.peek().map_or(false, |c| c != ')') {
-            list.push(self.parse_matcher(None)?);
+            list.push(self.parse_matcher_with_modifiers()?);
             if !self.check_char(')') {
                 self.assert_whitespace()?;
             }
             if self.check_char('|') {
-                let children = list.into_iter().map(|m| RefCell::new(m)).collect();
-                let list_matcher = ListMatcher::new(None, children);
+                let matcher = self.maybe_list(list);
                 list = Vec::new();
-                choice.push(Rc::new(list_matcher));
+                choice.push(matcher);
                 self.assert_whitespace()?;
             }
         }
-        let children = list.into_iter().map(|m| RefCell::new(m)).collect();
         if !choice.is_empty() {
-            let list_matcher = ListMatcher::new(None, children);
-            choice.push(Rc::new(list_matcher));
+            let list_matcher = self.maybe_list(list);
+            choice.push(list_matcher);
             let choice = choice.into_iter().map(|m| RefCell::new(m)).collect();
-            let choice_matcher = ChoiceMatcher::new(name, choice);
+            let choice_matcher = ChoiceMatcher::new(choice);
             Ok(Rc::new(choice_matcher))
         } else {
-            let list_matcher = ListMatcher::new(name, children);
-            Ok(Rc::new(list_matcher))
+            Ok(self.maybe_list(list))
         }
     }
 }
