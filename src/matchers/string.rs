@@ -1,17 +1,17 @@
-use super::{Matcher};
+use super::Matcher;
 use crate::{error::FluxError, tokens::Token};
-use std::{rc::Rc};
+use std::rc::Rc;
 
 pub struct StringMatcher {
-    name: Rc<String>,
+    name: Option<Rc<String>>,
     to_match: String,
     case_sensitive: bool,
 }
 
 impl StringMatcher {
-    pub fn new<S: ToString>(name: S, to_match: String, case_sensitive: bool) -> Self {
+    pub fn new<S: ToString>(name: Option<S>, to_match: String, case_sensitive: bool) -> Self {
         Self {
-            name: Rc::new(name.to_string()),
+            name: name.map(|name| Rc::new(name.to_string())),
             to_match,
             case_sensitive,
         }
@@ -48,7 +48,11 @@ impl Matcher for StringMatcher {
         self.to_match.len()
     }
 
-    fn name(&self) -> &str {
-        &self.name
+    fn name(&self) -> Option<&str> {
+        if let Some(name) = &self.name {
+            Some(name.as_str())
+        } else {
+            None
+        }
     }
 }

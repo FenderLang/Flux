@@ -3,15 +3,15 @@ use crate::{error::FluxError, tokens::Token};
 use std::{cell::RefCell, rc::Rc};
 
 pub struct ListMatcher {
-    name: Rc<String>,
+    name: Option<Rc<String>>,
     min_length: RefCell<Option<usize>>,
     children: MatcherChildren,
 }
 
 impl ListMatcher {
-    pub fn new<S: ToString>(name: S, children: Vec<RefCell<MatcherRef>>) -> ListMatcher {
+    pub fn new<S: ToString>(name: Option<S>, children: Vec<RefCell<MatcherRef>>) -> ListMatcher {
         ListMatcher {
-            name: Rc::new(name.to_string()),
+            name: name.map(|name| Rc::new(name.to_string())),
             min_length: RefCell::new(None),
             children,
         }
@@ -62,8 +62,12 @@ impl Matcher for ListMatcher {
         }
     }
 
-    fn name(&self) -> &str {
-        &self.name
+    fn name(&self) -> Option<&str> {
+        if let Some(name) = &self.name {
+            Some(name.as_str())
+        } else {
+            None
+        }
     }
 
     fn children(&self) -> Option<&super::MatcherChildren> {

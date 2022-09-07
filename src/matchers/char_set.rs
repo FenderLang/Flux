@@ -4,15 +4,15 @@ use std::{collections::HashSet, rc::Rc};
 
 #[derive(Clone, Debug)]
 pub struct CharSetMatcher {
-    name: Rc<String>,
+    name: Option<Rc<String>>,
     matching_set: HashSet<char>,
     inverted: bool,
 }
 
 impl CharSetMatcher {
-    pub fn new<S: ToString>(name: S, matching_set: HashSet<char>, inverted: bool) -> Self {
+    pub fn new<S: ToString>(name: Option<S>, matching_set: HashSet<char>, inverted: bool) -> Self {
         Self {
-            name: Rc::new(name.to_string()),
+            name: name.map(|name| Rc::new(name.to_string())),
             matching_set,
             inverted,
         }
@@ -62,7 +62,11 @@ impl Matcher for CharSetMatcher {
         1
     }
 
-    fn name(&self) -> &str {
-        &self.name
+    fn name(&self) -> Option<&str> {
+        if let Some(name) = &self.name {
+            Some(name.as_str())
+        } else {
+            None
+        }
     }
 }

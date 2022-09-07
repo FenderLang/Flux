@@ -3,15 +3,15 @@ use crate::error::FluxError;
 use std::{cell::RefCell, rc::Rc};
 
 pub struct ChoiceMatcher {
-    name: Rc<String>,
+    name: Option<Rc<String>>,
     min_length: RefCell<Option<usize>>,
     children: Vec<RefCell<MatcherRef>>,
 }
 
 impl ChoiceMatcher {
-    pub fn new<S: ToString>(name: S, children: Vec<RefCell<MatcherRef>>) -> ChoiceMatcher {
+    pub fn new<S: ToString>(name: Option<S>, children: Vec<RefCell<MatcherRef>>) -> ChoiceMatcher {
         ChoiceMatcher {
-            name: Rc::new(name.to_string()),
+            name: name.map(|name| Rc::new(name.to_string())),
             min_length: RefCell::new(None),
             children,
         }
@@ -52,8 +52,12 @@ impl Matcher for ChoiceMatcher {
         }
     }
 
-    fn name(&self) -> &str {
-        &self.name
+    fn name(&self) -> Option<&str> {
+        if let Some(name) = &self.name {
+            Some(name.as_str())
+        } else {
+            None
+        }
     }
 
     fn children(&self) -> Option<&Vec<RefCell<MatcherRef>>> {

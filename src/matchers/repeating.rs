@@ -3,16 +3,16 @@ use crate::{error::FluxError, tokens::Token};
 use std::{cell::RefCell, rc::Rc};
 
 pub struct RepeatingMatcher {
-    name: Rc<String>,
+    name: Option<Rc<String>>,
     min: usize,
     max: usize,
     child: MatcherChildren,
 }
 
 impl RepeatingMatcher {
-    pub fn new<S: ToString>(name: S, min: usize, max: usize, child: MatcherRef) -> Self {
+    pub fn new<S: ToString>(name: Option<S>, min: usize, max: usize, child: MatcherRef) -> Self {
         Self {
-            name: Rc::new(name.to_string()),
+            name: name.map(|name| Rc::new(name.to_string())),
             min,
             max,
             child: vec![RefCell::new(child.clone())],
@@ -65,8 +65,12 @@ impl Matcher for RepeatingMatcher {
         self.child[0].borrow().min_length() * self.min
     }
 
-    fn name(&self) -> &str {
-        &self.name
+    fn name(&self) -> Option<&str> {
+        if let Some(name) = &self.name {
+            Some(name.as_str())
+        } else {
+            None
+        }
     }
 
     fn children(&self) -> Option<&MatcherChildren> {

@@ -4,16 +4,21 @@ use std::{rc::Rc, vec};
 
 #[derive(Clone)]
 pub struct CharRangeMatcher {
-    name: Rc<String>,
+    name: Option<Rc<String>>,
     min: char,
     max: char,
     inverted: bool,
 }
 
 impl CharRangeMatcher {
-    pub fn new<S: ToString>(name: S, min: char, max: char, inverted: bool) -> CharRangeMatcher {
+    pub fn new<S: ToString>(
+        name: Option<S>,
+        min: char,
+        max: char,
+        inverted: bool,
+    ) -> CharRangeMatcher {
         CharRangeMatcher {
-            name: Rc::new(name.to_string()),
+            name: name.map(|name| Rc::new(name.to_string())),
             max,
             min,
             inverted,
@@ -55,7 +60,11 @@ impl Matcher for CharRangeMatcher {
         1
     }
 
-    fn name(&self) -> &str {
-        &self.name
+    fn name(&self) -> Option<&str> {
+        if let Some(name) = &self.name {
+            Some(name.as_str())
+        } else {
+            None
+        }
     }
 }

@@ -1,11 +1,14 @@
-use std::{fmt::{Debug, Display}, rc::Rc};
+use std::{
+    fmt::{Debug, Display},
+    rc::Rc,
+};
 
 pub type Result<T> = std::result::Result<T, FluxError>;
 
 pub struct FluxError {
     description: &'static str,
     location: usize,
-    matcher_name:  Option<Rc<String>>
+    matcher_name: Option<Rc<String>>,
 }
 
 impl FluxError {
@@ -16,11 +19,15 @@ impl FluxError {
             matcher_name: None,
         }
     }
-    pub fn new_matcher(description: &'static str, location: usize, match_ref: Rc<String>) -> FluxError {
+    pub fn new_matcher(
+        description: &'static str,
+        location: usize,
+        matcher_name: Option<Rc<String>>,
+    ) -> FluxError {
         FluxError {
             description,
             location,
-            matcher_name: Some(match_ref),
+            matcher_name,
         }
     }
 }
