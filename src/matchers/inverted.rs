@@ -1,6 +1,6 @@
 use super::{Matcher, MatcherName, MatcherRef};
 use crate::{error::FluxError, tokens::Token};
-use std::{rc::Rc, vec, cell::RefCell};
+use std::{cell::RefCell, rc::Rc, vec};
 
 pub struct InvertedMatcher {
     name: MatcherName,

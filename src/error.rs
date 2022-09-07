@@ -1,7 +1,8 @@
 use std::{
     cell::RefCell,
     fmt::{Debug, Display},
-    rc::Rc, ops::Deref,
+    ops::Deref,
+    rc::Rc,
 };
 
 use crate::matchers::MatcherName;

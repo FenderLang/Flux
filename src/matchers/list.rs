@@ -1,4 +1,4 @@
-use super::{Matcher, MatcherChildren, MatcherRef, MatcherName};
+use super::{Matcher, MatcherChildren, MatcherName, MatcherRef};
 use crate::{error::FluxError, tokens::Token};
 use std::{cell::RefCell, rc::Rc};
 
@@ -62,7 +62,6 @@ impl Matcher for ListMatcher {
         }
     }
 
-
     fn get_name(&self) -> MatcherName {
         self.name.clone()
     }
@@ -78,5 +77,4 @@ impl Matcher for ListMatcher {
     fn is_placeholder(&self) -> bool {
         false
     }
-
 }

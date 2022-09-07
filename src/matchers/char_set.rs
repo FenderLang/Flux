@@ -1,6 +1,6 @@
 use super::{Matcher, MatcherName};
 use crate::{error::FluxError, tokens::Token};
-use std::{collections::HashSet, rc::Rc, cell::RefCell};
+use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
 #[derive(Clone, Debug)]
 pub struct CharSetMatcher {
@@ -61,7 +61,6 @@ impl Matcher for CharSetMatcher {
     fn min_length(&self) -> usize {
         1
     }
-
 
     fn get_name(&self) -> MatcherName {
         self.name.clone()
