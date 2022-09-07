@@ -104,12 +104,12 @@ impl BNFParserState {
         Ok(out)
     }
 
-    pub fn parse_matcher(&mut self, name: String) -> Result<MatcherRef> {
+    pub fn parse_matcher(&mut self, name: Option<String>) -> Result<MatcherRef> {
         let negated = self.check_char('!');
         todo!()
     }
 
-    pub fn parse_char_range(&mut self, name: String) -> Result<MatcherRef> {
+    pub fn parse_char_range(&mut self, name: Option<String>) -> Result<MatcherRef> {
         self.assert_char('[')?;
         let inverted = self.check_char('^');
         let low = self.parse_char_or_escape_seq()?;
@@ -120,7 +120,7 @@ impl BNFParserState {
         Ok(Rc::new(matcher))
     }
 
-    pub fn parse_char_set(&mut self, name: String) -> Result<MatcherRef> {
+    pub fn parse_char_set(&mut self, name: Option<String>) -> Result<MatcherRef> {
         self.assert_char('[')?;
         let inverted = self.check_char('^');
         let chars = self.parse_str_chars(']')?;
@@ -129,7 +129,7 @@ impl BNFParserState {
         Ok(Rc::new(matcher))
     }
 
-    pub fn parse_string(&mut self, name: String) -> Result<MatcherRef> {
+    pub fn parse_string(&mut self, name: Option<String>) -> Result<MatcherRef> {
         let case_sensitive = !self.check_char('i');
         self.assert_char('"')?;
         let chars = self.parse_str_chars('"')?;
@@ -138,30 +138,31 @@ impl BNFParserState {
         Ok(Rc::new(matcher))
     }
 
-    pub fn parse_list(&mut self, name: String) -> Result<MatcherRef> {
+    pub fn parse_list(&mut self, name: Option<String>) -> Result<MatcherRef> {
         let mut list = Vec::new();
         let mut choice = Vec::<MatcherRef>::new();
         while self.peek().map_or(false, |c| c != ')') {
-            list.push(self.parse_matcher(String::default())?);
+            list.push(self.parse_matcher(None)?);
             if !self.check_char(')') {
                 self.assert_whitespace()?;
             }
             if self.check_char('|') {
                 let children = list.into_iter().map(|m| RefCell::new(m)).collect();
-                let list_matcher = ListMatcher::new(String::default(), children);
+                let list_matcher = ListMatcher::new::<String>(None, children);
                 list = Vec::new();
                 choice.push(Rc::new(list_matcher));
                 self.assert_whitespace()?;
             }
         }
         let children = list.into_iter().map(|m| RefCell::new(m)).collect();
-        let list_matcher = ListMatcher::new(String::default(), children);
         if !choice.is_empty() {
+            let list_matcher = ListMatcher::new::<String>(None, children);
             choice.push(Rc::new(list_matcher));
             let choice = choice.into_iter().map(|m| RefCell::new(m)).collect();
-            let choice_matcher = ChoiceMatcher::new(String::default(), choice);
+            let choice_matcher = ChoiceMatcher::new(name, choice);
             Ok(Rc::new(choice_matcher))
         } else {
+            let list_matcher = ListMatcher::new(name, children);
             Ok(Rc::new(list_matcher))
         }
     }
