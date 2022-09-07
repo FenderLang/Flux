@@ -1,9 +1,9 @@
-use super::{Matcher, MatcherRef};
+use super::{Matcher, MatcherName, MatcherRef};
 use crate::error::FluxError;
 use std::{cell::RefCell, rc::Rc};
 
 pub struct ChoiceMatcher {
-    name: Option<Rc<String>>,
+    name: MatcherName,
     min_length: RefCell<Option<usize>>,
     children: Vec<RefCell<MatcherRef>>,
 }
@@ -11,7 +11,7 @@ pub struct ChoiceMatcher {
 impl ChoiceMatcher {
     pub fn new(children: Vec<RefCell<MatcherRef>>) -> ChoiceMatcher {
         ChoiceMatcher {
-            name: None,
+            name: Rc::new(RefCell::new(None)),
             min_length: RefCell::new(None),
             children,
         }
@@ -52,19 +52,14 @@ impl Matcher for ChoiceMatcher {
         }
     }
 
-    fn get_name(&self) -> Option<&str> {
-        if let Some(name) = &self.name {
-            Some(name.as_str())
-        } else {
-            None
-        }
-    }
-
-    fn children(&self) -> Option<&Vec<RefCell<MatcherRef>>> {
-        Some(&self.children)
+    fn get_name(&self) -> MatcherName {
+        self.name.clone()
     }
 
     fn set_name(&mut self, new_name: String) {
-        self.name = Some(Rc::new(new_name))
+        let tmp = *self.name.as_ref().borrow_mut() = Some(new_name);
+    }
+    fn children(&self) -> Option<&Vec<RefCell<MatcherRef>>> {
+        Some(&self.children)
     }
 }

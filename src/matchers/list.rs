@@ -1,9 +1,9 @@
-use super::{Matcher, MatcherChildren, MatcherRef};
+use super::{Matcher, MatcherChildren, MatcherRef, MatcherName};
 use crate::{error::FluxError, tokens::Token};
 use std::{cell::RefCell, rc::Rc};
 
 pub struct ListMatcher {
-    name: Option<Rc<String>>,
+    name: MatcherName,
     min_length: RefCell<Option<usize>>,
     children: MatcherChildren,
 }
@@ -11,7 +11,7 @@ pub struct ListMatcher {
 impl ListMatcher {
     pub fn new(children: Vec<RefCell<MatcherRef>>) -> ListMatcher {
         ListMatcher {
-            name: None,
+            name: Rc::new(RefCell::new(None)),
             min_length: RefCell::new(None),
             children,
         }
@@ -62,12 +62,13 @@ impl Matcher for ListMatcher {
         }
     }
 
-    fn get_name(&self) -> Option<&str> {
-        if let Some(name) = &self.name {
-            Some(name.as_str())
-        } else {
-            None
-        }
+
+    fn get_name(&self) -> MatcherName {
+        self.name.clone()
+    }
+
+    fn set_name(&mut self, new_name: String) {
+        let tmp = *self.name.as_ref().borrow_mut() = Some(new_name);
     }
 
     fn children(&self) -> Option<&super::MatcherChildren> {
@@ -78,7 +79,4 @@ impl Matcher for ListMatcher {
         false
     }
 
-    fn set_name(&mut self, new_name: String) {
-        self.name = Some(Rc::new(new_name))
-    }
 }

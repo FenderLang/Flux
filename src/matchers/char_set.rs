@@ -1,10 +1,10 @@
-use super::Matcher;
+use super::{Matcher, MatcherName};
 use crate::{error::FluxError, tokens::Token};
-use std::{collections::HashSet, rc::Rc};
+use std::{collections::HashSet, rc::Rc, cell::RefCell};
 
 #[derive(Clone, Debug)]
 pub struct CharSetMatcher {
-    name: Option<Rc<String>>,
+    name: MatcherName,
     matching_set: HashSet<char>,
     inverted: bool,
 }
@@ -12,7 +12,7 @@ pub struct CharSetMatcher {
 impl CharSetMatcher {
     pub fn new(matching_set: HashSet<char>, inverted: bool) -> Self {
         Self {
-            name: None,
+            name: Rc::new(RefCell::new(None)),
             matching_set,
             inverted,
         }
@@ -62,15 +62,12 @@ impl Matcher for CharSetMatcher {
         1
     }
 
-    fn get_name(&self) -> Option<&str> {
-        if let Some(name) = &self.name {
-            Some(name.as_str())
-        } else {
-            None
-        }
+
+    fn get_name(&self) -> MatcherName {
+        self.name.clone()
     }
 
     fn set_name(&mut self, new_name: String) {
-        self.name = Some(Rc::new(new_name))
+        let tmp = *self.name.as_ref().borrow_mut() = Some(new_name);
     }
 }

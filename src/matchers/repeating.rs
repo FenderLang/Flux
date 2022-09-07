@@ -1,9 +1,9 @@
-use super::{Matcher, MatcherChildren, MatcherRef};
+use super::{Matcher, MatcherChildren, MatcherName, MatcherRef};
 use crate::{error::FluxError, tokens::Token};
 use std::{cell::RefCell, rc::Rc};
 
 pub struct RepeatingMatcher {
-    name: Option<Rc<String>>,
+    name: MatcherName,
     min: usize,
     max: usize,
     child: MatcherChildren,
@@ -12,7 +12,7 @@ pub struct RepeatingMatcher {
 impl RepeatingMatcher {
     pub fn new(min: usize, max: usize, child: MatcherRef) -> Self {
         Self {
-            name: None,
+            name: Rc::new(RefCell::new(None)),
             min,
             max,
             child: vec![RefCell::new(child.clone())],
@@ -65,19 +65,15 @@ impl Matcher for RepeatingMatcher {
         self.child[0].borrow().min_length() * self.min
     }
 
-    fn get_name(&self) -> Option<&str> {
-        if let Some(name) = &self.name {
-            Some(name.as_str())
-        } else {
-            None
-        }
-    }
-
     fn children(&self) -> Option<&MatcherChildren> {
         Some(&self.child)
     }
 
+    fn get_name(&self) -> MatcherName {
+        self.name.clone()
+    }
+
     fn set_name(&mut self, new_name: String) {
-        self.name = Some(Rc::new(new_name))
+        let tmp = *self.name.as_ref().borrow_mut() = Some(new_name);
     }
 }

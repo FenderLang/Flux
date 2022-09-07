@@ -1,15 +1,18 @@
-use super::{Matcher, MatcherRef};
+use super::{Matcher, MatcherName, MatcherRef};
 use crate::{error::FluxError, tokens::Token};
-use std::{rc::Rc, vec};
+use std::{rc::Rc, vec, cell::RefCell};
 
 pub struct InvertedMatcher {
-    name: Option<Rc<String>>,
+    name: MatcherName,
     child: MatcherRef,
 }
 
 impl InvertedMatcher {
     pub fn new(child: MatcherRef) -> Self {
-        Self { name: None, child }
+        Self {
+            name: Rc::new(RefCell::new(None)),
+            child,
+        }
     }
 }
 
@@ -38,14 +41,11 @@ impl Matcher for InvertedMatcher {
         0
     }
 
-    fn get_name(&self) -> Option<&str> {
-        match &self.name {
-            Some(name) => Some(name.as_str()),
-            None => None,
-        }
+    fn get_name(&self) -> MatcherName {
+        self.name.clone()
     }
 
     fn set_name(&mut self, new_name: String) {
-        self.name = Some(Rc::new(new_name));
+        let tmp = *self.name.as_ref().borrow_mut() = Some(new_name);
     }
 }

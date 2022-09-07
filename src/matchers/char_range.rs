@@ -1,10 +1,10 @@
-use super::Matcher;
+use super::{Matcher, MatcherName};
 use crate::{error::FluxError, tokens::Token};
-use std::{rc::Rc, vec};
+use std::{cell::RefCell, rc::Rc, vec};
 
 #[derive(Clone)]
 pub struct CharRangeMatcher {
-    name: Option<Rc<String>>,
+    name: MatcherName,
     min: char,
     max: char,
     inverted: bool,
@@ -13,7 +13,7 @@ pub struct CharRangeMatcher {
 impl CharRangeMatcher {
     pub fn new(min: char, max: char, inverted: bool) -> CharRangeMatcher {
         CharRangeMatcher {
-            name: None,
+            name: Rc::new(RefCell::new(None)),
             max,
             min,
             inverted,
@@ -55,15 +55,11 @@ impl Matcher for CharRangeMatcher {
         1
     }
 
-    fn get_name(&self) -> Option<&str> {
-        if let Some(name) = &self.name {
-            Some(name.as_str())
-        } else {
-            None
-        }
+    fn get_name(&self) -> MatcherName {
+        self.name.clone()
     }
 
     fn set_name(&mut self, new_name: String) {
-        self.name = Some(Rc::new(new_name))
+        let tmp = *self.name.as_ref().borrow_mut() = Some(new_name);
     }
 }

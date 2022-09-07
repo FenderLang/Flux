@@ -1,14 +1,17 @@
 use std::{
+    cell::RefCell,
     fmt::{Debug, Display},
-    rc::Rc,
+    rc::Rc, ops::Deref,
 };
+
+use crate::matchers::MatcherName;
 
 pub type Result<T> = std::result::Result<T, FluxError>;
 
 pub struct FluxError {
     description: &'static str,
     location: usize,
-    matcher_name: Option<Rc<String>>,
+    matcher_name: MatcherName,
 }
 
 impl FluxError {
@@ -16,13 +19,13 @@ impl FluxError {
         FluxError {
             description,
             location,
-            matcher_name: None,
+            matcher_name: Rc::new(RefCell::new(None)),
         }
     }
     pub fn new_matcher(
         description: &'static str,
         location: usize,
-        matcher_name: Option<Rc<String>>,
+        matcher_name: MatcherName,
     ) -> FluxError {
         FluxError {
             description,
@@ -50,7 +53,7 @@ impl Display for FluxError {
             f,
             "FluxError at {} with {} description \"{}\"",
             self.location,
-            match &self.matcher_name {
+            match &self.matcher_name.as_ref().borrow().deref() {
                 Some(m) => format!("matcher named `{}`", m),
                 None => "no matcher".into(),
             },

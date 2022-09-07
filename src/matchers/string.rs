@@ -1,9 +1,9 @@
-use super::Matcher;
+use super::{Matcher, MatcherName};
 use crate::{error::FluxError, tokens::Token};
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 
 pub struct StringMatcher {
-    name: Option<Rc<String>>,
+    name: MatcherName,
     to_match: String,
     case_sensitive: bool,
 }
@@ -11,7 +11,7 @@ pub struct StringMatcher {
 impl StringMatcher {
     pub fn new(to_match: String, case_sensitive: bool) -> Self {
         Self {
-            name: None,
+            name: Rc::new(RefCell::new(None)),
             to_match,
             case_sensitive,
         }
@@ -48,15 +48,11 @@ impl Matcher for StringMatcher {
         self.to_match.len()
     }
 
-    fn get_name(&self) -> Option<&str> {
-        if let Some(name) = &self.name {
-            Some(name.as_str())
-        } else {
-            None
-        }
+    fn get_name(&self) -> MatcherName {
+        self.name.clone()
     }
 
     fn set_name(&mut self, new_name: String) {
-        self.name = Some(Rc::new(new_name))
+        let tmp = *self.name.as_ref().borrow_mut() = Some(new_name);
     }
 }
