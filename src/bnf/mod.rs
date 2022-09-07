@@ -148,7 +148,7 @@ impl BNFParserState {
             }
             if self.check_char('|') {
                 let children = list.into_iter().map(|m| RefCell::new(m)).collect();
-                let list_matcher = ListMatcher::new::<String>(None, children);
+                let list_matcher = ListMatcher::new(None, children);
                 list = Vec::new();
                 choice.push(Rc::new(list_matcher));
                 self.assert_whitespace()?;
@@ -156,7 +156,7 @@ impl BNFParserState {
         }
         let children = list.into_iter().map(|m| RefCell::new(m)).collect();
         if !choice.is_empty() {
-            let list_matcher = ListMatcher::new::<String>(None, children);
+            let list_matcher = ListMatcher::new(None, children);
             choice.push(Rc::new(list_matcher));
             let choice = choice.into_iter().map(|m| RefCell::new(m)).collect();
             let choice_matcher = ChoiceMatcher::new(name, choice);
