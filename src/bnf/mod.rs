@@ -4,7 +4,9 @@ use std::rc::Rc;
 use crate::error::{FluxError, Result};
 use crate::matchers::char_range::CharRangeMatcher;
 use crate::matchers::choice::ChoiceMatcher;
+use crate::matchers::inverted::InvertedMatcher;
 use crate::matchers::list::ListMatcher;
+use crate::matchers::placeholder::PlaceholderMatcher;
 use crate::matchers::repeating::RepeatingMatcher;
 use crate::matchers::string::StringMatcher;
 use crate::matchers::{char_set::CharSetMatcher, MatcherRef};
@@ -16,6 +18,16 @@ pub struct BNFParserState {
 
 impl BNFParserState {
     pub fn parse(&self) -> Result<MatcherRef> {
+        todo!()
+    }
+
+    pub fn parse_rule(&mut self) -> Result<MatcherRef> {
+        let name = self.parse_word()?;
+        self.assert_whitespace()?;
+        self.assert_string("::=")?;
+        self.assert_whitespace()?;
+        let mut matcher = self.parse_list()?;
+        
         todo!()
     }
 
@@ -98,19 +110,61 @@ impl BNFParserState {
 
     pub fn parse_word(&mut self) -> Result<String> {
         let mut out = String::new();
-        while self.peek().map_or(false, |c| c.is_alphabetic()) {
+        while self.peek().map_or(false, char::is_alphabetic) {
             out.push(self.advance().unwrap());
         }
         Ok(out)
     }
 
-    pub fn parse_matcher_with_modifiers(&mut self) -> Result<MatcherRef> {
-        let negated = self.check_char('!');
-        let mut matcher = self.parse_matcher()?;
-        if self.check_char('+') {
-            RepeatingMatcher::new(1, usize::MAX, matcher);
+    pub fn parse_placeholder(&mut self) -> Result<MatcherRef> {
+        let name = self.parse_word()?;
+        let matcher = PlaceholderMatcher::new(name);
+        Ok(Rc::new(matcher))
+    }
+
+    pub fn parse_number(&mut self) -> Result<usize> {
+        let mut out = String::new();
+        while self.peek().map_or(false, |c| c.is_digit(10)) {
+            out.push(self.advance().unwrap());
         }
-        todo!()
+        out.parse().map_err(|_| FluxError::new("", self.pos))
+    }
+
+    pub fn parse_matcher_with_modifiers(&mut self) -> Result<MatcherRef> {
+        let inverted = self.check_char('!');
+        let mut matcher = self.parse_matcher()?;
+        match self.peek() {
+            Some('+') => {
+                self.advance();
+                matcher = Rc::new(RepeatingMatcher::new(1, usize::MAX, matcher));
+            }
+            Some('*') => {
+                self.advance();
+                matcher = Rc::new(RepeatingMatcher::new(0, usize::MAX, matcher));
+            }
+            Some('?') => {
+                self.advance();
+                matcher = Rc::new(RepeatingMatcher::new(0, 1, matcher));
+            }
+            Some('{') => {
+                let bounds = self.parse_repeating_bounds()?;
+                matcher = Rc::new(RepeatingMatcher::new(bounds.0, bounds.1, matcher));
+            }
+            _ => {}
+        }
+        if inverted {
+            matcher = Rc::new(InvertedMatcher::new(matcher));
+        }
+        Ok(matcher)
+    }
+
+    pub fn parse_repeating_bounds(&mut self) -> Result<(usize, usize)> {
+        self.assert_char('{')?;
+        let min = if let Some(',') = self.peek() {0} else {self.parse_number()?};
+        self.assert_char(',')?;
+        let max = if let Some('}') = self.peek() {usize::MAX} else {self.parse_number()?};
+        self.assert_char('}')?;
+        Ok((min, max))
     }
 
     pub fn parse_matcher(&mut self) -> Result<MatcherRef> {
@@ -123,13 +177,14 @@ impl BNFParserState {
             }
             Some('[') => {
                 let pos = self.pos;
-                self.parse_char_range().or_else(|_| {
+                let matcher = self.parse_char_range().or_else(|_| {
                     self.pos = pos;
                     self.parse_char_set()
                 })?;
-                todo!()
+                Ok(matcher)
             }
             Some('"') => self.parse_string(),
+            Some(c) if c.is_alphabetic() => self.parse_placeholder(),
             _ => Err(FluxError::new("", self.pos)),
         }
     }
