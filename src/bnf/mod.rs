@@ -17,18 +17,30 @@ pub struct BNFParserState {
 }
 
 impl BNFParserState {
-    pub fn parse(&self) -> Result<MatcherRef> {
+    pub fn parse(&mut self) -> Result<MatcherRef> {
+        self.consume_line_break();
+        let mut rules = Vec::new();
+        while self.pos < self.source.len() {
+            rules.extend(self.parse_rule().into_iter());
+        }
+        
         todo!()
     }
 
-    pub fn parse_rule(&mut self) -> Result<MatcherRef> {
+    pub fn parse_rule(&mut self) -> Result<Option<MatcherRef>> {
+        if self.check_str("//") {
+            while self.peek().map_or(false, |c| c != '\n') {
+                self.pos += 1;
+            }
+            return Ok(None)
+        }
         let name = self.parse_word()?;
-        self.assert_whitespace()?;
+        self.call_assert(Self::consume_whitespace)?;
         self.assert_string("::=")?;
-        self.assert_whitespace()?;
+        self.call_assert(Self::consume_whitespace)?;
         let matcher = self.parse_list()?;
         matcher.set_name(name);
-        Ok(matcher)
+        Ok(Some(matcher))
     }
 
     pub fn peek(&self) -> Option<char> {
@@ -58,16 +70,40 @@ impl BNFParserState {
         }
     }
 
-    pub fn assert_whitespace(&mut self) -> Result<()> {
-        let mut whitespace = false;
-        while self.peek().map_or(false, |c| c.is_whitespace()) {
-            whitespace = true;
-            self.advance();
-        }
-        if whitespace {
-            Ok(())
+    pub fn check_str(&mut self, match_str: &str) -> bool {
+        if self.source[self.pos..self.pos + match_str.len()].iter().zip(match_str.chars()).all(|(c1, c2)| *c1 == c2) {
+            self.pos += match_str.len();
+            true
         } else {
+            false
+        }
+    }
+
+    pub fn call_assert(&mut self, func: fn (&mut Self)) -> Result<()> {
+        let start = self.pos;
+        func(self);
+        if start == self.pos {
             Err(FluxError::new("", self.pos))
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn consume_line_break(&mut self) {
+        self.consume_whitespace();
+        while self.peek().map_or(false, |c| c == '\n') {
+            self.advance();
+            self.consume_whitespace();
+        }
+    }
+
+    pub fn is_whitespace(c: char) -> bool {
+        c.is_whitespace() && c != '\n'
+    }
+
+    pub fn consume_whitespace(&mut self) {
+        while self.peek().map_or(false, BNFParserState::is_whitespace) {
+            self.advance();
         }
     }
 
@@ -124,7 +160,7 @@ impl BNFParserState {
 
     pub fn parse_number(&mut self) -> Result<usize> {
         let mut out = String::new();
-        while self.peek().map_or(false, |c| c.is_digit(10)) {
+        while self.peek().map_or(false, |c| c.is_ascii_digit()) {
             out.push(self.advance().unwrap());
         }
         out.parse().map_err(|_| FluxError::new("", self.pos))
@@ -234,13 +270,13 @@ impl BNFParserState {
         while self.peek().map_or(false, |c| c != ')') {
             list.push(self.parse_matcher_with_modifiers()?);
             if !self.check_char(')') {
-                self.assert_whitespace()?;
+                self.call_assert(Self::consume_whitespace)?;
             }
             if self.check_char('|') {
                 let matcher = self.maybe_list(list);
                 list = Vec::new();
                 choice.push(matcher);
-                self.assert_whitespace()?;
+                self.call_assert(Self::consume_whitespace)?;
             }
         }
         if !choice.is_empty() {
