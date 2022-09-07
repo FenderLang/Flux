@@ -26,9 +26,9 @@ impl BNFParserState {
         self.assert_whitespace()?;
         self.assert_string("::=")?;
         self.assert_whitespace()?;
-        let mut matcher = self.parse_list()?;
-        
-        todo!()
+        let matcher = self.parse_list()?;
+        matcher.set_name(name);
+        Ok(matcher)
     }
 
     pub fn peek(&self) -> Option<char> {

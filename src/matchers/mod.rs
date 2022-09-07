@@ -11,7 +11,7 @@ pub trait Matcher {
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token>;
     fn min_length(&self) -> usize;
     fn get_name(&self) -> MatcherName;
-    fn set_name(&mut self, new_name: String);
+    fn set_name(&self, new_name: String);
     fn children(&self) -> Option<&MatcherChildren> {
         None
     }

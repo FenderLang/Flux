@@ -1,20 +1,23 @@
-use super::Matcher;
+use std::{rc::Rc, cell::RefCell};
+
+use super::{Matcher, MatcherName};
 
 
 pub struct PlaceholderMatcher {
 
-    name: String,
+    name: MatcherName,
 
 }
 
 impl PlaceholderMatcher {
     pub fn new(name: String) -> PlaceholderMatcher {
-        PlaceholderMatcher {name}
+        
+        PlaceholderMatcher {name: Rc::new(RefCell::new(Some(name)))}
     }
 }
 
 impl Matcher for PlaceholderMatcher {
-    fn apply(&self, source: std::rc::Rc<Vec<char>>, pos: usize) -> crate::error::Result<crate::tokens::Token> {
+    fn apply(&self, _: std::rc::Rc<Vec<char>>, _: usize) -> crate::error::Result<crate::tokens::Token> {
         unreachable!()
     }
 
@@ -22,11 +25,11 @@ impl Matcher for PlaceholderMatcher {
         unreachable!()
     }
 
-    fn get_name(&self) -> Option<&str> {
-        Some(&self.name)
+    fn get_name(&self) -> MatcherName {
+        self.name.clone()
     }
 
-    fn set_name(&mut self, new_name: String) {
+    fn set_name(&self, _: String) {
         unreachable!()
     }
 

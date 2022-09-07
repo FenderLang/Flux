@@ -56,8 +56,8 @@ impl Matcher for ChoiceMatcher {
         self.name.clone()
     }
 
-    fn set_name(&mut self, new_name: String) {
-        let tmp = *self.name.as_ref().borrow_mut() = Some(new_name);
+    fn set_name(&self, new_name: String) {
+        *self.name.as_ref().borrow_mut() = Some(new_name);
     }
     fn children(&self) -> Option<&Vec<RefCell<MatcherRef>>> {
         Some(&self.children)
