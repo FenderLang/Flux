@@ -111,19 +111,21 @@ impl BNFParserState {
 
     pub fn parse_char_range(&mut self, name: String) -> Result<MatcherRef> {
         self.assert_char('[')?;
+        let inverted = self.check_char('^');
         let low = self.parse_char_or_escape_seq()?;
         self.assert_char('-')?;
         let high = self.parse_char_or_escape_seq()?;
         self.assert_char(']')?;
-        let matcher = CharRangeMatcher::new(name, low, high);
+        let matcher = CharRangeMatcher::new(name, low, high, inverted);
         Ok(Rc::new(matcher))
     }
 
     pub fn parse_char_set(&mut self, name: String) -> Result<MatcherRef> {
         self.assert_char('[')?;
+        let inverted = self.check_char('^');
         let chars = self.parse_str_chars(']')?;
         self.assert_char(']')?;
-        let matcher = CharSetMatcher::new(name, chars.chars().collect());
+        let matcher = CharSetMatcher::new(name, chars.chars().collect(), inverted);
         Ok(Rc::new(matcher))
     }
 
