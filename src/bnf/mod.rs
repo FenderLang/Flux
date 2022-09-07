@@ -12,8 +12,8 @@ use crate::matchers::string::StringMatcher;
 use crate::matchers::{char_set::CharSetMatcher, MatcherRef};
 
 pub struct BNFParserState {
-    pub source: Vec<char>,
-    pub pos: usize,
+    source: Vec<char>,
+    pos: usize,
 }
 
 impl BNFParserState {
@@ -21,46 +21,47 @@ impl BNFParserState {
         self.consume_line_break();
         let mut rules = Vec::new();
         while self.pos < self.source.len() {
-            rules.extend(self.parse_rule());
+            rules.extend(self.parse_rule()?);
         }
 
         todo!()
     }
 
-    pub fn parse_rule(&mut self) -> Result<Option<MatcherRef>> {
+    fn parse_rule(&mut self) -> Result<Option<MatcherRef>> {
         if self.check_str("//") {
-            while self.peek().map_or(false, |c| c != '\n') {
-                self.pos += 1;
-            }
+            self.consume_comment();
             return Ok(None)
         }
         let name = self.parse_word()?;
         self.call_assert(Self::consume_whitespace)?;
-        self.assert_string("::=")?;
+        self.assert_str("::=")?;
         self.call_assert(Self::consume_whitespace)?;
         let matcher = self.parse_list()?;
         matcher.set_name(name);
+        if self.check_str("//") {
+            self.consume_comment();
+        }
         Ok(Some(matcher))
     }
 
-    pub fn peek(&self) -> Option<char> {
+    fn peek(&self) -> Option<char> {
         self.source.get(self.pos).copied()
     }
 
-    pub fn advance(&mut self) -> Option<char> {
+    fn advance(&mut self) -> Option<char> {
         let c = self.peek();
         self.pos += 1;
         c
     }
 
-    pub fn assert_char(&mut self, match_char: char) -> Result<()> {
+    fn assert_char(&mut self, match_char: char) -> Result<()> {
         match self.advance() {
             Some(c) if c == match_char => Ok(()),
             _ => Err(FluxError::new("", self.pos)),
         }
     }
 
-    pub fn check_char(&mut self, match_char: char) -> bool {
+    fn check_char(&mut self, match_char: char) -> bool {
         match self.peek() {
             Some(c) if c == match_char => {
                 self.advance();
@@ -70,7 +71,7 @@ impl BNFParserState {
         }
     }
 
-    pub fn check_str(&mut self, match_str: &str) -> bool {
+    fn check_str(&mut self, match_str: &str) -> bool {
         if self.source[self.pos..self.pos + match_str.len()].iter().zip(match_str.chars()).all(|(c1, c2)| *c1 == c2) {
             self.pos += match_str.len();
             true
@@ -79,7 +80,7 @@ impl BNFParserState {
         }
     }
 
-    pub fn call_assert(&mut self, func: fn (&mut Self)) -> Result<()> {
+    fn call_assert(&mut self, func: fn (&mut Self)) -> Result<()> {
         let start = self.pos;
         func(self);
         if start == self.pos {
@@ -89,7 +90,13 @@ impl BNFParserState {
         }
     }
 
-    pub fn consume_line_break(&mut self) {
+    fn consume_comment(&mut self) {
+        while self.peek().map_or(false, |c| c != '\n') {
+            self.pos += 1;
+        }
+    }
+
+    fn consume_line_break(&mut self) {
         self.consume_whitespace();
         while self.peek().map_or(false, |c| c == '\n') {
             self.advance();
@@ -97,24 +104,24 @@ impl BNFParserState {
         }
     }
 
-    pub fn is_whitespace(c: char) -> bool {
+    fn is_whitespace(c: char) -> bool {
         c.is_whitespace() && c != '\n'
     }
 
-    pub fn consume_whitespace(&mut self) {
+    fn consume_whitespace(&mut self) {
         while self.peek().map_or(false, BNFParserState::is_whitespace) {
             self.advance();
         }
     }
 
-    pub fn assert_string(&mut self, match_string: &str) -> Result<()> {
+    fn assert_str(&mut self, match_string: &str) -> Result<()> {
         for c in match_string.chars() {
             self.assert_char(c)?
         }
         Ok(())
     }
 
-    pub fn parse_char_or_escape_seq(&mut self) -> Result<char> {
+    fn parse_char_or_escape_seq(&mut self) -> Result<char> {
         match self.advance() {
             Some('\\') => self.parse_escape_seq(),
             Some(c) => Ok(c),
@@ -122,7 +129,7 @@ impl BNFParserState {
         }
     }
 
-    pub fn parse_escape_seq(&mut self) -> Result<char> {
+    fn parse_escape_seq(&mut self) -> Result<char> {
         match self.advance() {
             Some('n') => Ok('\n'),
             Some('t') => Ok('\t'),
@@ -131,7 +138,7 @@ impl BNFParserState {
         }
     }
 
-    pub fn parse_str_chars(&mut self, terminator: char) -> Result<String> {
+    fn parse_str_chars(&mut self, terminator: char) -> Result<String> {
         let mut out = String::new();
         while self.peek().map_or(false, |c| c != terminator) {
             let c = self.advance().unwrap();
@@ -144,7 +151,7 @@ impl BNFParserState {
         Ok(out)
     }
 
-    pub fn parse_word(&mut self) -> Result<String> {
+    fn parse_word(&mut self) -> Result<String> {
         let mut out = String::new();
         while self.peek().map_or(false, char::is_alphabetic) {
             out.push(self.advance().unwrap());
@@ -152,13 +159,13 @@ impl BNFParserState {
         Ok(out)
     }
 
-    pub fn parse_placeholder(&mut self) -> Result<MatcherRef> {
+    fn parse_placeholder(&mut self) -> Result<MatcherRef> {
         let name = self.parse_word()?;
         let matcher = PlaceholderMatcher::new(name);
         Ok(Rc::new(matcher))
     }
 
-    pub fn parse_number(&mut self) -> Result<usize> {
+    fn parse_number(&mut self) -> Result<usize> {
         let mut out = String::new();
         while self.peek().map_or(false, |c| c.is_ascii_digit()) {
             out.push(self.advance().unwrap());
@@ -166,7 +173,7 @@ impl BNFParserState {
         out.parse().map_err(|_| FluxError::new("", self.pos))
     }
 
-    pub fn parse_matcher_with_modifiers(&mut self) -> Result<MatcherRef> {
+    fn parse_matcher_with_modifiers(&mut self) -> Result<MatcherRef> {
         let inverted = self.check_char('!');
         let mut matcher = self.parse_matcher()?;
         match self.peek() {
@@ -194,7 +201,7 @@ impl BNFParserState {
         Ok(matcher)
     }
 
-    pub fn parse_repeating_bounds(&mut self) -> Result<(usize, usize)> {
+    fn parse_repeating_bounds(&mut self) -> Result<(usize, usize)> {
         self.assert_char('{')?;
         let min = if let Some(',') = self.peek() {0} else {self.parse_number()?};
         self.assert_char(',')?;
@@ -203,7 +210,7 @@ impl BNFParserState {
         Ok((min, max))
     }
 
-    pub fn parse_matcher(&mut self) -> Result<MatcherRef> {
+    fn parse_matcher(&mut self) -> Result<MatcherRef> {
         match self.peek() {
             Some('(') => {
                 self.assert_char('(')?;
@@ -225,7 +232,7 @@ impl BNFParserState {
         }
     }
 
-    pub fn parse_char_range(&mut self) -> Result<MatcherRef> {
+    fn parse_char_range(&mut self) -> Result<MatcherRef> {
         self.assert_char('[')?;
         let inverted = self.check_char('^');
         let low = self.parse_char_or_escape_seq()?;
@@ -236,7 +243,7 @@ impl BNFParserState {
         Ok(Rc::new(matcher))
     }
 
-    pub fn parse_char_set(&mut self) -> Result<MatcherRef> {
+    fn parse_char_set(&mut self) -> Result<MatcherRef> {
         self.assert_char('[')?;
         let inverted = self.check_char('^');
         let chars = self.parse_str_chars(']')?;
@@ -245,7 +252,7 @@ impl BNFParserState {
         Ok(Rc::new(matcher))
     }
 
-    pub fn parse_string(&mut self) -> Result<MatcherRef> {
+    fn parse_string(&mut self) -> Result<MatcherRef> {
         let case_sensitive = !self.check_char('i');
         self.assert_char('"')?;
         let chars = self.parse_str_chars('"')?;
@@ -254,7 +261,7 @@ impl BNFParserState {
         Ok(Rc::new(matcher))
     }
 
-    pub fn maybe_list(&mut self, mut list: Vec<MatcherRef>) -> MatcherRef {
+    fn maybe_list(&mut self, mut list: Vec<MatcherRef>) -> MatcherRef {
         if list.len() == 1 {
             list.remove(0)
         } else {
@@ -264,7 +271,7 @@ impl BNFParserState {
         }
     }
 
-    pub fn parse_list(&mut self) -> Result<MatcherRef> {
+    fn parse_list(&mut self) -> Result<MatcherRef> {
         let mut list = Vec::new();
         let mut choice = Vec::<MatcherRef>::new();
         while self.peek().map_or(false, |c| c != ')') {
