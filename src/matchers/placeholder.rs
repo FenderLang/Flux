@@ -11,7 +11,6 @@ pub struct PlaceholderMatcher {
 
 impl PlaceholderMatcher {
     pub fn new(name: String) -> PlaceholderMatcher {
-        
         PlaceholderMatcher {name: Rc::new(RefCell::new(Some(name)))}
     }
 }
