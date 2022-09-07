@@ -74,6 +74,6 @@ impl Matcher for RepeatingMatcher {
     }
 
     fn set_name(&self, new_name: String) {
-        *self.name.as_ref().borrow_mut() = Some(new_name);
+        self.name.replace(Some(new_name));
     }
 }
