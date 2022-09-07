@@ -10,9 +10,9 @@ pub struct RepeatingMatcher {
 }
 
 impl RepeatingMatcher {
-    pub fn new(name: Option<String>, min: usize, max: usize, child: MatcherRef) -> Self {
+    pub fn new(min: usize, max: usize, child: MatcherRef) -> Self {
         Self {
-            name: name.map(|name| Rc::new(name.to_string())),
+            name: None,
             min,
             max,
             child: vec![RefCell::new(child.clone())],
@@ -65,7 +65,7 @@ impl Matcher for RepeatingMatcher {
         self.child[0].borrow().min_length() * self.min
     }
 
-    fn name(&self) -> Option<&str> {
+    fn get_name(&self) -> Option<&str> {
         if let Some(name) = &self.name {
             Some(name.as_str())
         } else {
@@ -75,5 +75,9 @@ impl Matcher for RepeatingMatcher {
 
     fn children(&self) -> Option<&MatcherChildren> {
         Some(&self.child)
+    }
+
+    fn set_name(&mut self, new_name: String) {
+        self.name = Some(Rc::new(new_name))
     }
 }

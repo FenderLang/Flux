@@ -9,7 +9,8 @@ pub type MatcherChildren = Vec<RefCell<MatcherRef>>;
 pub trait Matcher {
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token>;
     fn min_length(&self) -> usize;
-    fn name(&self) -> Option<&str>;
+    fn get_name(&self) -> Option<&str>;
+    fn set_name(&mut self, new_name: String);
     fn children(&self) -> Option<&MatcherChildren> {
         None
     }

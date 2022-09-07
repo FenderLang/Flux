@@ -9,9 +9,9 @@ pub struct StringMatcher {
 }
 
 impl StringMatcher {
-    pub fn new(name: Option<String>, to_match: String, case_sensitive: bool) -> Self {
+    pub fn new(to_match: String, case_sensitive: bool) -> Self {
         Self {
-            name: name.map(|name| Rc::new(name.to_string())),
+            name: None,
             to_match,
             case_sensitive,
         }
@@ -48,11 +48,15 @@ impl Matcher for StringMatcher {
         self.to_match.len()
     }
 
-    fn name(&self) -> Option<&str> {
+    fn get_name(&self) -> Option<&str> {
         if let Some(name) = &self.name {
             Some(name.as_str())
         } else {
             None
         }
+    }
+
+    fn set_name(&mut self, new_name: String) {
+        self.name = Some(Rc::new(new_name))
     }
 }

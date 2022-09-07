@@ -11,14 +11,9 @@ pub struct CharRangeMatcher {
 }
 
 impl CharRangeMatcher {
-    pub fn new(
-        name: Option<String>,
-        min: char,
-        max: char,
-        inverted: bool,
-    ) -> CharRangeMatcher {
+    pub fn new(min: char, max: char, inverted: bool) -> CharRangeMatcher {
         CharRangeMatcher {
-            name: name.map(|name| Rc::new(name.to_string())),
+            name: None,
             max,
             min,
             inverted,
@@ -60,11 +55,15 @@ impl Matcher for CharRangeMatcher {
         1
     }
 
-    fn name(&self) -> Option<&str> {
+    fn get_name(&self) -> Option<&str> {
         if let Some(name) = &self.name {
             Some(name.as_str())
         } else {
             None
         }
+    }
+
+    fn set_name(&mut self, new_name: String) {
+        self.name = Some(Rc::new(new_name))
     }
 }

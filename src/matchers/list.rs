@@ -9,9 +9,9 @@ pub struct ListMatcher {
 }
 
 impl ListMatcher {
-    pub fn new(name: Option<String>, children: Vec<RefCell<MatcherRef>>) -> ListMatcher {
+    pub fn new(children: Vec<RefCell<MatcherRef>>) -> ListMatcher {
         ListMatcher {
-            name: name.map(|name| Rc::new(name.to_string())),
+            name: None,
             min_length: RefCell::new(None),
             children,
         }
@@ -62,7 +62,7 @@ impl Matcher for ListMatcher {
         }
     }
 
-    fn name(&self) -> Option<&str> {
+    fn get_name(&self) -> Option<&str> {
         if let Some(name) = &self.name {
             Some(name.as_str())
         } else {
@@ -76,5 +76,9 @@ impl Matcher for ListMatcher {
 
     fn is_placeholder(&self) -> bool {
         false
+    }
+
+    fn set_name(&mut self, new_name: String) {
+        self.name = Some(Rc::new(new_name))
     }
 }

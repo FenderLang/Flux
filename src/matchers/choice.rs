@@ -9,9 +9,9 @@ pub struct ChoiceMatcher {
 }
 
 impl ChoiceMatcher {
-    pub fn new(name: Option<String>, children: Vec<RefCell<MatcherRef>>) -> ChoiceMatcher {
+    pub fn new(children: Vec<RefCell<MatcherRef>>) -> ChoiceMatcher {
         ChoiceMatcher {
-            name: name.map(|name| Rc::new(name.to_string())),
+            name: None,
             min_length: RefCell::new(None),
             children,
         }
@@ -52,7 +52,7 @@ impl Matcher for ChoiceMatcher {
         }
     }
 
-    fn name(&self) -> Option<&str> {
+    fn get_name(&self) -> Option<&str> {
         if let Some(name) = &self.name {
             Some(name.as_str())
         } else {
@@ -62,5 +62,9 @@ impl Matcher for ChoiceMatcher {
 
     fn children(&self) -> Option<&Vec<RefCell<MatcherRef>>> {
         Some(&self.children)
+    }
+
+    fn set_name(&mut self, new_name: String) {
+        self.name = Some(Rc::new(new_name))
     }
 }

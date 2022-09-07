@@ -10,9 +10,9 @@ pub struct CharSetMatcher {
 }
 
 impl CharSetMatcher {
-    pub fn new(name: Option<String>, matching_set: HashSet<char>, inverted: bool) -> Self {
+    pub fn new(matching_set: HashSet<char>, inverted: bool) -> Self {
         Self {
-            name: name.map(|name| Rc::new(name.to_string())),
+            name: None,
             matching_set,
             inverted,
         }
@@ -62,11 +62,15 @@ impl Matcher for CharSetMatcher {
         1
     }
 
-    fn name(&self) -> Option<&str> {
+    fn get_name(&self) -> Option<&str> {
         if let Some(name) = &self.name {
             Some(name.as_str())
         } else {
             None
         }
+    }
+
+    fn set_name(&mut self, new_name: String) {
+        self.name = Some(Rc::new(new_name))
     }
 }

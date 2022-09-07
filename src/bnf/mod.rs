@@ -1,13 +1,13 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use crate::error::{FluxError, Result};
 use crate::matchers::char_range::CharRangeMatcher;
 use crate::matchers::choice::ChoiceMatcher;
 use crate::matchers::list::ListMatcher;
 use crate::matchers::repeating::RepeatingMatcher;
 use crate::matchers::string::StringMatcher;
-use crate::matchers::{MatcherRef, char_set::CharSetMatcher};
-use crate::error::{Result, FluxError};
+use crate::matchers::{char_set::CharSetMatcher, MatcherRef};
 
 pub struct BNFParserState {
     pub source: Vec<char>,
@@ -32,7 +32,7 @@ impl BNFParserState {
     pub fn assert_char(&mut self, match_char: char) -> Result<()> {
         match self.advance() {
             Some(c) if c == match_char => Ok(()),
-            _ => Err(FluxError::new("", self.pos))
+            _ => Err(FluxError::new("", self.pos)),
         }
     }
 
@@ -41,8 +41,8 @@ impl BNFParserState {
             Some(c) if c == match_char => {
                 self.advance();
                 true
-            },
-            _ => false
+            }
+            _ => false,
         }
     }
 
@@ -70,7 +70,7 @@ impl BNFParserState {
         match self.advance() {
             Some('\\') => self.parse_escape_seq(),
             Some(c) => Ok(c),
-            _ => Err(FluxError::new("", self.pos))
+            _ => Err(FluxError::new("", self.pos)),
         }
     }
 
@@ -79,7 +79,7 @@ impl BNFParserState {
             Some('n') => Ok('\n'),
             Some('t') => Ok('\t'),
             Some('r') => Ok('\r'),
-            _ => Err(FluxError::new("", self.pos))
+            _ => Err(FluxError::new("", self.pos)),
         }
     }
 
@@ -94,7 +94,6 @@ impl BNFParserState {
             }
         }
         Ok(out)
-
     }
 
     pub fn parse_word(&mut self) -> Result<String> {
@@ -131,7 +130,7 @@ impl BNFParserState {
                 todo!()
             }
             Some('"') => self.parse_string(),
-            _ => Err(FluxError::new("", self.pos))
+            _ => Err(FluxError::new("", self.pos)),
         }
     }
 
