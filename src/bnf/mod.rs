@@ -30,7 +30,7 @@ impl BNFParserState {
     fn parse_rule(&mut self) -> Result<Option<MatcherRef>> {
         if self.check_str("//") {
             self.consume_comment();
-            return Ok(None)
+            return Ok(None);
         }
         let name = self.parse_word()?;
         self.call_assert(Self::consume_whitespace)?;
@@ -72,7 +72,11 @@ impl BNFParserState {
     }
 
     fn check_str(&mut self, match_str: &str) -> bool {
-        if self.source[self.pos..self.pos + match_str.len()].iter().zip(match_str.chars()).all(|(c1, c2)| *c1 == c2) {
+        if self.source[self.pos..self.pos + match_str.len()]
+            .iter()
+            .zip(match_str.chars())
+            .all(|(c1, c2)| *c1 == c2)
+        {
             self.pos += match_str.len();
             true
         } else {
@@ -80,7 +84,7 @@ impl BNFParserState {
         }
     }
 
-    fn call_assert(&mut self, func: fn (&mut Self)) -> Result<()> {
+    fn call_assert(&mut self, func: fn(&mut Self)) -> Result<()> {
         let start = self.pos;
         func(self);
         if start == self.pos {
@@ -203,9 +207,17 @@ impl BNFParserState {
 
     fn parse_repeating_bounds(&mut self) -> Result<(usize, usize)> {
         self.assert_char('{')?;
-        let min = if let Some(',') = self.peek() {0} else {self.parse_number()?};
+        let min = if let Some(',') = self.peek() {
+            0
+        } else {
+            self.parse_number()?
+        };
         self.assert_char(',')?;
-        let max = if let Some('}') = self.peek() {usize::MAX} else {self.parse_number()?};
+        let max = if let Some('}') = self.peek() {
+            usize::MAX
+        } else {
+            self.parse_number()?
+        };
         self.assert_char('}')?;
         Ok((min, max))
     }

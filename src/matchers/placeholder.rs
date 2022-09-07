@@ -1,22 +1,25 @@
-use std::{rc::Rc, cell::RefCell};
+use std::{cell::RefCell, rc::Rc};
 
 use super::{Matcher, MatcherName};
 
-
 pub struct PlaceholderMatcher {
-
     name: MatcherName,
-
 }
 
 impl PlaceholderMatcher {
     pub fn new(name: String) -> PlaceholderMatcher {
-        PlaceholderMatcher {name: Rc::new(RefCell::new(Some(name)))}
+        PlaceholderMatcher {
+            name: Rc::new(RefCell::new(Some(name))),
+        }
     }
 }
 
 impl Matcher for PlaceholderMatcher {
-    fn apply(&self, _: std::rc::Rc<Vec<char>>, _: usize) -> crate::error::Result<crate::tokens::Token> {
+    fn apply(
+        &self,
+        _: std::rc::Rc<Vec<char>>,
+        _: usize,
+    ) -> crate::error::Result<crate::tokens::Token> {
         unreachable!()
     }
 
