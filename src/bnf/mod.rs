@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::error::{FluxError, Result};
-use crate::matchers::MatcherName;
 use crate::matchers::char_range::CharRangeMatcher;
 use crate::matchers::choice::ChoiceMatcher;
 use crate::matchers::inverted::InvertedMatcher;
