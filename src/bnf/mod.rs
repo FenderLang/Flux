@@ -1,7 +1,9 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::error::{FluxError, Result};
+use crate::matchers::MatcherName;
 use crate::matchers::char_range::CharRangeMatcher;
 use crate::matchers::choice::ChoiceMatcher;
 use crate::matchers::inverted::InvertedMatcher;
@@ -22,6 +24,12 @@ impl BNFParserState {
         let mut rules = Vec::new();
         while self.pos < self.source.len() {
             rules.extend(self.parse_rule()?);
+        }
+        let mut map: HashMap<String, MatcherRef> = HashMap::new();
+        for rule in rules {
+            if let Some(name) = rule.get_name().borrow().as_ref() {
+                map.insert(name.clone(), rule.clone());
+            }
         }
 
         todo!()
