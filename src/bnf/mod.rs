@@ -67,9 +67,9 @@ impl BNFParserState {
             return Ok(None);
         }
         let name = self.parse_word()?;
-        self.call_assert(Self::consume_whitespace)?;
+        self.call_assert("whitespace", Self::consume_whitespace)?;
         self.assert_str("::=")?;
-        self.call_assert(Self::consume_whitespace)?;
+        self.call_assert("whitespace", Self::consume_whitespace)?;
         let matcher = self.parse_list()?;
         matcher.set_name(name);
         if self.check_str("//") {
@@ -91,7 +91,7 @@ impl BNFParserState {
     fn assert_char(&mut self, match_char: char) -> Result<()> {
         match self.advance() {
             Some(c) if c == match_char => Ok(()),
-            _ => Err(FluxError::new("", self.pos)),
+            _ => Err(FluxError::new_dyn(format!("Expected {}", match_char), self.pos)),
         }
     }
 
@@ -118,11 +118,11 @@ impl BNFParserState {
         }
     }
 
-    fn call_assert(&mut self, func: fn(&mut Self)) -> Result<()> {
+    fn call_assert(&mut self, context: &str, func: fn(&mut Self)) -> Result<()> {
         let start = self.pos;
         func(self);
         if start == self.pos {
-            Err(FluxError::new("", self.pos))
+            Err(FluxError::new_dyn(format!("Expected {}", context), self.pos))
         } else {
             Ok(())
         }
@@ -163,7 +163,7 @@ impl BNFParserState {
         match self.advance() {
             Some('\\') => self.parse_escape_seq(),
             Some(c) => Ok(c),
-            _ => Err(FluxError::new("", self.pos)),
+            _ => Err(FluxError::new("Unexpected end of file", self.pos)),
         }
     }
 
@@ -172,7 +172,7 @@ impl BNFParserState {
             Some('n') => Ok('\n'),
             Some('t') => Ok('\t'),
             Some('r') => Ok('\r'),
-            _ => Err(FluxError::new("", self.pos)),
+            _ => Err(FluxError::new("Invalid escape sequence", self.pos)),
         }
     }
 
@@ -208,7 +208,7 @@ impl BNFParserState {
         while self.peek().map_or(false, |c| c.is_ascii_digit()) {
             out.push(self.advance().unwrap());
         }
-        out.parse().map_err(|_| FluxError::new("", self.pos))
+        out.parse().map_err(|_| FluxError::new("Invalid number", self.pos))
     }
 
     fn parse_matcher_with_modifiers(&mut self) -> Result<MatcherRef> {
@@ -274,7 +274,7 @@ impl BNFParserState {
             }
             Some('"') => self.parse_string(),
             Some(c) if c.is_alphabetic() => self.parse_placeholder(),
-            _ => Err(FluxError::new("", self.pos)),
+            _ => Err(FluxError::new("Unexpected character or end of file", self.pos)),
         }
     }
 
@@ -323,13 +323,13 @@ impl BNFParserState {
         while self.peek().map_or(false, |c| c != ')') {
             list.push(self.parse_matcher_with_modifiers()?);
             if !self.check_char(')') {
-                self.call_assert(Self::consume_whitespace)?;
+                self.call_assert("whitespace", Self::consume_whitespace)?;
             }
             if self.check_char('|') {
                 let matcher = self.maybe_list(list);
                 list = Vec::new();
                 choice.push(matcher);
-                self.call_assert(Self::consume_whitespace)?;
+                self.call_assert("whitespace", Self::consume_whitespace)?;
             }
         }
         if !choice.is_empty() {
