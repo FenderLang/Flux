@@ -2,6 +2,7 @@ use super::{Matcher, MatcherChildren, MatcherName, MatcherRef};
 use crate::{error::FluxError, tokens::Token};
 use std::{cell::RefCell, rc::Rc};
 
+#[derive(Debug)]
 pub struct RepeatingMatcher {
     name: MatcherName,
     min: usize,

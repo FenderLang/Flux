@@ -12,13 +12,17 @@ use crate::matchers::repeating::RepeatingMatcher;
 use crate::matchers::string::StringMatcher;
 use crate::matchers::{char_set::CharSetMatcher, MatcherRef};
 
-pub struct BNFParserState {
+pub fn parse(input: &str) -> Result<MatcherRef> {
+    BNFParserState {source: input.chars().collect(), pos: 0}.parse()
+}
+
+struct BNFParserState {
     source: Vec<char>,
     pos: usize,
 }
 
 impl BNFParserState {
-    pub fn parse(&mut self) -> Result<MatcherRef> {
+    fn parse(&mut self) -> Result<MatcherRef> {
         self.consume_line_break();
         let mut rules = Vec::new();
         while self.pos < self.source.len() {
@@ -30,8 +34,31 @@ impl BNFParserState {
                 map.insert(name.clone(), rule.clone());
             }
         }
+        if !map.contains_key("root") {
+            return Err(FluxError::new("No root matcher specified", 0));
+        }
+        let root = map.get("root").ok_or_else(|| FluxError::new("No root matcher specified", 0))?;
+        self.replace_placeholders(&root, &map);
+        Ok(root.clone())
+    }
 
-        todo!()
+    fn replace_placeholders(&self, root: &MatcherRef, map: &HashMap<String, MatcherRef>) -> Result<()> {
+        if root.children().is_none() {
+            return Ok(());
+        }
+        let children = root.children().unwrap();
+        for i in 0..children.len() {
+            if !children[i].borrow().is_placeholder() {
+                continue;
+            }
+            let name = children[i].borrow().get_name();
+            let name = name.borrow();
+            let name = name.as_ref().unwrap();
+            let matcher = map.get(name).ok_or_else(|| FluxError::new_dyn(format!("Missing matcher for {}", name).to_owned(), 0))?;
+            self.replace_placeholders(matcher, map)?;
+            children[i].replace(matcher.clone());
+        }
+        Ok(())
     }
 
     fn parse_rule(&mut self) -> Result<Option<MatcherRef>> {

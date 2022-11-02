@@ -2,12 +2,13 @@ use crate::error::Result;
 use crate::tokens::Token;
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::fmt::Debug;
 
 pub type MatcherRef = Rc<dyn Matcher>;
 pub type MatcherChildren = Vec<RefCell<MatcherRef>>;
 pub type MatcherName = Rc<RefCell<Option<String>>>;
 
-pub trait Matcher {
+pub trait Matcher: Debug {
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token>;
     fn min_length(&self) -> usize;
     fn get_name(&self) -> MatcherName;

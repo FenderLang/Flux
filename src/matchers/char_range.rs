@@ -2,7 +2,7 @@ use super::{Matcher, MatcherName};
 use crate::{error::FluxError, tokens::Token};
 use std::{cell::RefCell, rc::Rc, vec};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CharRangeMatcher {
     name: MatcherName,
     min: char,

@@ -2,6 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use super::{Matcher, MatcherName};
 
+#[derive(Debug)]
 pub struct PlaceholderMatcher {
     name: MatcherName,
 }

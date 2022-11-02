@@ -2,6 +2,7 @@ use super::{Matcher, MatcherName, MatcherRef};
 use crate::{error::FluxError, tokens::Token};
 use std::{cell::RefCell, rc::Rc, vec};
 
+#[derive(Debug)]
 pub struct InvertedMatcher {
     name: MatcherName,
     child: MatcherRef,

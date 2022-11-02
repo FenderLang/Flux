@@ -2,6 +2,7 @@ use super::{Matcher, MatcherName, MatcherRef};
 use crate::error::FluxError;
 use std::{cell::RefCell, rc::Rc};
 
+#[derive(Debug)]
 pub struct ChoiceMatcher {
     name: MatcherName,
     min_length: RefCell<Option<usize>>,

@@ -2,6 +2,7 @@ use super::{Matcher, MatcherName};
 use crate::{error::FluxError, tokens::Token};
 use std::{cell::RefCell, rc::Rc};
 
+#[derive(Debug)]
 pub struct StringMatcher {
     name: MatcherName,
     to_match: String,
