@@ -12,8 +12,6 @@ use crate::matchers::repeating::RepeatingMatcher;
 use crate::matchers::string::StringMatcher;
 use crate::matchers::{char_set::CharSetMatcher, MatcherRef};
 
-pub mod lexer;
-
 pub fn parse(input: &str) -> Result<MatcherRef> {
     BNFParserState {source: input.chars().collect(), pos: 0}.parse()
 }

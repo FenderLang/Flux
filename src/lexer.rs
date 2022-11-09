@@ -1,6 +1,8 @@
 use crate::matchers::MatcherRef;
 
 enum CullStrategy {
+    /// Leave the token alone
+    NONE,
     /// Delete the token and all of its children
     DELETE_ALL,
     /// Delete the children of the token but not the token itself
@@ -11,4 +13,7 @@ enum CullStrategy {
 
 struct Lexer {
     root: MatcherRef,
+    retain_empty: bool,
+    retain_literal: bool,
+    unnamed_rule: CullStrategy,
 }
