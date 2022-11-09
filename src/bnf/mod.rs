@@ -31,6 +31,9 @@ impl BNFParserState {
         let mut map: HashMap<String, MatcherRef> = HashMap::new();
         for rule in rules {
             if let Some(name) = rule.get_name().borrow().as_ref() {
+                if map.contains_key(name) {
+                    return Err(FluxError::new_dyn(format!("Duplicate rule name {}", name), 0));
+                }
                 map.insert(name.clone(), rule.clone());
             }
         }
@@ -38,7 +41,7 @@ impl BNFParserState {
             return Err(FluxError::new("No root matcher specified", 0));
         }
         let root = map.get("root").ok_or_else(|| FluxError::new("No root matcher specified", 0))?;
-        self.replace_placeholders(&root, &map);
+        self.replace_placeholders(&root, &map)?;
         Ok(root.clone())
     }
 
@@ -106,7 +109,7 @@ impl BNFParserState {
     }
 
     fn check_str(&mut self, match_str: &str) -> bool {
-        if self.source[self.pos..self.pos + match_str.len()]
+        if match_str.len() + self.pos < self.source.len() && self.source[self.pos..self.pos + match_str.len()]
             .iter()
             .zip(match_str.chars())
             .all(|(c1, c2)| *c1 == c2)
@@ -322,7 +325,7 @@ impl BNFParserState {
         let mut choice = Vec::<MatcherRef>::new();
         while self.peek().map_or(false, |c| c != ')') {
             list.push(self.parse_matcher_with_modifiers()?);
-            if !self.check_char(')') {
+            if self.peek().is_some() && self.peek() != Some(')') {
                 self.call_assert("whitespace", Self::consume_whitespace)?;
             }
             if self.check_char('|') {

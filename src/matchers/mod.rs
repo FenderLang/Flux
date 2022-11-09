@@ -2,7 +2,7 @@ use crate::error::Result;
 use crate::tokens::Token;
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
 pub type MatcherRef = Rc<dyn Matcher>;
 pub type MatcherChildren = Vec<RefCell<MatcherRef>>;
@@ -18,6 +18,12 @@ pub trait Matcher: Debug {
     }
     fn is_placeholder(&self) -> bool {
         false
+    }
+}
+
+impl Display for dyn Matcher {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{:?}", self))
     }
 }
 
