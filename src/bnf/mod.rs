@@ -139,7 +139,7 @@ impl BNFParserState {
 
     fn consume_line_break(&mut self) {
         self.consume_whitespace();
-        while self.peek().map_or(false, |c| c == '\n') {
+        while self.peek() == Some('\n') {
             self.advance();
             self.consume_whitespace();
         }
