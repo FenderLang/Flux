@@ -1,14 +1,17 @@
+use std::collections::HashMap;
+use crate::error::{FluxError, Result};
 use crate::matchers::MatcherRef;
+use crate::tokens::Token;
 
 enum CullStrategy {
     /// Leave the token alone
-    NONE,
+    None,
     /// Delete the token and all of its children
-    DELETE_ALL,
+    DeleteAll,
     /// Delete the children of the token but not the token itself
-    DELETE_CHILDREN,
+    DeleteChildren,
     /// Delete the token and replace it with its children in its parent
-    LIFT_CHILDREN
+    LiftChildren
 }
 
 struct Lexer {
@@ -16,4 +19,17 @@ struct Lexer {
     retain_empty: bool,
     retain_literal: bool,
     unnamed_rule: CullStrategy,
+    named_rules: HashMap<String, CullStrategy>
+}
+
+impl Lexer {
+
+    pub fn tokenize(&self, input: &str) -> Result<Token> {
+        todo!()
+    }
+
+    fn prune(root: Token) -> Token {
+        todo!()
+    }
+
 }
