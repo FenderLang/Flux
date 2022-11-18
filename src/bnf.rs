@@ -45,9 +45,6 @@ impl BNFParserState {
                 map.insert(name.clone(), rule.clone());
             }
         }
-        if !map.contains_key("root") {
-            return Err(FluxError::new("No root matcher specified", 0));
-        }
         let root = map
             .get("root")
             .ok_or_else(|| FluxError::new("No root matcher specified", 0))?;
