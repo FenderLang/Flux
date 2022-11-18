@@ -11,14 +11,14 @@ pub type Result<T> = std::result::Result<T, FluxError>;
 
 pub enum ErrorMessage {
     Constant(&'static str),
-    Dynamic(String)
+    Dynamic(String),
 }
 
 impl ErrorMessage {
     fn get_message(&self) -> &str {
         match self {
             Self::Constant(s) => s,
-            Self::Dynamic(s) => &s
+            Self::Dynamic(s) => &s,
         }
     }
 }
@@ -54,7 +54,7 @@ impl FluxError {
         FluxError {
             description: ErrorMessage::Dynamic(description),
             location,
-            matcher_name: Rc::new(RefCell::new(None))
+            matcher_name: Rc::new(RefCell::new(None)),
         }
     }
 }

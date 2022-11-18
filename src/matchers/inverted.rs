@@ -21,7 +21,7 @@ impl Matcher for InvertedMatcher {
     fn apply<'a>(&self, source: &'a Vec<char>, pos: usize) -> Result<Token<'a>> {
         match self.child.apply(source, pos) {
             Ok(_) => Err(FluxError::new_matcher(
-                "Inverted matcher",
+                "unexpected",
                 pos,
                 self.name.clone(),
             )),
@@ -29,7 +29,7 @@ impl Matcher for InvertedMatcher {
                 children: vec![],
                 matcher_name: self.name.clone(),
                 source,
-                range: 0..0,
+                range: pos..pos,
             }),
         }
     }

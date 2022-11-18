@@ -21,11 +21,7 @@ impl CharRangeMatcher {
     }
 
     pub fn check_char(&self, check_char: char) -> bool {
-        if self.inverted {
-            check_char < self.min || check_char > self.max
-        } else {
-            check_char >= self.min && check_char <= self.max
-        }
+        (check_char >= self.min && check_char <= self.max) ^ self.inverted
     }
 }
 
@@ -38,13 +34,8 @@ impl Matcher for CharRangeMatcher {
                 source,
                 range: pos..pos + 1,
             }),
-            None => Err(FluxError::new_matcher(
-                "expected single char but no characters remaining",
-                pos,
-                self.name.clone(),
-            )),
-            Some(_) => Err(FluxError::new_matcher(
-                "expected character matcher",
+            _ => Err(FluxError::new_matcher(
+                "expected",
                 pos,
                 self.name.clone(),
             )),

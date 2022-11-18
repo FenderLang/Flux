@@ -22,17 +22,20 @@ impl ListMatcher {
 impl Matcher for ListMatcher {
     fn apply<'a>(&self, source: &'a Vec<char>, pos: usize) -> Result<Token<'a>> {
         let mut children: Vec<Token> = Vec::new();
-
+        let mut cursor = pos;
         for child in self.children.iter() {
-            match child.borrow().apply(source, pos) {
-                Ok(child_token) => children.push(child_token),
+            match child.borrow().apply(source, cursor) {
+                Ok(child_token) => {
+                    children.push(child_token);
+                    cursor = child_token.range.end;
+                }
                 Err(_) => {
                     return Err(FluxError::new_matcher(
-                        "failed in list matcher",
+                        "expected",
                         pos,
-                        self.name.clone(),
+                        child.borrow().get_name().clone(),
                     ))
-                } //TODO don't remember to fix later
+                }
             }
         }
 

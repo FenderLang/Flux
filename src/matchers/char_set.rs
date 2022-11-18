@@ -19,35 +19,23 @@ impl CharSetMatcher {
     }
 
     pub fn check_char(&self, check_char: &char) -> bool {
-        if self.inverted {
-            !self.matching_set.contains(check_char)
-        } else {
-            self.matching_set.contains(check_char)
-        }
+        self.matching_set.contains(check_char) ^ self.inverted
     }
 }
 
 impl Matcher for CharSetMatcher {
     fn apply<'a>(&self, source: &'a Vec<char>, pos: usize) -> Result<Token<'a>> {
         match source.get(pos) {
-            Some(c) => {
-                if self.check_char(c) {
-                    Ok(Token {
-                        children: vec![],
-                        matcher_name: self.name.clone(),
-                        range: pos..pos + 1,
-                        source,
-                    })
-                } else {
-                    Err(FluxError::new_matcher(
-                        "char_set no character at pos not in set",
-                        pos,
-                        self.name.clone(),
-                    ))
-                }
+            Some(c) if self.check_char(c) => {
+                Ok(Token {
+                    children: vec![],
+                    matcher_name: self.name.clone(),
+                    range: pos..pos + 1,
+                    source,
+                })
             }
-            None => Err(FluxError::new_matcher(
-                "char_set no character at the position",
+            _ => Err(FluxError::new_matcher(
+                "expected",
                 pos,
                 self.name.clone(),
             )),

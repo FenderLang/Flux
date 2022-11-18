@@ -7,7 +7,7 @@ pub struct RepeatingMatcher {
     name: MatcherName,
     min: usize,
     max: usize,
-    child: MatcherChildren,
+    child: MatcherRef,
 }
 
 impl RepeatingMatcher {
@@ -16,7 +16,7 @@ impl RepeatingMatcher {
             name: Rc::new(RefCell::new(None)),
             min,
             max,
-            child: vec![RefCell::new(child.clone())],
+            child,
         }
     }
 }
@@ -25,29 +25,15 @@ impl Matcher for RepeatingMatcher {
     fn apply<'a>(&self, source: &'a Vec<char>, pos: usize) -> Result<Token<'a>> {
         let mut children: Vec<Token> = Vec::new();
 
-        for child in self.child.iter() {
-            if children.len() >= self.max {
-                break;
-            }
-
-            match child.borrow().apply(source, pos) {
+        while children.len() < self.max {
+            match self.child.apply(source, pos) {
                 Ok(child_token) => children.push(child_token),
-                Err(_) => {
-                    return Err(FluxError::new_matcher(
-                        "failed in repeating matcher",
-                        pos,
-                        self.name.clone(),
-                    ))
-                } //TODO don't remember to fix later
+                Err(_) => break,
             }
         }
 
         if children.len() < self.min {
-            Err(FluxError::new_matcher(
-                "failed in repeating matcher did not match required number of times",
-                pos,
-                self.name.clone(),
-            ))
+            Err(FluxError::new_matcher("expected", pos, self.name.clone()))
         } else {
             Ok(Token {
                 range: (pos..children.iter().last().unwrap().range.end),
