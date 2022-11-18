@@ -26,8 +26,8 @@ impl Matcher for ListMatcher {
         for child in self.children.iter() {
             match child.borrow().apply(source, cursor) {
                 Ok(child_token) => {
-                    children.push(child_token);
                     cursor = child_token.range.end;
+                    children.push(child_token);
                 }
                 Err(_) => {
                     return Err(FluxError::new_matcher(

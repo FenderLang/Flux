@@ -7,7 +7,7 @@ pub struct RepeatingMatcher {
     name: MatcherName,
     min: usize,
     max: usize,
-    child: MatcherRef,
+    child: MatcherChildren,
 }
 
 impl RepeatingMatcher {
@@ -16,7 +16,7 @@ impl RepeatingMatcher {
             name: Rc::new(RefCell::new(None)),
             min,
             max,
-            child,
+            child: vec![RefCell::new(child)],
         }
     }
 }
@@ -25,8 +25,9 @@ impl Matcher for RepeatingMatcher {
     fn apply<'a>(&self, source: &'a Vec<char>, pos: usize) -> Result<Token<'a>> {
         let mut children: Vec<Token> = Vec::new();
 
+        let child = self.child[0].borrow();
         while children.len() < self.max {
-            match self.child.apply(source, pos) {
+            match child.apply(source, pos) {
                 Ok(child_token) => children.push(child_token),
                 Err(_) => break,
             }
