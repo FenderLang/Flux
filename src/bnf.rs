@@ -30,9 +30,7 @@ impl BNFParserState {
         self.consume_line_break();
         let mut rules = Vec::new();
         while self.pos < self.source.len() {
-            println!("Parsing rule");
             rules.extend(self.parse_rule()?);
-            println!("Parsed rule");
             self.consume_line_break();
         }
         let mut map: HashMap<String, MatcherRef> = HashMap::new();
