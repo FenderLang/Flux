@@ -1,5 +1,5 @@
 use super::{Matcher, MatcherName, MatcherRef};
-use crate::{error::FluxError, tokens::Token, error::Result};
+use crate::{error::FluxError, error::Result, tokens::Token};
 use std::{cell::RefCell, rc::Rc, vec};
 
 #[derive(Debug)]
@@ -18,11 +18,7 @@ impl InvertedMatcher {
 }
 
 impl Matcher for InvertedMatcher {
-    fn apply<'a>(
-        &self,
-        source: &'a Vec<char>,
-        pos: usize,
-    ) -> Result<Token<'a>> {
+    fn apply<'a>(&self, source: &'a Vec<char>, pos: usize) -> Result<Token<'a>> {
         match self.child.apply(source, pos) {
             Ok(_) => Err(FluxError::new_matcher(
                 "Inverted matcher",

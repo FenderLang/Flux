@@ -1,6 +1,6 @@
-use std::{cell::RefCell, rc::Rc};
-
 use super::{Matcher, MatcherName};
+use crate::{error::Result, tokens::Token};
+use std::{cell::RefCell, rc::Rc};
 
 #[derive(Debug)]
 pub struct PlaceholderMatcher {
@@ -16,11 +16,7 @@ impl PlaceholderMatcher {
 }
 
 impl Matcher for PlaceholderMatcher {
-    fn apply<'a>(
-        &self,
-        _: &'a Vec<char>,
-        _: usize,
-    ) -> crate::error::Result<crate::tokens::Token<'a>> {
+    fn apply<'a>(&self, _: &'a Vec<char>, _: usize) -> Result<Token<'a>> {
         unreachable!()
     }
 

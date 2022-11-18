@@ -1,5 +1,5 @@
 use super::{Matcher, MatcherName};
-use crate::{error::FluxError, tokens::Token};
+use crate::{error::FluxError, error::Result, tokens::Token};
 use std::{cell::RefCell, rc::Rc};
 
 #[derive(Debug)]
@@ -20,7 +20,7 @@ impl StringMatcher {
 }
 
 impl Matcher for StringMatcher {
-    fn apply<'a>(&self, source: &'a Vec<char>, pos: usize) -> crate::error::Result<Token<'a>> {
+    fn apply<'a>(&self, source: &'a Vec<char>, pos: usize) -> Result<Token<'a>> {
         for (a, b) in source[pos..(self.to_match.len())]
             .iter()
             .zip(self.to_match.chars())

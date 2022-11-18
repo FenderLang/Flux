@@ -1,5 +1,5 @@
 use super::{Matcher, MatcherChildren, MatcherName, MatcherRef};
-use crate::{error::FluxError, tokens::Token};
+use crate::{error::FluxError, error::Result, tokens::Token};
 use std::{cell::RefCell, rc::Rc};
 
 #[derive(Debug)]
@@ -22,11 +22,7 @@ impl RepeatingMatcher {
 }
 
 impl Matcher for RepeatingMatcher {
-    fn apply<'a>(
-        &self,
-        source: &'a Vec<char>,
-        pos: usize,
-        ) -> crate::error::Result<crate::tokens::Token<'a>> {
+    fn apply<'a>(&self, source: &'a Vec<char>, pos: usize) -> Result<Token<'a>> {
         let mut children: Vec<Token> = Vec::new();
 
         for child in self.child.iter() {

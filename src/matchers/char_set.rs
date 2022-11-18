@@ -1,5 +1,5 @@
 use super::{Matcher, MatcherName};
-use crate::{error::FluxError, tokens::Token};
+use crate::{error::FluxError, error::Result, tokens::Token};
 use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
 #[derive(Clone, Debug)]
@@ -28,11 +28,7 @@ impl CharSetMatcher {
 }
 
 impl Matcher for CharSetMatcher {
-    fn apply<'a>(
-        &self,
-        source: &'a Vec<char>,
-        pos: usize,
-    ) -> crate::error::Result<crate::tokens::Token<'a>> {
+    fn apply<'a>(&self, source: &'a Vec<char>, pos: usize) -> Result<Token<'a>> {
         match source.get(pos) {
             Some(c) => {
                 if self.check_char(c) {
