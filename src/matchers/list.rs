@@ -20,15 +20,15 @@ impl ListMatcher {
 }
 
 impl Matcher for ListMatcher {
-    fn apply(
+    fn apply<'a>(
         &self,
-        source: std::rc::Rc<Vec<char>>,
+        source: &'a Vec<char>,
         pos: usize,
-    ) -> crate::error::Result<crate::tokens::Token> {
+    ) -> crate::error::Result<crate::tokens::Token<'a>> {
         let mut children: Vec<Token> = Vec::new();
 
         for child in self.children.iter() {
-            match child.borrow().apply(source.clone(), pos) {
+            match child.borrow().apply(source, pos) {
                 Ok(child_token) => children.push(child_token),
                 Err(_) => {
                     return Err(FluxError::new_matcher(

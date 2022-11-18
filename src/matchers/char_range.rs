@@ -30,12 +30,12 @@ impl CharRangeMatcher {
 }
 
 impl Matcher for CharRangeMatcher {
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> crate::error::Result<Token> {
+    fn apply<'a>(&self, source: &'a Vec<char>, pos: usize) -> crate::error::Result<Token<'a>> {
         match source.get(pos) {
             Some(c) if self.check_char(*c) => Ok(Token {
                 matcher_name: self.name.clone(),
                 children: vec![],
-                source: source.clone(),
+                source,
                 range: pos..pos + 1,
             }),
             None => Err(FluxError::new_matcher(

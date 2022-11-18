@@ -16,11 +16,11 @@ impl PlaceholderMatcher {
 }
 
 impl Matcher for PlaceholderMatcher {
-    fn apply(
+    fn apply<'a>(
         &self,
-        _: std::rc::Rc<Vec<char>>,
+        _: &'a Vec<char>,
         _: usize,
-    ) -> crate::error::Result<crate::tokens::Token> {
+    ) -> crate::error::Result<crate::tokens::Token<'a>> {
         unreachable!()
     }
 

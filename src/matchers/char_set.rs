@@ -28,11 +28,11 @@ impl CharSetMatcher {
 }
 
 impl Matcher for CharSetMatcher {
-    fn apply(
+    fn apply<'a>(
         &self,
-        source: Rc<Vec<char>>,
+        source: &'a Vec<char>,
         pos: usize,
-    ) -> crate::error::Result<crate::tokens::Token> {
+    ) -> crate::error::Result<crate::tokens::Token<'a>> {
         match source.get(pos) {
             Some(c) => {
                 if self.check_char(c) {
@@ -40,7 +40,7 @@ impl Matcher for CharSetMatcher {
                         children: vec![],
                         matcher_name: self.name.clone(),
                         range: pos..pos + 1,
-                        source: source.clone(),
+                        source,
                     })
                 } else {
                     Err(FluxError::new_matcher(

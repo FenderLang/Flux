@@ -20,7 +20,7 @@ impl StringMatcher {
 }
 
 impl Matcher for StringMatcher {
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> crate::error::Result<Token> {
+    fn apply<'a>(&self, source: &'a Vec<char>, pos: usize) -> crate::error::Result<Token<'a>> {
         for (a, b) in source[pos..(self.to_match.len())]
             .iter()
             .zip(self.to_match.chars())

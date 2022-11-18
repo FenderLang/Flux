@@ -22,11 +22,11 @@ impl RepeatingMatcher {
 }
 
 impl Matcher for RepeatingMatcher {
-    fn apply(
+    fn apply<'a>(
         &self,
-        source: Rc<Vec<char>>,
+        source: &'a Vec<char>,
         pos: usize,
-    ) -> crate::error::Result<crate::tokens::Token> {
+        ) -> crate::error::Result<crate::tokens::Token<'a>> {
         let mut children: Vec<Token> = Vec::new();
 
         for child in self.child.iter() {
@@ -34,7 +34,7 @@ impl Matcher for RepeatingMatcher {
                 break;
             }
 
-            match child.borrow().apply(source.clone(), pos) {
+            match child.borrow().apply(source, pos) {
                 Ok(child_token) => children.push(child_token),
                 Err(_) => {
                     return Err(FluxError::new_matcher(

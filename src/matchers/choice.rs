@@ -20,13 +20,13 @@ impl ChoiceMatcher {
 }
 
 impl Matcher for ChoiceMatcher {
-    fn apply(
+    fn apply<'a>(
         &self,
-        source: std::rc::Rc<Vec<char>>,
+        source: &'a Vec<char>,
         pos: usize,
-    ) -> crate::error::Result<crate::tokens::Token> {
+    ) -> crate::error::Result<crate::tokens::Token<'a>> {
         for child in &self.children {
-            if let Ok(token) = child.borrow().apply(source.clone(), pos) {
+            if let Ok(token) = child.borrow().apply(source, pos) {
                 return Ok(token);
             }
         }
