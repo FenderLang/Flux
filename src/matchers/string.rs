@@ -29,7 +29,7 @@ impl StringMatcher {
 
 impl Matcher for StringMatcher {
     fn apply<'a>(&self, source: &'a Vec<char>, pos: usize) -> Result<Token<'a>> {
-        let zip = self
+        let mut zip = self
             .to_match
             .iter()
             .zip(&source[pos..])
