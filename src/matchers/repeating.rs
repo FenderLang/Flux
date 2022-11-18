@@ -26,9 +26,13 @@ impl Matcher for RepeatingMatcher {
         let mut children: Vec<Token> = Vec::new();
 
         let child = self.child[0].borrow();
+        let mut cursor = pos;
         while children.len() < self.max {
-            match child.apply(source, pos) {
-                Ok(child_token) => children.push(child_token),
+            match child.apply(source, cursor) {
+                Ok(child_token) => {
+                    cursor = child_token.range.end;
+                    children.push(child_token);
+                },
                 Err(_) => break,
             }
         }

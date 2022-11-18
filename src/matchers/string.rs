@@ -34,7 +34,7 @@ impl Matcher for StringMatcher {
             .iter()
             .zip(&source[pos..])
             .take(self.to_match.len());
-
+        
         if zip.len() == self.to_match.len() && zip.all(|(a, b)| self.char_matches(a, b)) {
             Ok(Token {
                 matcher_name: self.name.clone(),
