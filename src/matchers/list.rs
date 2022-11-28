@@ -20,7 +20,7 @@ impl ListMatcher {
 }
 
 impl Matcher for ListMatcher {
-    fn apply<'a>(&self, source: &'a Vec<char>, pos: usize) -> Result<Token<'a>> {
+    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>> {
         let mut children: Vec<Token> = Vec::new();
         let mut cursor = pos;
         for child in self.children.iter() {
@@ -33,7 +33,7 @@ impl Matcher for ListMatcher {
                     return Err(FluxError::new_matcher(
                         "expected",
                         pos,
-                        child.borrow().get_name().clone(),
+                        child.borrow().get_name(),
                     ))
                 }
             }

@@ -1,7 +1,8 @@
-use std::collections::HashMap;
-use crate::error::{FluxError, Result};
+#![allow(dead_code)]
+use crate::error::Result;
 use crate::matchers::MatcherRef;
 use crate::tokens::Token;
+use std::collections::HashMap;
 
 enum CullStrategy {
     /// Leave the token alone
@@ -11,7 +12,7 @@ enum CullStrategy {
     /// Delete the children of the token but not the token itself
     DeleteChildren,
     /// Delete the token and replace it with its children in its parent
-    LiftChildren
+    LiftChildren,
 }
 
 struct Lexer {
@@ -19,11 +20,10 @@ struct Lexer {
     retain_empty: bool,
     retain_literal: bool,
     unnamed_rule: CullStrategy,
-    named_rules: HashMap<String, CullStrategy>
+    named_rules: HashMap<String, CullStrategy>,
 }
 
 impl Lexer {
-
     pub fn tokenize(&self, input: &str) -> Result<Token> {
         todo!()
     }
@@ -31,5 +31,4 @@ impl Lexer {
     fn prune(root: Token) -> Token {
         todo!()
     }
-
 }

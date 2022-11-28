@@ -21,7 +21,7 @@ impl ChoiceMatcher {
 }
 
 impl Matcher for ChoiceMatcher {
-    fn apply<'a>(&self, source: &'a Vec<char>, pos: usize) -> Result<Token<'a>> {
+    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>> {
         for child in &self.children {
             if let Ok(token) = child.borrow().apply(source, pos) {
                 return Ok(Token {

@@ -48,31 +48,28 @@ impl BNFParserState {
         let root = map
             .get("root")
             .ok_or_else(|| FluxError::new("No root matcher specified", 0))?;
-        self.replace_placeholders(&root, &map)?;
+        Self::replace_placeholders(root, &map)?;
         Ok(root.clone())
     }
 
-    fn replace_placeholders(
-        &self,
-        root: &MatcherRef,
-        map: &HashMap<String, MatcherRef>,
-    ) -> Result<()> {
+    fn replace_placeholders(root: &MatcherRef, map: &HashMap<String, MatcherRef>) -> Result<()> {
         if root.children().is_none() {
             return Ok(());
         }
         let children = root.children().unwrap();
-        for i in 0..children.len() {
-            if !children[i].borrow().is_placeholder() {
+        for c in children {
+            // for i in 0..children.len() {
+            if !c.borrow().is_placeholder() {
                 continue;
             }
-            let name = children[i].borrow().get_name();
+            let name = c.borrow().get_name();
             let name = name.borrow();
             let name = name.as_ref().unwrap();
-            let matcher = map.get(name).ok_or_else(|| {
-                FluxError::new_dyn(format!("Missing matcher for {}", name).to_owned(), 0)
-            })?;
-            self.replace_placeholders(matcher, map)?;
-            children[i].replace(matcher.clone());
+            let matcher = map
+                .get(name)
+                .ok_or_else(|| FluxError::new_dyn(format!("Missing matcher for {}", name), 0))?;
+            Self::replace_placeholders(matcher, map)?;
+            c.replace(matcher.clone());
         }
         Ok(())
     }

@@ -16,7 +16,7 @@ impl PlaceholderMatcher {
 }
 
 impl Matcher for PlaceholderMatcher {
-    fn apply<'a>(&self, _: &'a Vec<char>, _: usize) -> Result<Token<'a>> {
+    fn apply<'a>(&self, _: &'a [char], _: usize) -> Result<Token<'a>> {
         unreachable!()
     }
 

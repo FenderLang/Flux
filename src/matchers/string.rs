@@ -28,13 +28,13 @@ impl StringMatcher {
 }
 
 impl Matcher for StringMatcher {
-    fn apply<'a>(&self, source: &'a Vec<char>, pos: usize) -> Result<Token<'a>> {
+    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>> {
         let mut zip = self
             .to_match
             .iter()
             .zip(&source[pos..])
             .take(self.to_match.len());
-        
+
         if zip.len() == self.to_match.len() && zip.all(|(a, b)| self.char_matches(a, b)) {
             Ok(Token {
                 matcher_name: self.name.clone(),

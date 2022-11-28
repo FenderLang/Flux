@@ -26,7 +26,7 @@ impl CharRangeMatcher {
 }
 
 impl Matcher for CharRangeMatcher {
-    fn apply<'a>(&self, source: &'a Vec<char>, pos: usize) -> Result<Token<'a>> {
+    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>> {
         match source.get(pos) {
             Some(c) if self.check_char(*c) => Ok(Token {
                 matcher_name: self.name.clone(),
@@ -34,11 +34,7 @@ impl Matcher for CharRangeMatcher {
                 source,
                 range: pos..pos + 1,
             }),
-            _ => Err(FluxError::new_matcher(
-                "expected",
-                pos,
-                self.name.clone(),
-            )),
+            _ => Err(FluxError::new_matcher("expected", pos, self.name.clone())),
         }
     }
 

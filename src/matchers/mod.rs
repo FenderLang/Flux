@@ -1,15 +1,15 @@
 use crate::error::Result;
 use crate::tokens::Token;
 use std::cell::RefCell;
-use std::rc::Rc;
 use std::fmt::{Debug, Display};
+use std::rc::Rc;
 
 pub type MatcherRef = Rc<dyn Matcher>;
 pub type MatcherChildren = Vec<RefCell<MatcherRef>>;
 pub type MatcherName = Rc<RefCell<Option<String>>>;
 
 pub trait Matcher: Debug {
-    fn apply<'a>(&self, source: &'a Vec<char>, pos: usize) -> Result<Token<'a>>;
+    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>>;
     fn min_length(&self) -> usize;
     fn get_name(&self) -> MatcherName;
     fn set_name(&self, new_name: String);

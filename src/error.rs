@@ -18,7 +18,7 @@ impl ErrorMessage {
     fn get_message(&self) -> &str {
         match self {
             Self::Constant(s) => s,
-            Self::Dynamic(s) => &s,
+            Self::Dynamic(s) => s,
         }
     }
 }

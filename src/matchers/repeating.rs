@@ -22,7 +22,7 @@ impl RepeatingMatcher {
 }
 
 impl Matcher for RepeatingMatcher {
-    fn apply<'a>(&self, source: &'a Vec<char>, pos: usize) -> Result<Token<'a>> {
+    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>> {
         let mut children: Vec<Token> = Vec::new();
 
         let child = self.child[0].borrow();
@@ -32,7 +32,7 @@ impl Matcher for RepeatingMatcher {
                 Ok(child_token) => {
                     cursor = child_token.range.end;
                     children.push(child_token);
-                },
+                }
                 Err(_) => break,
             }
         }
