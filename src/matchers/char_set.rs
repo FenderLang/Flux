@@ -1,5 +1,5 @@
 use super::{Matcher, MatcherName};
-use crate::{error::FluxError, tokens::Token};
+use crate::{error::FluxError, error::Result, tokens::Token};
 use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
 #[derive(Clone, Debug)]
@@ -19,42 +19,20 @@ impl CharSetMatcher {
     }
 
     pub fn check_char(&self, check_char: &char) -> bool {
-        if self.inverted {
-            !self.matching_set.contains(check_char)
-        } else {
-            self.matching_set.contains(check_char)
-        }
+        self.matching_set.contains(check_char) ^ self.inverted
     }
 }
 
 impl Matcher for CharSetMatcher {
-    fn apply(
-        &self,
-        source: Rc<Vec<char>>,
-        pos: usize,
-    ) -> crate::error::Result<crate::tokens::Token> {
+    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>> {
         match source.get(pos) {
-            Some(c) => {
-                if self.check_char(c) {
-                    Ok(Token {
-                        children: vec![],
-                        matcher_name: self.name.clone(),
-                        range: pos..pos + 1,
-                        source: source.clone(),
-                    })
-                } else {
-                    Err(FluxError::new_matcher(
-                        "char_set no character at pos not in set",
-                        pos,
-                        self.name.clone(),
-                    ))
-                }
-            }
-            None => Err(FluxError::new_matcher(
-                "char_set no character at the position",
-                pos,
-                self.name.clone(),
-            )),
+            Some(c) if self.check_char(c) => Ok(Token {
+                children: vec![],
+                matcher_name: self.name.clone(),
+                range: pos..pos + 1,
+                source,
+            }),
+            _ => Err(FluxError::new_matcher("expected", pos, self.name.clone())),
         }
     }
 

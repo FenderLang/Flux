@@ -1,5 +1,6 @@
 use super::{Matcher, MatcherName, MatcherRef};
-use crate::error::FluxError;
+use crate::error::{FluxError, Result};
+use crate::tokens::Token;
 use std::{cell::RefCell, rc::Rc};
 
 #[derive(Debug)]
@@ -20,14 +21,15 @@ impl ChoiceMatcher {
 }
 
 impl Matcher for ChoiceMatcher {
-    fn apply(
-        &self,
-        source: std::rc::Rc<Vec<char>>,
-        pos: usize,
-    ) -> crate::error::Result<crate::tokens::Token> {
+    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>> {
         for child in &self.children {
-            if let Ok(token) = child.borrow().apply(source.clone(), pos) {
-                return Ok(token);
+            if let Ok(token) = child.borrow().apply(source, pos) {
+                return Ok(Token {
+                    matcher_name: self.name.clone(),
+                    range: token.range.clone(),
+                    children: vec![token],
+                    source,
+                });
             }
         }
 

@@ -1,5 +1,5 @@
 use super::{Matcher, MatcherChildren, MatcherName, MatcherRef};
-use crate::{error::FluxError, tokens::Token};
+use crate::{error::FluxError, error::Result, tokens::Token};
 use std::{cell::RefCell, rc::Rc};
 
 #[derive(Debug)]
@@ -20,23 +20,22 @@ impl ListMatcher {
 }
 
 impl Matcher for ListMatcher {
-    fn apply(
-        &self,
-        source: std::rc::Rc<Vec<char>>,
-        pos: usize,
-    ) -> crate::error::Result<crate::tokens::Token> {
+    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>> {
         let mut children: Vec<Token> = Vec::new();
-
+        let mut cursor = pos;
         for child in self.children.iter() {
-            match child.borrow().apply(source.clone(), pos) {
-                Ok(child_token) => children.push(child_token),
+            match child.borrow().apply(source, cursor) {
+                Ok(child_token) => {
+                    cursor = child_token.range.end;
+                    children.push(child_token);
+                }
                 Err(_) => {
                     return Err(FluxError::new_matcher(
-                        "failed in list matcher",
+                        "expected",
                         pos,
-                        self.name.clone(),
+                        child.borrow().get_name(),
                     ))
-                } //TODO don't remember to fix later
+                }
             }
         }
 

@@ -13,7 +13,11 @@ use crate::matchers::string::StringMatcher;
 use crate::matchers::{char_set::CharSetMatcher, MatcherRef};
 
 pub fn parse(input: &str) -> Result<MatcherRef> {
-    BNFParserState {source: input.chars().collect(), pos: 0}.parse()
+    BNFParserState {
+        source: input.chars().collect(),
+        pos: 0,
+    }
+    .parse()
 }
 
 struct BNFParserState {
@@ -27,39 +31,45 @@ impl BNFParserState {
         let mut rules = Vec::new();
         while self.pos < self.source.len() {
             rules.extend(self.parse_rule()?);
+            self.consume_line_break();
         }
         let mut map: HashMap<String, MatcherRef> = HashMap::new();
         for rule in rules {
             if let Some(name) = rule.get_name().borrow().as_ref() {
                 if map.contains_key(name) {
-                    return Err(FluxError::new_dyn(format!("Duplicate rule name {}", name), 0));
+                    return Err(FluxError::new_dyn(
+                        format!("Duplicate rule name {}", name),
+                        0,
+                    ));
                 }
                 map.insert(name.clone(), rule.clone());
             }
         }
-        if !map.contains_key("root") {
-            return Err(FluxError::new("No root matcher specified", 0));
-        }
-        let root = map.get("root").ok_or_else(|| FluxError::new("No root matcher specified", 0))?;
-        self.replace_placeholders(&root, &map)?;
+        let root = map
+            .get("root")
+            .ok_or_else(|| FluxError::new("No root matcher specified", 0))?;
+        Self::replace_placeholders(root, &map)?;
         Ok(root.clone())
     }
 
-    fn replace_placeholders(&self, root: &MatcherRef, map: &HashMap<String, MatcherRef>) -> Result<()> {
+    fn replace_placeholders(root: &MatcherRef, map: &HashMap<String, MatcherRef>) -> Result<()> {
         if root.children().is_none() {
             return Ok(());
         }
         let children = root.children().unwrap();
-        for i in 0..children.len() {
-            if !children[i].borrow().is_placeholder() {
+        for c in children {
+            // for i in 0..children.len() {
+            if !c.borrow().is_placeholder() {
                 continue;
             }
-            let name = children[i].borrow().get_name();
+            let name = c.borrow().get_name();
             let name = name.borrow();
             let name = name.as_ref().unwrap();
-            let matcher = map.get(name).ok_or_else(|| FluxError::new_dyn(format!("Missing matcher for {}", name).to_owned(), 0))?;
-            self.replace_placeholders(matcher, map)?;
-            children[i].replace(matcher.clone());
+            let matcher = map
+                .get(name)
+                .ok_or_else(|| FluxError::new_dyn(format!("Missing matcher for {}", name), 0))?;
+            Self::replace_placeholders(matcher, map)?;
+            c.replace(matcher.clone());
         }
         Ok(())
     }
@@ -94,7 +104,10 @@ impl BNFParserState {
     fn assert_char(&mut self, match_char: char) -> Result<()> {
         match self.advance() {
             Some(c) if c == match_char => Ok(()),
-            _ => Err(FluxError::new_dyn(format!("Expected {}", match_char), self.pos)),
+            _ => Err(FluxError::new_dyn(
+                format!("Expected {}", match_char),
+                self.pos,
+            )),
         }
     }
 
@@ -109,10 +122,11 @@ impl BNFParserState {
     }
 
     fn check_str(&mut self, match_str: &str) -> bool {
-        if match_str.len() + self.pos < self.source.len() && self.source[self.pos..self.pos + match_str.len()]
-            .iter()
-            .zip(match_str.chars())
-            .all(|(c1, c2)| *c1 == c2)
+        if match_str.len() + self.pos < self.source.len()
+            && self.source[self.pos..self.pos + match_str.len()]
+                .iter()
+                .zip(match_str.chars())
+                .all(|(c1, c2)| *c1 == c2)
         {
             self.pos += match_str.len();
             true
@@ -125,10 +139,19 @@ impl BNFParserState {
         let start = self.pos;
         func(self);
         if start == self.pos {
-            Err(FluxError::new_dyn(format!("Expected {}", context), self.pos))
+            Err(FluxError::new_dyn(
+                format!("Expected {}", context),
+                self.pos,
+            ))
         } else {
             Ok(())
         }
+    }
+
+    fn call_check(&mut self, func: impl Fn(&mut Self)) -> bool {
+        let start = self.pos;
+        func(self);
+        start != self.pos
     }
 
     fn consume_comment(&mut self) {
@@ -211,7 +234,8 @@ impl BNFParserState {
         while self.peek().map_or(false, |c| c.is_ascii_digit()) {
             out.push(self.advance().unwrap());
         }
-        out.parse().map_err(|_| FluxError::new("Invalid number", self.pos))
+        out.parse()
+            .map_err(|_| FluxError::new("Invalid number", self.pos))
     }
 
     fn parse_matcher_with_modifiers(&mut self) -> Result<MatcherRef> {
@@ -277,7 +301,10 @@ impl BNFParserState {
             }
             Some('"') => self.parse_string(),
             Some(c) if c.is_alphabetic() => self.parse_placeholder(),
-            _ => Err(FluxError::new("Unexpected character or end of file", self.pos)),
+            _ => Err(FluxError::new(
+                "Unexpected character or end of file",
+                self.pos,
+            )),
         }
     }
 
@@ -323,16 +350,19 @@ impl BNFParserState {
     fn parse_list(&mut self) -> Result<MatcherRef> {
         let mut list = Vec::new();
         let mut choice = Vec::<MatcherRef>::new();
-        while self.peek().map_or(false, |c| c != ')') {
+        loop {
+            if self.pos >= self.source.len() || self.peek() == Some('\n') {
+                break;
+            }
             list.push(self.parse_matcher_with_modifiers()?);
-            if self.peek().is_some() && self.peek() != Some(')') {
-                self.call_assert("whitespace", Self::consume_whitespace)?;
+            let whitespace = self.call_check(Self::consume_whitespace);
+            if !whitespace || self.check_char(')') {
+                break;
             }
             if self.check_char('|') {
                 let matcher = self.maybe_list(list);
                 list = Vec::new();
                 choice.push(matcher);
-                self.call_assert("whitespace", Self::consume_whitespace)?;
             }
         }
         if !choice.is_empty() {

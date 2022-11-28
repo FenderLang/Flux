@@ -1,5 +1,5 @@
 use super::{Matcher, MatcherName};
-use crate::{error::FluxError, tokens::Token};
+use crate::{error::FluxError, error::Result, tokens::Token};
 use std::{cell::RefCell, rc::Rc, vec};
 
 #[derive(Clone, Debug)]
@@ -21,33 +21,20 @@ impl CharRangeMatcher {
     }
 
     pub fn check_char(&self, check_char: char) -> bool {
-        if self.inverted {
-            check_char < self.min || check_char > self.max
-        } else {
-            check_char >= self.min && check_char <= self.max
-        }
+        (check_char >= self.min && check_char <= self.max) ^ self.inverted
     }
 }
 
 impl Matcher for CharRangeMatcher {
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> crate::error::Result<Token> {
+    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>> {
         match source.get(pos) {
             Some(c) if self.check_char(*c) => Ok(Token {
                 matcher_name: self.name.clone(),
                 children: vec![],
-                source: source.clone(),
+                source,
                 range: pos..pos + 1,
             }),
-            None => Err(FluxError::new_matcher(
-                "expected single char but no characters remaining",
-                pos,
-                self.name.clone(),
-            )),
-            Some(_) => Err(FluxError::new_matcher(
-                "expected character matcher",
-                pos,
-                self.name.clone(),
-            )),
+            _ => Err(FluxError::new_matcher("expected", pos, self.name.clone())),
         }
     }
 

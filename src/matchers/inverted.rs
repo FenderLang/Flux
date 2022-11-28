@@ -1,39 +1,31 @@
-use super::{Matcher, MatcherName, MatcherRef};
-use crate::{error::FluxError, tokens::Token};
+use super::{Matcher, MatcherChildren, MatcherName, MatcherRef};
+use crate::{error::FluxError, error::Result, tokens::Token};
 use std::{cell::RefCell, rc::Rc, vec};
 
 #[derive(Debug)]
 pub struct InvertedMatcher {
     name: MatcherName,
-    child: MatcherRef,
+    child: MatcherChildren,
 }
 
 impl InvertedMatcher {
     pub fn new(child: MatcherRef) -> Self {
         Self {
             name: Rc::new(RefCell::new(None)),
-            child,
+            child: vec![RefCell::new(child)],
         }
     }
 }
 
 impl Matcher for InvertedMatcher {
-    fn apply(
-        &self,
-        source: Rc<Vec<char>>,
-        pos: usize,
-    ) -> crate::error::Result<crate::tokens::Token> {
-        match self.child.apply(source.clone(), pos) {
-            Ok(_) => Err(FluxError::new_matcher(
-                "Inverted matcher",
-                pos,
-                self.name.clone(),
-            )),
+    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>> {
+        match self.child[0].borrow().apply(source, pos) {
+            Ok(_) => Err(FluxError::new_matcher("unexpected", pos, self.name.clone())),
             Err(_) => Ok(Token {
                 children: vec![],
                 matcher_name: self.name.clone(),
                 source,
-                range: 0..0,
+                range: pos..pos,
             }),
         }
     }
@@ -48,5 +40,9 @@ impl Matcher for InvertedMatcher {
 
     fn set_name(&self, new_name: String) {
         self.name.replace(Some(new_name));
+    }
+
+    fn children(&self) -> Option<&super::MatcherChildren> {
+        Some(&self.child)
     }
 }

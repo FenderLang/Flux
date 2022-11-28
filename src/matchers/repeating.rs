@@ -1,5 +1,5 @@
 use super::{Matcher, MatcherChildren, MatcherName, MatcherRef};
-use crate::{error::FluxError, tokens::Token};
+use crate::{error::FluxError, error::Result, tokens::Token};
 use std::{cell::RefCell, rc::Rc};
 
 #[derive(Debug)]
@@ -16,42 +16,29 @@ impl RepeatingMatcher {
             name: Rc::new(RefCell::new(None)),
             min,
             max,
-            child: vec![RefCell::new(child.clone())],
+            child: vec![RefCell::new(child)],
         }
     }
 }
 
 impl Matcher for RepeatingMatcher {
-    fn apply(
-        &self,
-        source: Rc<Vec<char>>,
-        pos: usize,
-    ) -> crate::error::Result<crate::tokens::Token> {
+    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>> {
         let mut children: Vec<Token> = Vec::new();
 
-        for child in self.child.iter() {
-            if children.len() >= self.max {
-                break;
-            }
-
-            match child.borrow().apply(source.clone(), pos) {
-                Ok(child_token) => children.push(child_token),
-                Err(_) => {
-                    return Err(FluxError::new_matcher(
-                        "failed in repeating matcher",
-                        pos,
-                        self.name.clone(),
-                    ))
-                } //TODO don't remember to fix later
+        let child = self.child[0].borrow();
+        let mut cursor = pos;
+        while children.len() < self.max {
+            match child.apply(source, cursor) {
+                Ok(child_token) => {
+                    cursor = child_token.range.end;
+                    children.push(child_token);
+                }
+                Err(_) => break,
             }
         }
 
         if children.len() < self.min {
-            Err(FluxError::new_matcher(
-                "failed in repeating matcher did not match required number of times",
-                pos,
-                self.name.clone(),
-            ))
+            Err(FluxError::new_matcher("expected", pos, self.name.clone()))
         } else {
             Ok(Token {
                 range: (pos..children.iter().last().unwrap().range.end),
