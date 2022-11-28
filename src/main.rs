@@ -2,7 +2,7 @@ use flux::bnf;
 
 fn main() {
     let example = r#"
-    root ::= "hello"+   
+    root ::= "hello"+
     "#;
     let parsed = bnf::parse(example).unwrap();
     let test = "hello";
