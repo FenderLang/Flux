@@ -2,7 +2,7 @@ sep ::= [ \n\t]+
 break ::= sep? ((";" | "\n") sep?)+
 
 root ::= break? (statement break?)*
-statement ::= assignment | expr
+statement ::= assignment | expr | returnStatement
 returnStatement ::= "return" (sep expr)?
 assignment ::= "$"? name sep? "=" sep? expr
 
