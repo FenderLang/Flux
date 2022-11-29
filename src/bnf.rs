@@ -45,10 +45,12 @@ impl BNFParserState {
                 map.insert(name.clone(), rule.clone());
             }
         }
+        for rule in map.values() {
+            Self::replace_placeholders(&rule, &map)?;
+        }
         let root = map
             .get("root")
             .ok_or_else(|| FluxError::new("No root matcher specified", 0))?;
-        Self::replace_placeholders(root, &map)?;
         Ok(root.clone())
     }
 
@@ -58,18 +60,16 @@ impl BNFParserState {
         }
         let children = root.children().unwrap();
         for c in children {
-            // for i in 0..children.len() {
-            if !c.borrow().is_placeholder() {
-                continue;
+            Self::replace_placeholders(&c.borrow(), map)?;
+            if c.borrow().is_placeholder() {
+                let name = c.borrow().get_name();
+                let name = name.borrow();
+                let name = name.as_ref().unwrap();
+                let matcher = map.get(name).ok_or_else(|| {
+                    FluxError::new_dyn(format!("Missing matcher for {}", name), 0)
+                })?;
+                c.replace(matcher.clone());
             }
-            let name = c.borrow().get_name();
-            let name = name.borrow();
-            let name = name.as_ref().unwrap();
-            let matcher = map
-                .get(name)
-                .ok_or_else(|| FluxError::new_dyn(format!("Missing matcher for {}", name), 0))?;
-            Self::replace_placeholders(matcher, map)?;
-            c.replace(matcher.clone());
         }
         Ok(())
     }
@@ -198,6 +198,8 @@ impl BNFParserState {
             Some('n') => Ok('\n'),
             Some('t') => Ok('\t'),
             Some('r') => Ok('\r'),
+            Some('"') => Ok('"'),
+            Some('\\') => Ok('\\'),
             _ => Err(FluxError::new("Invalid escape sequence", self.pos)),
         }
     }
@@ -300,6 +302,7 @@ impl BNFParserState {
                 Ok(matcher)
             }
             Some('"') => self.parse_string(),
+            Some('i') if self.source.get(self.pos + 1) == Some(&'"') => self.parse_string(),
             Some(c) if c.is_alphabetic() => self.parse_placeholder(),
             _ => Err(FluxError::new(
                 "Unexpected character or end of file",
@@ -350,10 +353,7 @@ impl BNFParserState {
     fn parse_list(&mut self) -> Result<MatcherRef> {
         let mut list = Vec::new();
         let mut choice = Vec::<MatcherRef>::new();
-        loop {
-            if self.pos >= self.source.len() || self.peek() == Some('\n') {
-                break;
-            }
+        while self.pos < self.source.len() && self.peek() != Some('\n') {
             list.push(self.parse_matcher_with_modifiers()?);
             let whitespace = self.call_check(Self::consume_whitespace);
             if !whitespace || self.check_char(')') {
@@ -361,6 +361,7 @@ impl BNFParserState {
             }
             if self.check_char('|') {
                 let matcher = self.maybe_list(list);
+                self.consume_whitespace();
                 list = Vec::new();
                 choice.push(matcher);
             }
