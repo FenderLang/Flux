@@ -3,10 +3,9 @@ use crate::error::Result;
 use crate::matchers::MatcherRef;
 use crate::tokens::Token;
 use std::collections::HashMap;
-use std::ops::Deref;
 use std::vec;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum CullStrategy {
     /// Leave the token alone
     None,
@@ -21,7 +20,6 @@ pub enum CullStrategy {
 pub struct Lexer {
     root: MatcherRef,
     retain_empty: bool,
-    retain_literal: bool,
     unnamed_rule: CullStrategy,
     named_rules: HashMap<String, CullStrategy>,
 }
@@ -31,7 +29,6 @@ impl Lexer {
         Lexer {
             root,
             retain_empty: false,
-            retain_literal: false,
             unnamed_rule: CullStrategy::LiftChildren,
             named_rules: HashMap::new(),
         }
@@ -39,10 +36,6 @@ impl Lexer {
 
     pub fn set_retain_empty(&mut self, retain_empty: bool) {
         self.retain_empty = retain_empty;
-    }
-
-    pub fn set_retain_literal(&mut self, retain_literal: bool) {
-        self.retain_literal = retain_literal;
     }
 
     pub fn set_unnamed_rule(&mut self, unnamed_rule: CullStrategy) {
@@ -61,51 +54,35 @@ impl Lexer {
         Ok(self.prune(token))
     }
 
-    fn prune<'a>(&'a self, mut root: Token<'a>) -> Token<'a> {
-        let mut new_root = Token {
-            children: Vec::new(),
-            ..root.clone()
-        };
-
-        for i in 0..root.children.len() {
-            self.prune_rec(&mut root, i)
-                .into_iter()
-                .for_each(|t| new_root.children.push(t));
+    fn get_cull_strat(&self, token: &Token) -> CullStrategy {
+        if token.matcher_name.borrow().is_none() {
+            return self.unnamed_rule;
         }
-
-        new_root
+        if token.range.is_empty() && !self.retain_empty {
+            return CullStrategy::DeleteAll;
+        }
+        if let Some(name) = &*token.matcher_name.borrow() {
+            return *self.named_rules.get(name).unwrap_or(&CullStrategy::None);
+        }
+        CullStrategy::None
     }
 
-    fn prune_rec<'a>(&'a self, parent: &mut Token<'a>, child_pos: usize) -> Vec<Token<'a>> {
+    fn prune<'a>(&'a self, mut parent: Token<'a>) -> Token<'a> {
         let mut tmp_children = Vec::new();
-
-        for i in 0..(parent.children[child_pos]).children.len() {
-            self.prune_rec(&mut parent.children[child_pos], i)
-                .into_iter()
-                .for_each(|t| tmp_children.push(t));
+        for child in parent.children {
+            let child = self.prune(child);
+            let strat = self.get_cull_strat(&child);
+            tmp_children.extend(apply_cull_strat(strat, child));
         }
         parent.children = tmp_children;
-
-        if let (false, true) = (self.retain_empty, parent.children.is_empty()) {
-            return Vec::new();
-        }
-
-        let cull_strat = match parent.children[child_pos].matcher_name.borrow().deref() {
-            Some(name) => self.named_rules.get(name).clone(),
-            None => Some(&self.unnamed_rule),
-        };
-
-        if let Some(cull_strat) = cull_strat {
-            apply_cull_strat(*cull_strat, parent.children[child_pos].clone())
-        } else {
-            Vec::new()
-        }
+        parent
     }
 }
 
 fn apply_cull_strat(cull_strat: CullStrategy, mut token: Token) -> Vec<Token> {
+    println!("{:?}", cull_strat);
     match cull_strat {
-        CullStrategy::None => vec![token.clone()],
+        CullStrategy::None => vec![token],
         CullStrategy::DeleteAll => Vec::new(),
         CullStrategy::DeleteChildren => {
             token.children = Vec::new();
