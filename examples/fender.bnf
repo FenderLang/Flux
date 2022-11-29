@@ -10,16 +10,17 @@ binaryOperator ::= "||" | "&&" | "==" | "<=" | ">=" | [-+*/^<>]
 unaryOperator ::= [-!]
 
 expr ::= term (sep? binaryOperator sep? term)*
-term ::= (unaryOperator sep?)? value sep? receiverCallChain?
-value ::= (name | literal)
+term ::= (unaryOperator sep?)? value sep? tailOperationChain?
+lambdaParameter = "$"
+value ::= (name | literal | lambdaParameter)
 
 alpha ::= [a-z] | [A-Z]
 alphanum ::= [a-z] | [A-Z] | [0-9]
 name ::= ("_" | alpha) alphaNum*
 
-literal ::= float | int | string | boolean | function | lambdaParameter
-lambdaParameter ::= "$"
+literal ::= float | int | boolean | string | list | function
 int ::= "-"? [0-9]+
+list ::= "[" sep? (expr (sep? "," sep? expr)*)? sep? "]"
 float ::= ("-"? [0-9]+)? "." [0-9]+
 string ::= "\"" (escapeSequence | [^"])* "\""
 escapeSequence ::= "\\" [^]
@@ -34,4 +35,6 @@ functionArgs ::= "(" sep? (functionArg sep? ("," sep? functionArg)*)? sep? ")"
 function ::= functionArgs? sep? functionBody
 
 receiverCall ::= "." sep? name sep? invoke
-receiverCallChain ::= receiverCall (sep? receiverCall)*
+index ::= "[" expr "]"
+tailOperation ::= receiverCall | index
+tailOperationChain ::= tailOperation (sep? tailOperation)*
