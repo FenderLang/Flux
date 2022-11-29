@@ -27,6 +27,22 @@ struct Lexer {
 }
 
 impl Lexer {
+    pub fn new(
+        root: MatcherRef,
+        retain_empty: bool,
+        retain_literal: bool,
+        unnamed_rule: CullStrategy,
+        named_rules: HashMap<String, CullStrategy>,
+    ) -> Lexer {
+        Lexer {
+            root,
+            retain_empty,
+            retain_literal,
+            unnamed_rule,
+            named_rules,
+        }
+    }
+
     pub fn tokenize<'a>(&'a self, input: &'a [char]) -> Result<Token> {
         let pos = 0;
         let token = self.root.apply(input, pos)?;
