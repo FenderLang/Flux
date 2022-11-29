@@ -65,9 +65,9 @@ impl BNFParserState {
                 let name = c.borrow().get_name();
                 let name = name.borrow();
                 let name = name.as_ref().unwrap();
-                let matcher = map
-                    .get(name)
-                    .ok_or_else(|| FluxError::new_dyn(format!("Missing matcher for {}", name), 0))?;
+                let matcher = map.get(name).ok_or_else(|| {
+                    FluxError::new_dyn(format!("Missing matcher for {}", name), 0)
+                })?;
                 c.replace(matcher.clone());
             }
         }
