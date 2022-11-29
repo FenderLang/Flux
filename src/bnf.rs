@@ -198,6 +198,8 @@ impl BNFParserState {
             Some('n') => Ok('\n'),
             Some('t') => Ok('\t'),
             Some('r') => Ok('\r'),
+            Some('"') => Ok('"'),
+            Some('\\') => Ok('\\'),
             _ => Err(FluxError::new("Invalid escape sequence", self.pos)),
         }
     }
@@ -300,6 +302,7 @@ impl BNFParserState {
                 Ok(matcher)
             }
             Some('"') => self.parse_string(),
+            Some('i') if self.source.get(self.pos + 1) == Some(&'"') => self.parse_string(),
             Some(c) if c.is_alphabetic() => self.parse_placeholder(),
             _ => Err(FluxError::new(
                 "Unexpected character or end of file",
@@ -350,10 +353,7 @@ impl BNFParserState {
     fn parse_list(&mut self) -> Result<MatcherRef> {
         let mut list = Vec::new();
         let mut choice = Vec::<MatcherRef>::new();
-        loop {
-            if self.pos >= self.source.len() || self.peek() == Some('\n') {
-                break;
-            }
+        while self.pos < self.source.len() && self.peek() != Some('\n') {
             list.push(self.parse_matcher_with_modifiers()?);
             let whitespace = self.call_check(Self::consume_whitespace);
             if !whitespace || self.check_char(')') {
@@ -361,6 +361,7 @@ impl BNFParserState {
             }
             if self.check_char('|') {
                 let matcher = self.maybe_list(list);
+                self.consume_whitespace();
                 list = Vec::new();
                 choice.push(matcher);
             }

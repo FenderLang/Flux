@@ -41,7 +41,7 @@ impl Matcher for RepeatingMatcher {
             Err(FluxError::new_matcher("expected", pos, self.name.clone()))
         } else {
             Ok(Token {
-                range: (pos..children.iter().last().unwrap().range.end),
+                range: (pos..cursor),
                 children,
                 matcher_name: self.name.clone(),
                 source,
