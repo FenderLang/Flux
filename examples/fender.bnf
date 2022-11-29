@@ -11,12 +11,12 @@ unaryOperator ::= [-!]
 
 expr ::= term (sep? binaryOperator sep? term)*
 term ::= (unaryOperator sep?)? value sep? tailOperationChain?
-lambdaParameter = "$"
+lambdaParameter ::= "$"
 value ::= (name | literal | lambdaParameter)
 
 alpha ::= [a-z] | [A-Z]
 alphanum ::= [a-z] | [A-Z] | [0-9]
-name ::= ("_" | alpha) alphaNum*
+name ::= ("_" | alpha) alphanum*
 
 literal ::= float | int | boolean | string | list | function
 int ::= "-"? [0-9]+
