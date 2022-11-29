@@ -58,7 +58,6 @@ impl BNFParserState {
         }
         let children = root.children().unwrap();
         for c in children {
-            // for i in 0..children.len() {
             if !c.borrow().is_placeholder() {
                 continue;
             }
