@@ -17,7 +17,8 @@ alpha ::= [a-z] | [A-Z]
 alphanum ::= [a-z] | [A-Z] | [0-9]
 name ::= ("_" | alpha) alphaNum*
 
-literal ::= float | int | string | boolean | function
+literal ::= float | int | string | boolean | function | lambdaParameter
+lambdaParameter ::= "$"
 int ::= "-"? [0-9]+
 float ::= ("-"? [0-9]+)? "." [0-9]+
 string ::= "\"" (escapeSequence | [^"])* "\""
