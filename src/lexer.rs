@@ -7,7 +7,7 @@ use std::ops::Deref;
 use std::vec;
 
 #[derive(Clone, Copy)]
-enum CullStrategy {
+pub enum CullStrategy {
     /// Leave the token alone
     None,
     /// Delete the token and all of its children
@@ -27,19 +27,31 @@ struct Lexer {
 }
 
 impl Lexer {
-    pub fn new(
-        root: MatcherRef,
-        retain_empty: bool,
-        retain_literal: bool,
-        unnamed_rule: CullStrategy,
-        named_rules: HashMap<String, CullStrategy>,
-    ) -> Lexer {
+    pub fn new(root: MatcherRef) -> Lexer {
         Lexer {
             root,
-            retain_empty,
-            retain_literal,
-            unnamed_rule,
-            named_rules,
+            retain_empty: false,
+            retain_literal: false,
+            unnamed_rule: CullStrategy::LiftChildren,
+            named_rules: HashMap::new(),
+        }
+    }
+
+    pub fn set_retain_empty(&mut self, retain_empty: bool) {
+        self.retain_empty = retain_empty;
+    }
+
+    pub fn set_retain_literal(&mut self, retain_literal: bool) {
+        self.retain_literal = retain_literal;
+    }
+
+    pub fn set_unnamed_rule(&mut self, unnamed_rule: CullStrategy) {
+        self.unnamed_rule = unnamed_rule;
+    }
+
+    pub fn add_rule_for_names(&mut self, names: Vec<String>, rule: CullStrategy){
+        for name in names.into_iter(){
+            self.named_rules.insert(name, rule);
         }
     }
 
