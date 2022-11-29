@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::error::{FluxError, Result};
+use crate::lexer::Lexer;
 use crate::matchers::char_range::CharRangeMatcher;
 use crate::matchers::choice::ChoiceMatcher;
 use crate::matchers::inverted::InvertedMatcher;
@@ -12,7 +13,7 @@ use crate::matchers::repeating::RepeatingMatcher;
 use crate::matchers::string::StringMatcher;
 use crate::matchers::{char_set::CharSetMatcher, MatcherRef};
 
-pub fn parse(input: &str) -> Result<MatcherRef> {
+pub fn parse(input: &str) -> Result<Lexer> {
     BNFParserState {
         source: input.chars().collect(),
         pos: 0,
@@ -26,7 +27,7 @@ struct BNFParserState {
 }
 
 impl BNFParserState {
-    fn parse(&mut self) -> Result<MatcherRef> {
+    fn parse(&mut self) -> Result<Lexer> {
         self.consume_line_break();
         let mut rules = Vec::new();
         while self.pos < self.source.len() {
@@ -51,7 +52,7 @@ impl BNFParserState {
         let root = map
             .get("root")
             .ok_or_else(|| FluxError::new("No root matcher specified", 0))?;
-        Ok(root.clone())
+        Ok(Lexer::new(root.clone()))
     }
 
     fn replace_placeholders(root: &MatcherRef, map: &HashMap<String, MatcherRef>) -> Result<()> {
