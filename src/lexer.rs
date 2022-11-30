@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use crate::error::Result;
+use crate::error::{Result, FluxError};
 use crate::matchers::MatcherRef;
 use crate::tokens::Token;
 use std::collections::HashMap;
@@ -51,7 +51,11 @@ impl Lexer {
     pub fn tokenize<'a>(&'a self, input: &'a [char]) -> Result<Token> {
         let pos = 0;
         let token = self.root.apply(input, pos)?;
-        Ok(self.prune(token))
+        if token.range.len() < input.len() {
+            Err(FluxError::new("unexpected token", token.range.end))
+        } else {
+            Ok(self.prune(token))
+        }
     }
 
     fn get_cull_strat(&self, token: &Token) -> CullStrategy {
