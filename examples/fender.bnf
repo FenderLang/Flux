@@ -5,15 +5,15 @@ lineSep ::= lineBreak | sep
 
 root ::= break? (statement break?)*
 statement ::= declaration | assignment | expr | returnStatement
-returnStatement ::= "return" (sep expr)?
-declaration ::= "$" sep? name sep? "=" sep? expr
+returnStatement ::= "return" (lineSep expr)?
+declaration ::= "$" sep? name sep? "=" lineSep? expr
 assignment ::= expr sep? "=" sep? expr
 
 binaryOperator ::= "||" | "&&" | "==" | "<=" | ">=" | [-+*/^<>]
 unaryOperator ::= [-!]
 
-expr ::= term (sep? binaryOperator sep? term)*
-enclosedExpr ::= "(" sep? expr sep? ")"
+expr ::= term (lineSep? binaryOperator lineSep? term)*
+enclosedExpr ::= "(" lineSep? expr lineSep? ")"
 term ::= (unaryOperator sep?)* value sep? tailOperationChain?
 lambdaParameter ::= "$"
 value ::= literal | enclosedExpr | name | lambdaParameter
@@ -31,7 +31,7 @@ escapeSequence ::= "\\" [^]
 boolean ::= "true" | "false"
 
 invoke ::= invokeArgs | functionBody
-invokeArgs ::= "(" sep? (expr sep? ("," sep? expr)*)? sep? ")"
+invokeArgs ::= "(" lineSep? (expr lineSep? ("," sep? lineSep)*)? sep? ")"
 
 functionArg ::= name (lineSep? ":" lineSep? name)?
 functionBody ::= "{" break? (statement break)* statement? break? "}"
@@ -41,4 +41,4 @@ function ::= functionArgs? lineSep? functionBody
 receiverCall ::= "." lineSep? name sep? invoke
 index ::= "[" expr "]"
 tailOperation ::= invoke | receiverCall | index
-tailOperationChain ::= tailOperation (sep? tailOperation)*
+tailOperationChain ::= tailOperation (lineSep? tailOperation)*
