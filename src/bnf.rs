@@ -35,7 +35,7 @@ impl BNFParserState {
             self.consume_line_break();
         }
         let mut map: HashMap<String, MatcherRef> = HashMap::new();
-        for rule in rules {
+        for rule in &rules {
             if let Some(name) = rule.get_name().borrow().as_ref() {
                 if map.contains_key(name) {
                     return Err(FluxError::new_dyn(
@@ -46,13 +46,20 @@ impl BNFParserState {
                 map.insert(name.clone(), rule.clone());
             }
         }
+        let mut id = 1;
         for rule in map.values() {
+            rule.id().replace(id);
+            id += 1;
             Self::replace_placeholders(&rule, &map)?;
         }
         let root = map
             .get("root")
             .ok_or_else(|| FluxError::new("No root matcher specified", 0))?;
-        Ok(Lexer::new(root.clone()))
+        let mut id_map = HashMap::new();
+        for rule in &rules {
+            id_map.insert(rule.get_name().borrow().clone().unwrap(), *rule.id().borrow());
+        }
+        Ok(Lexer::new(root.clone(), id_map))
     }
 
     fn replace_placeholders(root: &MatcherRef, map: &HashMap<String, MatcherRef>) -> Result<()> {

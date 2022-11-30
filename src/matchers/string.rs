@@ -7,6 +7,7 @@ pub struct StringMatcher {
     name: MatcherName,
     to_match: Vec<char>,
     case_sensitive: bool,
+    id: RefCell<usize>,
 }
 
 impl StringMatcher {
@@ -15,6 +16,7 @@ impl StringMatcher {
             name: Rc::new(RefCell::new(None)),
             to_match: to_match.chars().collect(),
             case_sensitive,
+            id: RefCell::new(0),
         }
     }
 
@@ -41,6 +43,7 @@ impl Matcher for StringMatcher {
                 children: vec![],
                 source,
                 range: pos..pos + self.to_match.len(),
+                matcher_id: *self.id.borrow()
             })
         } else {
             Err(FluxError::new_matcher("expected", pos, self.name.clone()))
@@ -57,5 +60,9 @@ impl Matcher for StringMatcher {
 
     fn set_name(&self, new_name: String) {
         self.name.replace(Some(new_name));
+    }
+
+    fn id(&self) -> &RefCell<usize> {
+        &self.id
     }
 }

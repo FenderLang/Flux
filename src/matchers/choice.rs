@@ -8,6 +8,7 @@ pub struct ChoiceMatcher {
     name: MatcherName,
     min_length: RefCell<Option<usize>>,
     children: Vec<RefCell<MatcherRef>>,
+    id: RefCell<usize>,
 }
 
 impl ChoiceMatcher {
@@ -16,6 +17,7 @@ impl ChoiceMatcher {
             name: Rc::new(RefCell::new(None)),
             min_length: RefCell::new(None),
             children,
+            id: RefCell::new(0),
         }
     }
 }
@@ -29,6 +31,7 @@ impl Matcher for ChoiceMatcher {
                     range: token.range.clone(),
                     children: vec![token],
                     source,
+                    matcher_id: *self.id.borrow()
                 });
             }
         }
@@ -64,5 +67,9 @@ impl Matcher for ChoiceMatcher {
     }
     fn children(&self) -> Option<&Vec<RefCell<MatcherRef>>> {
         Some(&self.children)
+    }
+
+    fn id(&self) -> &RefCell<usize> {
+        &self.id
     }
 }

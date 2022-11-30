@@ -8,6 +8,7 @@ pub struct RepeatingMatcher {
     min: usize,
     max: usize,
     child: MatcherChildren,
+    id: RefCell<usize>,
 }
 
 impl RepeatingMatcher {
@@ -17,6 +18,7 @@ impl RepeatingMatcher {
             min,
             max,
             child: vec![RefCell::new(child)],
+            id: RefCell::new(0),
         }
     }
 }
@@ -45,6 +47,7 @@ impl Matcher for RepeatingMatcher {
                 children,
                 matcher_name: self.name.clone(),
                 source,
+                matcher_id: *self.id.borrow()
             })
         }
     }
@@ -63,5 +66,9 @@ impl Matcher for RepeatingMatcher {
 
     fn set_name(&self, new_name: String) {
         self.name.replace(Some(new_name));
+    }
+
+    fn id(&self) -> &RefCell<usize> {
+        &self.id
     }
 }

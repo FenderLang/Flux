@@ -8,6 +8,7 @@ pub struct CharRangeMatcher {
     min: char,
     max: char,
     inverted: bool,
+    id: RefCell<usize>,
 }
 
 impl CharRangeMatcher {
@@ -17,6 +18,7 @@ impl CharRangeMatcher {
             max,
             min,
             inverted,
+            id: RefCell::new(0),
         }
     }
 
@@ -33,6 +35,7 @@ impl Matcher for CharRangeMatcher {
                 children: vec![],
                 source,
                 range: pos..pos + 1,
+                matcher_id: *self.id.borrow()
             }),
             _ => Err(FluxError::new_matcher("expected", pos, self.name.clone())),
         }
@@ -48,5 +51,9 @@ impl Matcher for CharRangeMatcher {
 
     fn set_name(&self, new_name: String) {
         self.name.replace(Some(new_name));
+    }
+
+    fn id(&self) -> &RefCell<usize> {
+        &self.id
     }
 }

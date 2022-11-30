@@ -4,6 +4,7 @@ use std::{ops::Range, fmt::Debug};
 #[derive(Clone)]
 pub struct Token<'a> {
     pub matcher_name: MatcherName,
+    pub matcher_id: usize,
     pub children: Vec<Token<'a>>,
     pub source: &'a [char],
     pub range: Range<usize>,
