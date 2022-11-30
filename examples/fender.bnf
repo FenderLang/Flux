@@ -11,7 +11,7 @@ unaryOperator ::= [-!]
 
 expr ::= term (sep? binaryOperator sep? term)*
 enclosedExpr ::= "(" sep? expr sep? ")"
-term ::= (unaryOperator sep?)? value sep? tailOperationChain?
+term ::= (unaryOperator sep?)* value sep? tailOperationChain?
 lambdaParameter ::= "$"
 value ::= enclosedExpr | name | literal | lambdaParameter
 
