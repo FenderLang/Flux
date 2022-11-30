@@ -22,7 +22,7 @@ impl StringMatcher {
         if self.case_sensitive {
             first == second
         } else {
-            first.eq_ignore_ascii_case(second)
+            first == second || first.eq_ignore_ascii_case(second)
         }
     }
 }

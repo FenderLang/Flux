@@ -1,5 +1,7 @@
 sep ::= [ \n\t]+
 break ::= sep? ((";" | "\n") sep?)+
+lineBreak ::= sep? ("\n" sep?)+
+lineSep ::= lineBreak | sep
 
 root ::= break? (statement break?)*
 statement ::= declaration | assignment | expr | returnStatement
@@ -22,7 +24,7 @@ name ::= ("_" | alpha) alphanum*
 
 literal ::= float | int | boolean | string | list | function
 int ::= "-"? [0-9]+
-list ::= "[" sep? (expr (sep? "," sep? expr)*)? sep? "]"
+list ::= "[" lineSep? (expr (lineSep? "," lineSep? expr)*)? lineSep? "]"
 float ::= ("-"? [0-9]+)? "." [0-9]+
 string ::= "\"" (escapeSequence | [^"])* "\""
 escapeSequence ::= "\\" [^]
@@ -36,7 +38,7 @@ functionBody ::= "{" break? (statement break)* statement? break? "}"
 functionArgs ::= "(" sep? (functionArg sep? ("," sep? functionArg)*)? sep? ")"
 function ::= functionArgs? sep? functionBody
 
-receiverCall ::= "." sep? name sep? invoke
+receiverCall ::= "." lineSep? name sep? invoke
 index ::= "[" expr "]"
 tailOperation ::= invoke | receiverCall | index
 tailOperationChain ::= tailOperation (sep? tailOperation)*
