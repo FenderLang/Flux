@@ -16,7 +16,7 @@ expr ::= term (sep? binaryOperator sep? term)*
 enclosedExpr ::= "(" sep? expr sep? ")"
 term ::= (unaryOperator sep?)* value sep? tailOperationChain?
 lambdaParameter ::= "$"
-value ::= enclosedExpr | name | literal | lambdaParameter
+value ::= literal | enclosedExpr | name | lambdaParameter
 
 alpha ::= [a-z] | [A-Z]
 alphanum ::= [a-z] | [A-Z] | [0-9]
@@ -33,10 +33,10 @@ boolean ::= "true" | "false"
 invoke ::= invokeArgs | functionBody
 invokeArgs ::= "(" sep? (expr sep? ("," sep? expr)*)? sep? ")"
 
-functionArg ::= name (sep? ":" sep? name)?
+functionArg ::= name (lineSep? ":" lineSep? name)?
 functionBody ::= "{" break? (statement break)* statement? break? "}"
-functionArgs ::= "(" sep? (functionArg sep? ("," sep? functionArg)*)? sep? ")"
-function ::= functionArgs? sep? functionBody
+functionArgs ::= "(" lineSep? (functionArg lineSep? ("," lineSep? functionArg)*)? lineSep? ")"
+function ::= functionArgs? lineSep? functionBody
 
 receiverCall ::= "." lineSep? name sep? invoke
 index ::= "[" expr "]"
