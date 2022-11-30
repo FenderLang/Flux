@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use crate::error::{Result, FluxError};
+use crate::error::{FluxError, Result};
 use crate::matchers::MatcherRef;
 use crate::tokens::Token;
 use std::collections::HashMap;
@@ -42,8 +42,8 @@ impl Lexer {
         self.unnamed_rule = unnamed_rule;
     }
 
-    pub fn add_rule_for_names(&mut self, names: Vec<String>, rule: CullStrategy){
-        for name in names.into_iter(){
+    pub fn add_rule_for_names(&mut self, names: Vec<String>, rule: CullStrategy) {
+        for name in names.into_iter() {
             self.named_rules.insert(name, rule);
         }
     }
@@ -84,7 +84,6 @@ impl Lexer {
 }
 
 fn apply_cull_strat(cull_strat: CullStrategy, mut token: Token) -> Vec<Token> {
-    println!("{:?}", cull_strat);
     match cull_strat {
         CullStrategy::None => vec![token],
         CullStrategy::DeleteAll => Vec::new(),
