@@ -3,7 +3,7 @@ break ::= sep? ((";" | "\n") sep?)+
 lineBreak ::= sep? ("\n" sep?)+
 lineSep ::= lineBreak | sep
 
-root ::= break? (statement break?)*
+root ::= break? (statement break)* statement? break?
 statement ::= declaration | assignment | expr | returnStatement
 returnStatement ::= "return" (lineSep expr)?
 declaration ::= "$" sep? name sep? "=" lineSep? expr
