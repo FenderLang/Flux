@@ -11,9 +11,9 @@ unaryOperator ::= [-!]
 
 expr ::= term (sep? binaryOperator sep? term)*
 enclosedExpr ::= "(" sep? expr sep? ")"
-term ::= enclosedExpr | (unaryOperator sep?)? value sep? tailOperationChain?
+term ::= (unaryOperator sep?)? value sep? tailOperationChain?
 lambdaParameter ::= "$"
-value ::= (name | literal | lambdaParameter)
+value ::= enclosedExpr | name | literal | lambdaParameter
 
 alpha ::= [a-z] | [A-Z]
 alphanum ::= [a-z] | [A-Z] | [0-9]
