@@ -1,7 +1,6 @@
 use crate::matchers::MatcherName;
 use std::{ops::Range, fmt::Debug};
 
-
 #[derive(Clone)]
 pub struct Token<'a> {
     pub matcher_name: MatcherName,

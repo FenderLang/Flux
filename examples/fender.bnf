@@ -25,9 +25,13 @@ alpha ::= [a-z] | [A-Z]
 alphanum ::= [a-z] | [A-Z] | [0-9] | "_"
 name ::= ("_" | alpha) alphanum*
 
-literal ::= float | int | boolean | string | list | function
+literal ::= float | int | boolean | string | list | map | struct | function
 int ::= "-"? [0-9]+
 list ::= "[" lineSep? (expr (lineSep? "," lineSep? expr)*)? lineSep? "]"
+mapEntry ::= expr lineSep? ":" lineSep? expr
+map ::= "[" lineSep? (mapEntry (lineSep? "," lineSep? mapEntry)*)? lineSep? "]"
+structField ::= name (sep? typeAnnotation)?
+struct ::= "<" lineSep? (structField (lineSep? "," lineSep? structField)*)? ">"
 float ::= ("-"? [0-9]+)? "." [0-9]+
 string ::= "\"" (escapeSequence | [^"])* "\""
 escapeSequence ::= "\\" [^]
@@ -36,7 +40,8 @@ boolean ::= "true" | "false"
 invoke ::= invokeArgs | functionBody
 invokeArgs ::= "(" lineSep? (expr lineSep? ("," sep? lineSep)*)? sep? ")"
 
-functionArg ::= name (lineSep? ":" lineSep? name)?
+functionArg ::= name (sep? typeAnnotation)?
+typeAnnotation ::= ":" lineSep? name
 functionBody ::= "{" break? (statement break)* statement? break? "}"
 functionArgs ::= "(" lineSep? (functionArg lineSep? ("," lineSep? functionArg)*)? lineSep? ")"
 function ::= functionArgs? lineSep? functionBody
