@@ -2,9 +2,10 @@ sep ::= [ \n\t]+
 break ::= sep? ((";" | "\n") sep?)+
 
 root ::= break? (statement break?)*
-statement ::= assignment | expr | returnStatement
+statement ::= declaration | assignment | expr | returnStatement
 returnStatement ::= "return" (sep expr)?
-assignment ::= "$"? name sep? "=" sep? expr
+declaration ::= "$" sep? name sep? "=" sep? expr
+assignment ::= expr sep? "=" sep? expr
 
 binaryOperator ::= "||" | "&&" | "==" | "<=" | ">=" | [-+*/^<>]
 unaryOperator ::= [-!]
