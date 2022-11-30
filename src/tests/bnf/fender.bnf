@@ -1,6 +1,7 @@
 sep ::= [ \t]+
-break ::= sep? ((";" | comment? "\n") sep?)+
-lineBreak ::= sep? comment? ("\n" sep?)+
+newLine ::= "\r"? "\n"
+break ::= sep? ((";" | comment? newLine) sep?)+
+lineBreak ::= sep? comment? (newLine sep?)+
 lineSep ::= lineBreak | sep
 comment ::= "#" [^\n]*
 
