@@ -7,7 +7,7 @@ root ::= break? (statement break?)*
 statement ::= declaration | assignment | expr | returnStatement
 returnStatement ::= "return" (lineSep expr)?
 declaration ::= "$" sep? name sep? "=" lineSep? expr
-assignment ::= expr sep? [-+/*] "=" sep? expr
+assignment ::= expr sep? [-+/*]? "=" lineSep? expr
 
 binaryOperator ::= "||" | "&&" | "==" | "<=" | ">=" | [-+*/^<>]
 unaryOperator ::= [-!]
