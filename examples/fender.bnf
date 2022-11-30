@@ -5,8 +5,8 @@ lineSep ::= lineBreak | sep
 comment ::= "#" [^\n]*
 
 root ::= break? (statement break)* statement? break?
-statement ::= (declaration | assignment | expr | returnStatement) comment?
-return ::= "pass" | "return"
+statement ::= (declaration | assignment | returnStatement | expr) sep? comment?
+return ::= "pass" | "return" ("@" name)?
 returnStatement ::= return (lineSep expr)?
 declaration ::= "$" sep? name sep? "=" lineSep? expr
 assignment ::= expr sep? [-+/*]? "=" lineSep? expr
@@ -14,14 +14,15 @@ assignment ::= expr sep? [-+/*]? "=" lineSep? expr
 binaryOperator ::= "||" | "&&" | "==" | "<=" | ">=" | [-+*/^<>]
 unaryOperator ::= [-!]
 
-expr ::= term (lineSep? binaryOperator lineSep? term)*
+label ::= "`" name lineSep
+expr ::= label? term (lineSep? binaryOperator lineSep? term)*
 enclosedExpr ::= "(" lineSep? expr lineSep? ")"
 term ::= (unaryOperator sep?)* value sep? tailOperationChain?
 lambdaParameter ::= "$"
 value ::= literal | enclosedExpr | name | lambdaParameter
 
 alpha ::= [a-z] | [A-Z]
-alphanum ::= [a-z] | [A-Z] | [0-9]
+alphanum ::= [a-z] | [A-Z] | [0-9] | "_"
 name ::= ("_" | alpha) alphanum*
 
 literal ::= float | int | boolean | string | list | function
