@@ -1,4 +1,4 @@
-sep ::= [ \n\t]+
+sep ::= [ \t]+
 break ::= sep? ((";" | "\n") sep?)+
 lineBreak ::= sep? ("\n" sep?)+
 lineSep ::= lineBreak | sep

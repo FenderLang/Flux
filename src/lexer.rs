@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use crate::error::{FluxError, Result};
 use crate::matchers::MatcherRef;
 use crate::tokens::Token;
