@@ -10,7 +10,8 @@ binaryOperator ::= "||" | "&&" | "==" | "<=" | ">=" | [-+*/^<>]
 unaryOperator ::= [-!]
 
 expr ::= term (sep? binaryOperator sep? term)*
-term ::= (unaryOperator sep?)? value sep? tailOperationChain?
+enclosedExpr ::= "(" sep? expr sep? ")"
+term ::= enclosedExpr | (unaryOperator sep?)? value sep? tailOperationChain?
 lambdaParameter ::= "$"
 value ::= (name | literal | lambdaParameter)
 
