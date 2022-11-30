@@ -2,10 +2,12 @@ sep ::= [ \t]+
 break ::= sep? ((";" | "\n") sep?)+
 lineBreak ::= sep? ("\n" sep?)+
 lineSep ::= lineBreak | sep
+comment ::= "#" [^\n]*
 
 root ::= break? (statement break)* statement? break?
-statement ::= declaration | assignment | expr | returnStatement
-returnStatement ::= "return" (lineSep expr)?
+statement ::= (declaration | assignment | expr | returnStatement) comment?
+return ::= "pass" | "return"
+returnStatement ::= return (lineSep expr)?
 declaration ::= "$" sep? name sep? "=" lineSep? expr
 assignment ::= expr sep? [-+/*]? "=" lineSep? expr
 
