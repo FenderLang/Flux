@@ -5,7 +5,7 @@ fn main() {
     let mut lexer = bnf::parse(example).unwrap();
     lexer.add_rule_for_names(vec!["alpha", "alphanum", "sep", "break", "lineBreak", "lineSep", "comment"].iter().map(|s| s.to_string()).collect(), CullStrategy::DeleteAll);
     let test = r#"
-$map = <a: int, b, c>
+$map = [:]
     "#;
     let thing = test.chars().collect::<Vec<_>>();
     let token = lexer.tokenize(&thing);
