@@ -84,7 +84,10 @@ impl BNFParserState {
         self.call_assert("whitespace", Self::consume_whitespace)?;
         self.assert_str("::=")?;
         self.call_assert("whitespace", Self::consume_whitespace)?;
-        let matcher = self.parse_list()?;
+        let mut matcher = self.parse_list()?;
+        if matcher.is_placeholder() {
+            matcher = Rc::new(ListMatcher::new(vec![RefCell::new(matcher)]));
+        }
         matcher.set_name(name);
         if self.check_str("//") {
             self.consume_comment();
