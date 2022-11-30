@@ -37,5 +37,5 @@ function ::= functionArgs? sep? functionBody
 
 receiverCall ::= "." sep? name sep? invoke
 index ::= "[" expr "]"
-tailOperation ::= receiverCall | index
+tailOperation ::= invoke | receiverCall | index
 tailOperationChain ::= tailOperation (sep? tailOperation)*
