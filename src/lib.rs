@@ -5,4 +5,4 @@ pub mod matchers;
 pub mod tokens;
 
 #[cfg(test)]
-mod test;
+mod tests;

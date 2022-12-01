@@ -16,6 +16,7 @@ pub enum CullStrategy {
     LiftChildren,
 }
 
+#[derive(Debug, Clone)]
 pub struct Lexer {
     root: MatcherRef,
     retain_empty: bool,
