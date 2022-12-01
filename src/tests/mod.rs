@@ -10,9 +10,15 @@ fn syntax() {
 }
 
 #[test]
-fn self_reference_test() {
-	bnf::parse("root ::= root").unwrap_err();
-	bnf::parse("root ::= test\ntest ::= test").unwrap_err();
+#[ignore = "not yet implemented"]
+fn self_reference_test1() {
+    bnf::parse("root ::= root").unwrap_err();
+}
+
+#[test]
+#[ignore = "not yet implemented"]
+fn self_reference_test2() {
+    bnf::parse("root ::= test\ntest ::= test").unwrap_err();
 }
 
 #[test]
@@ -78,9 +84,7 @@ fn recursion_stop1() {
 #[test]
 fn recursion_stop2() {
     let lexer = bnf::parse(include_str!("bnf/numbers.bnf")).unwrap();
-    lexer
-        .tokenize(&"1.23".chars().collect::<Vec<_>>())
-        .unwrap();
+    lexer.tokenize(&"1.23".chars().collect::<Vec<_>>()).unwrap();
     lexer.tokenize(&"-4".chars().collect::<Vec<_>>()).unwrap();
     lexer
         .tokenize(&"abc".chars().collect::<Vec<_>>())
