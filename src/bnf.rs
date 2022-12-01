@@ -287,14 +287,18 @@ impl BNFParserState {
         } else {
             self.parse_number()?
         };
-        self.assert_char(',')?;
-        let max = if let Some('}') = self.peek() {
-            usize::MAX
+        if self.check_char(',') {
+            let max = if let Some('}') = self.peek() {
+                usize::MAX
+            } else {
+                self.parse_number()?
+            };
+            self.assert_char('}')?;
+            Ok((min, max))
         } else {
-            self.parse_number()?
-        };
-        self.assert_char('}')?;
-        Ok((min, max))
+            self.assert_char('}')?;
+            Ok((min, min))
+        }
     }
 
     fn parse_matcher(&mut self) -> Result<MatcherRef> {
