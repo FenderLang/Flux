@@ -13,6 +13,7 @@ pub trait Matcher: Debug {
     fn min_length(&self) -> usize;
     fn get_name(&self) -> MatcherName;
     fn set_name(&self, new_name: String);
+    fn id(&self) -> &RefCell<usize>;
     fn children(&self) -> Option<&MatcherChildren> {
         None
     }

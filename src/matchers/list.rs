@@ -7,6 +7,7 @@ pub struct ListMatcher {
     name: MatcherName,
     min_length: RefCell<Option<usize>>,
     children: MatcherChildren,
+    id: RefCell<usize>,
 }
 
 impl ListMatcher {
@@ -15,6 +16,7 @@ impl ListMatcher {
             name: Rc::new(RefCell::new(None)),
             min_length: RefCell::new(None),
             children,
+            id: RefCell::new(0),
         }
     }
 }
@@ -44,6 +46,7 @@ impl Matcher for ListMatcher {
             children,
             matcher_name: self.name.clone(),
             source,
+            matcher_id: *self.id.borrow()
         })
     }
 
@@ -76,5 +79,9 @@ impl Matcher for ListMatcher {
 
     fn is_placeholder(&self) -> bool {
         false
+    }
+
+    fn id(&self) -> &RefCell<usize> {
+        &self.id
     }
 }

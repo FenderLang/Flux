@@ -7,6 +7,7 @@ pub struct CharSetMatcher {
     name: MatcherName,
     matching_set: HashSet<char>,
     inverted: bool,
+    id: RefCell<usize>,
 }
 
 impl CharSetMatcher {
@@ -15,6 +16,7 @@ impl CharSetMatcher {
             name: Rc::new(RefCell::new(None)),
             matching_set,
             inverted,
+            id: RefCell::new(0),
         }
     }
 
@@ -31,6 +33,7 @@ impl Matcher for CharSetMatcher {
                 matcher_name: self.name.clone(),
                 range: pos..pos + 1,
                 source,
+                matcher_id: *self.id.borrow()
             }),
             _ => Err(FluxError::new_matcher("expected", pos, self.name.clone())),
         }
@@ -46,5 +49,9 @@ impl Matcher for CharSetMatcher {
 
     fn set_name(&self, new_name: String) {
         self.name.replace(Some(new_name));
+    }
+
+    fn id(&self) -> &RefCell<usize> {
+        &self.id
     }
 }

@@ -20,16 +20,18 @@ pub struct Lexer {
     root: MatcherRef,
     retain_empty: bool,
     unnamed_rule: CullStrategy,
-    named_rules: HashMap<String, CullStrategy>,
+    names: HashMap<String, usize>,
+    named_rules: Vec<CullStrategy>,
 }
 
 impl Lexer {
-    pub fn new(root: MatcherRef) -> Lexer {
+    pub fn new(root: MatcherRef, names: HashMap<String, usize>) -> Lexer {
         Lexer {
             root,
             retain_empty: false,
             unnamed_rule: CullStrategy::LiftChildren,
-            named_rules: HashMap::new(),
+            named_rules: vec![CullStrategy::None; names.len() + 1],
+            names,
         }
     }
 
@@ -43,7 +45,9 @@ impl Lexer {
 
     pub fn add_rule_for_names(&mut self, names: Vec<String>, rule: CullStrategy) {
         for name in names.into_iter() {
-            self.named_rules.insert(name, rule);
+            if let Some(id) = self.names.get(&name) {
+                self.named_rules[*id] = rule;
+            }
         }
     }
 
@@ -64,10 +68,7 @@ impl Lexer {
         if token.range.is_empty() && !self.retain_empty {
             return CullStrategy::DeleteAll;
         }
-        if let Some(name) = &*token.matcher_name.borrow() {
-            return *self.named_rules.get(name).unwrap_or(&CullStrategy::None);
-        }
-        CullStrategy::None
+        self.named_rules[token.matcher_id]
     }
 
     fn prune<'a>(&'a self, mut parent: Token<'a>) -> Token<'a> {

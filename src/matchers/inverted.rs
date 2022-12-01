@@ -6,6 +6,7 @@ use std::{cell::RefCell, rc::Rc, vec};
 pub struct InvertedMatcher {
     name: MatcherName,
     child: MatcherChildren,
+    id: RefCell<usize>,
 }
 
 impl InvertedMatcher {
@@ -13,6 +14,7 @@ impl InvertedMatcher {
         Self {
             name: Rc::new(RefCell::new(None)),
             child: vec![RefCell::new(child)],
+            id: RefCell::new(0),
         }
     }
 }
@@ -26,6 +28,7 @@ impl Matcher for InvertedMatcher {
                 matcher_name: self.name.clone(),
                 source,
                 range: pos..pos,
+                matcher_id: *self.id.borrow()
             }),
         }
     }
@@ -44,5 +47,9 @@ impl Matcher for InvertedMatcher {
 
     fn children(&self) -> Option<&super::MatcherChildren> {
         Some(&self.child)
+    }
+
+    fn id(&self) -> &RefCell<usize> {
+        &self.id
     }
 }

@@ -5,12 +5,14 @@ use std::{cell::RefCell, rc::Rc};
 #[derive(Debug)]
 pub struct PlaceholderMatcher {
     name: MatcherName,
+    id: RefCell<usize>,
 }
 
 impl PlaceholderMatcher {
     pub fn new(name: String) -> PlaceholderMatcher {
         PlaceholderMatcher {
             name: Rc::new(RefCell::new(Some(name))),
+            id: RefCell::new(0),
         }
     }
 }
@@ -34,5 +36,9 @@ impl Matcher for PlaceholderMatcher {
 
     fn is_placeholder(&self) -> bool {
         true
+    }
+
+    fn id(&self) -> &RefCell<usize> {
+        &self.id
     }
 }
