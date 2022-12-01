@@ -46,10 +46,8 @@ impl BNFParserState {
                 map.insert(name.clone(), rule.clone());
             }
         }
-        let mut id = 1;
-        for rule in map.values() {
+        for (rule, id) in map.values().zip(1..) {
             rule.id().replace(id);
-            id += 1;
             Self::replace_placeholders(&rule, &map)?;
         }
         let root = map
@@ -57,7 +55,10 @@ impl BNFParserState {
             .ok_or_else(|| FluxError::new("No root matcher specified", 0))?;
         let mut id_map = HashMap::new();
         for rule in &rules {
-            id_map.insert(rule.get_name().borrow().clone().unwrap(), *rule.id().borrow());
+            id_map.insert(
+                rule.get_name().borrow().clone().unwrap(),
+                *rule.id().borrow(),
+            );
         }
         Ok(Lexer::new(root.clone(), id_map))
     }
