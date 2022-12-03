@@ -205,6 +205,10 @@ impl BNFParserState {
         }
     }
 
+    fn invalid_escape_sequence(&self) -> FluxError {
+        FluxError::new("Invalid escape sequence", self.pos)
+    }
+
     fn parse_escape_seq(&mut self) -> Result<char> {
         match self.advance() {
             Some('n') => Ok('\n'),
@@ -212,7 +216,15 @@ impl BNFParserState {
             Some('r') => Ok('\r'),
             Some('"') => Ok('"'),
             Some('\\') => Ok('\\'),
-            _ => Err(FluxError::new("Invalid escape sequence", self.pos)),
+            Some('u') if self.pos + 4 < self.source.len() => {
+                let parsed = u32::from_str_radix(
+                    &self.source[self.pos..].iter().take(4).collect::<String>(),
+                    16,
+                ).map_err(|_| self.invalid_escape_sequence())?;
+                self.pos += 4;
+                char::from_u32(parsed).ok_or_else(|| self.invalid_escape_sequence())
+            }
+            _ => Err(self.invalid_escape_sequence()),
         }
     }
 
@@ -287,14 +299,18 @@ impl BNFParserState {
         } else {
             self.parse_number()?
         };
-        self.assert_char(',')?;
-        let max = if let Some('}') = self.peek() {
-            usize::MAX
+        if self.check_char(',') {
+            let max = if let Some('}') = self.peek() {
+                usize::MAX
+            } else {
+                self.parse_number()?
+            };
+            self.assert_char('}')?;
+            Ok((min, max))
         } else {
-            self.parse_number()?
-        };
-        self.assert_char('}')?;
-        Ok((min, max))
+            self.assert_char('}')?;
+            Ok((min, min))
+        }
     }
 
     fn parse_matcher(&mut self) -> Result<MatcherRef> {
