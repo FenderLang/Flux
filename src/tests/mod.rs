@@ -165,3 +165,9 @@ fn case_insensitive() {
         .tokenize(&"aBC".chars().collect::<Vec<_>>())
         .unwrap_err();
 }
+
+
+#[test]
+fn leading_space() {
+    bnf::parse(" root ::= [a-z]\n    \t other ::= [a-z]").unwrap();
+}

@@ -28,29 +28,29 @@ struct BNFParserState {
 
 impl BNFParserState {
     fn parse(&mut self) -> Result<Lexer> {
-        self.consume_line_break();
         let mut rules = Vec::new();
+        self.consume_line_breaks();
         while self.pos < self.source.len() {
             rules.extend(self.parse_rule()?);
-            self.consume_line_break();
+            self.consume_line_breaks();
         }
-        let mut map: HashMap<String, MatcherRef> = HashMap::new();
+        let mut rule_map: HashMap<String, MatcherRef> = HashMap::new();
         for rule in &rules {
             if let Some(name) = rule.get_name().borrow().as_ref() {
-                if map.contains_key(name) {
+                if rule_map.contains_key(name) {
                     return Err(FluxError::new_dyn(
                         format!("Duplicate rule name {}", name),
                         0,
                     ));
                 }
-                map.insert(name.clone(), rule.clone());
+                rule_map.insert(name.clone(), rule.clone());
             }
         }
-        for (rule, id) in map.values().zip(1..) {
+        for (rule, id) in rules.iter().zip(1..) {
             rule.id().replace(id);
-            Self::replace_placeholders(&rule, &map)?;
+            Self::replace_placeholders(&rule, &rule_map)?;
         }
-        let root = map
+        let root = rule_map
             .get("root")
             .ok_or_else(|| FluxError::new("No root matcher specified", 0))?;
         let mut id_map = HashMap::new();
@@ -63,11 +63,12 @@ impl BNFParserState {
         Ok(Lexer::new(root.clone(), id_map))
     }
 
-    fn replace_placeholders(root: &MatcherRef, map: &HashMap<String, MatcherRef>) -> Result<()> {
-        if root.children().is_none() {
-            return Ok(());
-        }
-        let children = root.children().unwrap();
+    fn replace_placeholders(rule: &MatcherRef, map: &HashMap<String, MatcherRef>) -> Result<()> {
+        let children = match rule.children() {
+            Some(children) => children,
+            None => return Ok(()),
+        };
+
         for c in children {
             Self::replace_placeholders(&c.borrow(), map)?;
             if c.borrow().is_placeholder() {
@@ -147,12 +148,12 @@ impl BNFParserState {
         }
     }
 
-    fn call_assert(&mut self, context: &str, func: fn(&mut Self)) -> Result<()> {
+    fn call_assert(&mut self, error_context: &str, func: fn(&mut Self)) -> Result<()> {
         let start = self.pos;
         func(self);
         if start == self.pos {
             Err(FluxError::new_dyn(
-                format!("Expected {}", context),
+                format!("Expected {}", error_context),
                 self.pos,
             ))
         } else {
@@ -167,12 +168,13 @@ impl BNFParserState {
     }
 
     fn consume_comment(&mut self) {
-        while self.peek().map_or(false, |c| c != '\n') {
+        while let Some('\n') = self.peek() {
             self.pos += 1;
         }
     }
 
-    fn consume_line_break(&mut self) {
+    /// Consume all whitespace including line breaks
+    fn consume_line_breaks(&mut self) {
         self.consume_whitespace();
         while self.peek() == Some('\n') {
             self.advance();
@@ -180,10 +182,12 @@ impl BNFParserState {
         }
     }
 
+    /// Identifies a non line break whitespace
     fn is_whitespace(c: char) -> bool {
         c.is_whitespace() && c != '\n'
     }
 
+    /// Consume all whitespace excluding line breaks
     fn consume_whitespace(&mut self) {
         while self.peek().map_or(false, BNFParserState::is_whitespace) {
             self.advance();
@@ -220,7 +224,8 @@ impl BNFParserState {
                 let parsed = u32::from_str_radix(
                     &self.source[self.pos..].iter().take(4).collect::<String>(),
                     16,
-                ).map_err(|_| self.invalid_escape_sequence())?;
+                )
+                .map_err(|_| self.invalid_escape_sequence())?;
                 self.pos += 4;
                 char::from_u32(parsed).ok_or_else(|| self.invalid_escape_sequence())
             }
@@ -229,21 +234,21 @@ impl BNFParserState {
     }
 
     fn parse_str_chars(&mut self, terminator: char) -> Result<String> {
-        let mut out = String::new();
-        while self.peek().map_or(false, |c| c != terminator) {
+        let mut contents = String::new();
+        while matches!(self.peek(), Some(c) if c != terminator) {
             let c = self.advance().unwrap();
             if c == '\\' {
-                out.push(self.parse_escape_seq()?);
+                contents.push(self.parse_escape_seq()?);
             } else {
-                out.push(c);
+                contents.push(c);
             }
         }
-        Ok(out)
+        Ok(contents)
     }
 
     fn parse_word(&mut self) -> Result<String> {
         let mut out = String::new();
-        while self.peek().map_or(false, char::is_alphabetic) {
+        while matches!(self.peek(), Some(c) if c.is_alphabetic()) {
             out.push(self.advance().unwrap());
         }
         Ok(out)
@@ -284,7 +289,7 @@ impl BNFParserState {
                 let bounds = self.parse_repeating_bounds()?;
                 matcher = Rc::new(RepeatingMatcher::new(bounds.0, bounds.1, matcher));
             }
-            _ => {}
+            _ => (),
         }
         if inverted {
             matcher = Rc::new(InvertedMatcher::new(matcher));
@@ -379,29 +384,27 @@ impl BNFParserState {
     }
 
     fn parse_list(&mut self) -> Result<MatcherRef> {
-        let mut list = Vec::new();
-        let mut choice = Vec::<MatcherRef>::new();
+        let mut matcher_list = Vec::new();
+        let mut choices = Vec::new();
         while self.pos < self.source.len() && self.peek() != Some('\n') {
-            list.push(self.parse_matcher_with_modifiers()?);
-            let whitespace = self.call_check(Self::consume_whitespace);
-            if !whitespace || self.check_char(')') {
+            matcher_list.push(self.parse_matcher_with_modifiers()?);
+            if !self.call_check(Self::consume_whitespace) {
                 break;
             }
             if self.check_char('|') {
-                let matcher = self.maybe_list(list);
+                let matcher = self.maybe_list(matcher_list);
                 self.consume_whitespace();
-                list = Vec::new();
-                choice.push(matcher);
+                matcher_list = Vec::new();
+                choices.push(matcher);
             }
         }
-        if !choice.is_empty() {
-            let list_matcher = self.maybe_list(list);
-            choice.push(list_matcher);
-            let choice = choice.into_iter().map(RefCell::new).collect();
-            let choice_matcher = ChoiceMatcher::new(choice);
-            Ok(Rc::new(choice_matcher))
+        if !choices.is_empty() {
+            let list_matcher = self.maybe_list(matcher_list);
+            choices.push(list_matcher);
+            let choices = choices.into_iter().map(RefCell::new).collect();
+            Ok(Rc::new(ChoiceMatcher::new(choices)))
         } else {
-            Ok(self.maybe_list(list))
+            Ok(self.maybe_list(matcher_list))
         }
     }
 }
