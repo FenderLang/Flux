@@ -40,7 +40,7 @@ escapeSequence ::= "\\" [^]
 boolean ::= "true" | "false"
 
 invoke ::= invokeArgs | functionBody
-invokeArgs ::= "(" lineSep? (expr lineSep? ("," sep? lineSep)*)? sep? ")"
+invokeArgs ::= "(" lineSep? (expr lineSep? ("," lineSep? expr)*)? sep? ")"
 
 functionArg ::= name (sep? typeAnnotation)?
 typeAnnotation ::= ":" lineSep? name
@@ -48,7 +48,8 @@ functionBody ::= "{" break? (statement break)* statement? break? "}"
 functionArgs ::= "(" lineSep? (functionArg lineSep? ("," lineSep? functionArg)*)? lineSep? ")"
 function ::= functionArgs? lineSep? functionBody
 
+fieldAccess ::= ":" lineSep? name
 receiverCall ::= "." lineSep? name sep? invoke
 index ::= "[" expr "]"
-tailOperation ::= invoke | receiverCall | index
+tailOperation ::= invoke | receiverCall | index | fieldAccess
 tailOperationChain ::= tailOperation (lineSep? tailOperation)*
