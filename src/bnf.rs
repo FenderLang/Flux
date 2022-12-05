@@ -333,7 +333,11 @@ impl BNFParserState {
                     self.parse_char_set()
                 })?;
                 Ok(matcher)
-            }
+            },
+            Some('<') => {
+                self.assert_str("<eof>")?;
+                
+            },
             Some('"') => self.parse_string(),
             Some('i') if self.source.get(self.pos + 1) == Some(&'"') => self.parse_string(),
             Some(c) if c.is_alphabetic() => self.parse_placeholder(),

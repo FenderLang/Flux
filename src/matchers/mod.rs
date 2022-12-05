@@ -36,3 +36,4 @@ pub mod list;
 pub mod placeholder;
 pub mod repeating;
 pub mod string;
+pub mod eof;
