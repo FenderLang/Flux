@@ -6,6 +6,7 @@ use crate::error::{FluxError, Result};
 use crate::lexer::Lexer;
 use crate::matchers::char_range::CharRangeMatcher;
 use crate::matchers::choice::ChoiceMatcher;
+use crate::matchers::eof::EofMatcher;
 use crate::matchers::inverted::InvertedMatcher;
 use crate::matchers::list::ListMatcher;
 use crate::matchers::placeholder::PlaceholderMatcher;
@@ -333,11 +334,11 @@ impl BNFParserState {
                     self.parse_char_set()
                 })?;
                 Ok(matcher)
-            },
-            Some('<') => {
+            }
+            Some('<') =>  {
                 self.assert_str("<eof>")?;
-                
-            },
+                Ok(Rc::new(EofMatcher::new()))
+            }
             Some('"') => self.parse_string(),
             Some('i') if self.source.get(self.pos + 1) == Some(&'"') => self.parse_string(),
             Some(c) if c.is_alphabetic() => self.parse_placeholder(),

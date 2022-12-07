@@ -18,8 +18,18 @@ impl EofMatcher {
 }
 
 impl Matcher for EofMatcher {
-    fn apply<'a>(&self, _: &'a [char], _: usize) -> Result<Token<'a>> {
-        unreachable!()
+    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>> {
+        if pos == source.len() {
+            Ok(Token {
+                matcher_name: self.name.clone(),
+                children: Vec::new(),
+                source,
+                range: (pos..pos),
+                matcher_id: *self.id.borrow(),
+            })
+        } else {
+            Err(FluxError::new_matcher("expected", 0, self.name.clone()))
+        }
     }
 
     fn min_length(&self) -> usize {
@@ -32,10 +42,6 @@ impl Matcher for EofMatcher {
 
     fn set_name(&self, name: String) {
         self.name.replace(Some(name));
-    }
-
-    fn is_placeholder(&self) -> bool {
-        true
     }
 
     fn id(&self) -> &RefCell<usize> {
