@@ -169,3 +169,11 @@ fn case_insensitive() {
 fn leading_space() {
     bnf::parse(" root ::= [a-z]\n    \t other ::= [a-z]").unwrap();
 }
+
+
+#[test]
+fn just_eof_test (){
+    let lex = bnf::parse(r#"root ::= "a" <eof>"#).unwrap();
+    lex.tokenize(&"a".chars().collect::<Vec<_>>()).unwrap();
+    lex.tokenize(&"a ".chars().collect::<Vec<_>>()).unwrap_err();
+}
