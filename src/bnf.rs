@@ -49,7 +49,7 @@ impl BNFParserState {
         }
         for (rule, id) in rules.iter().zip(1..) {
             rule.id().replace(id);
-            Self::replace_placeholders(&rule, &rule_map)?;
+            Self::replace_placeholders(rule, &rule_map)?;
         }
         let root = rule_map
             .get("root")
