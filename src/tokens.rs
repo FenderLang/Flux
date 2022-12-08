@@ -10,14 +10,17 @@ pub struct Token<'a> {
     pub range: Range<usize>,
 }
 
+impl<'a> Token<'a> {
+    fn get_match(&self) -> String {
+        self.source[self.range.start..self.range.end].iter().collect()
+    }
+}
+
 impl<'a> Debug for Token<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let matched = &self.source[self.range.start..self.range.end]
-            .iter()
-            .collect::<String>();
         let mut debug = f.debug_struct("Token");
         debug.field("name", &self.matcher_name.borrow().clone().unwrap_or("".to_string()));
-        debug.field("match", matched);
+        debug.field("match", &self.get_match());
         debug.field("range", &self.range);
         if !self.children.is_empty() {
             debug.field("children", &self.children);
