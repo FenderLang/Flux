@@ -12,7 +12,7 @@ returnStatement ::= return (lineSep expr)?
 declaration ::= "$" sep? name sep? "=" lineSep? expr
 assignment ::= expr sep? [-+/*]? "=" lineSep? expr
 
-binaryOperator ::= "||" | "&&" | "==" | "<=" | ">=" | [-+*/^<>]
+binaryOperator ::= "||" | "&&" | "==" | "<=" | ">=" | ".." "="? | [-+*/^<>]
 unaryOperator ::= [-!]
 
 label ::= "`" name lineSep
