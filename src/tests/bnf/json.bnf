@@ -7,6 +7,6 @@ decimal ::=  "-"? [0-9]+ "." [0-9]+
 boolean ::= "true" | "false"
 list ::= sep "[" sep (object sep ("," sep object)*)? sep "]" sep
 map ::= "{" sep (mapEntry sep ("," sep mapEntry)*)? sep "}" sep
- # comment
+ // comment
 mapEntry ::= string sep ":" sep object
 null ::= "null"

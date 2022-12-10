@@ -3,6 +3,7 @@ use std::{
     fmt::{Debug, Display},
     ops::Deref,
     rc::Rc,
+    backtrace::Backtrace,
 };
 
 use crate::matchers::MatcherName;
@@ -27,6 +28,7 @@ pub struct FluxError {
     description: ErrorMessage,
     location: usize,
     matcher_name: MatcherName,
+    backtrace: Backtrace,
 }
 
 impl FluxError {
@@ -35,6 +37,7 @@ impl FluxError {
             description: ErrorMessage::Constant(description),
             location,
             matcher_name: Rc::new(RefCell::new(None)),
+            backtrace: Backtrace::capture(),
         }
     }
 
@@ -47,6 +50,7 @@ impl FluxError {
             description: ErrorMessage::Constant(description),
             location,
             matcher_name,
+            backtrace: Backtrace::capture(),
         }
     }
 
@@ -55,6 +59,7 @@ impl FluxError {
             description: ErrorMessage::Dynamic(description),
             location,
             matcher_name: Rc::new(RefCell::new(None)),
+            backtrace: Backtrace::capture(),
         }
     }
 }
@@ -67,6 +72,7 @@ impl Debug for FluxError {
             .field("description", &self.description.get_message())
             .field("location", &self.location)
             .field("match_ref", &self.matcher_name)
+            .field("backtrace", &self.backtrace)
             .finish()
     }
 }

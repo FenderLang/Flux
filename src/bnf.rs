@@ -99,6 +99,7 @@ impl BNFParserState {
             matcher = Rc::new(ListMatcher::new(vec![RefCell::new(matcher)]));
         }
         matcher.set_name(name);
+        self.consume_whitespace();
         if self.check_str("//") {
             self.consume_comment();
         }
@@ -169,7 +170,7 @@ impl BNFParserState {
     }
 
     fn consume_comment(&mut self) {
-        while let Some('\n') = self.peek() {
+        while self.peek().map_or(false, |c| c != '\n')  {
             self.pos += 1;
         }
     }
@@ -388,10 +389,15 @@ impl BNFParserState {
         }
     }
 
+    fn list_should_continue(&self) -> bool {
+        let next = self.peek();
+        next != Some('\n') && next != Some('/')
+    }
+
     fn parse_list(&mut self) -> Result<MatcherRef> {
         let mut matcher_list = Vec::new();
         let mut choices = Vec::new();
-        while self.pos < self.source.len() && self.peek() != Some('\n') {
+        while self.pos < self.source.len() && self.list_should_continue() {
             matcher_list.push(self.parse_matcher_with_modifiers()?);
             if !self.call_check(Self::consume_whitespace) {
                 break;
