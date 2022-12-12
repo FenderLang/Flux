@@ -23,9 +23,9 @@ impl ChoiceMatcher {
 }
 
 impl Matcher for ChoiceMatcher {
-    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>> {
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
         for child in &self.children {
-            if let Ok(token) = child.borrow().apply(source, pos) {
+            if let Ok(token) = child.borrow().apply(source.clone(), pos) {
                 return Ok(Token {
                     matcher_name: self.name.clone(),
                     range: token.range.clone(),

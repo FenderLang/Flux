@@ -26,7 +26,7 @@ impl CharSetMatcher {
 }
 
 impl Matcher for CharSetMatcher {
-    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>> {
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
         match source.get(pos) {
             Some(c) if self.check_char(c) => Ok(Token {
                 children: vec![],

@@ -2,6 +2,7 @@ use crate::error::{FluxError, Result};
 use crate::matchers::MatcherRef;
 use crate::tokens::Token;
 use std::collections::HashMap;
+use std::rc::Rc;
 use std::vec;
 
 #[derive(Clone, Copy, Debug)]
@@ -52,9 +53,10 @@ impl Lexer {
         }
     }
 
-    pub fn tokenize<'a>(&'a self, input: &'a [char]) -> Result<Token> {
+    pub fn tokenize(&self, input: &str) -> Result<Token> {
+        let chars = Rc::new(input.chars().collect::<Vec<char>>());
         let pos = 0;
-        let token = self.root.apply(input, pos)?;
+        let token = self.root.apply(chars.clone(), pos)?;
         if token.range.len() < input.len() {
             Err(FluxError::new("unexpected token", token.range.end))
         } else {
@@ -72,7 +74,7 @@ impl Lexer {
         self.named_rules[token.matcher_id]
     }
 
-    fn prune<'a>(&'a self, mut parent: Token<'a>) -> Token<'a> {
+    fn prune(& self, mut parent: Token) -> Token {
         let mut tmp_children = Vec::new();
         for child in parent.children {
             let child = self.prune(child);

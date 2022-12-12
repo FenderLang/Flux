@@ -24,44 +24,44 @@ fn self_reference_test2() {
 #[test]
 fn unicode_escape() {
     let lexer = bnf::parse(r#"root ::= "\u0061""#).unwrap();
-    lexer.tokenize(&"a".chars().collect::<Vec<_>>()).unwrap();
+    lexer.tokenize(&"a").unwrap();
     lexer
-        .tokenize(&"b".chars().collect::<Vec<_>>())
+        .tokenize(&"b")
         .unwrap_err();
     lexer
-        .tokenize(&"u0061".chars().collect::<Vec<_>>())
+        .tokenize(&"u0061")
         .unwrap_err();
 }
 
 #[test]
 fn similar_token_after_repeating_token() {
     let lexer = bnf::parse(include_str!("bnf/a_after_repeating_ab.bnf")).unwrap();
-    lexer.tokenize(&"aa".chars().collect::<Vec<_>>()).unwrap();
+    lexer.tokenize(&"aa").unwrap();
     lexer
-        .tokenize(&"ab".chars().collect::<Vec<_>>())
+        .tokenize(&"ab")
         .unwrap_err();
     lexer
-        .tokenize(&"ababaa".chars().collect::<Vec<_>>())
+        .tokenize(&"ababaa")
         .unwrap();
     lexer
-        .tokenize(&"bababb".chars().collect::<Vec<_>>())
+        .tokenize(&"bababb")
         .unwrap_err();
 }
 
 #[test]
 fn similar_token_after_optional_token() {
     let lexer = bnf::parse(include_str!("bnf/a_after_optional_ab.bnf")).unwrap();
-    lexer.tokenize(&"a".chars().collect::<Vec<_>>()).unwrap();
+    lexer.tokenize(&"a").unwrap();
     lexer
-        .tokenize(&"b".chars().collect::<Vec<_>>())
+        .tokenize(&"b")
         .unwrap_err();
-    lexer.tokenize(&"aa".chars().collect::<Vec<_>>()).unwrap();
+    lexer.tokenize(&"aa").unwrap();
     lexer
-        .tokenize(&"ab".chars().collect::<Vec<_>>())
+        .tokenize(&"ab")
         .unwrap_err();
-    lexer.tokenize(&"ba".chars().collect::<Vec<_>>()).unwrap();
+    lexer.tokenize(&"ba").unwrap();
     lexer
-        .tokenize(&"aaa".chars().collect::<Vec<_>>())
+        .tokenize(&"aaa")
         .unwrap_err();
 }
 
@@ -69,25 +69,25 @@ fn similar_token_after_optional_token() {
 fn not_newline() {
     let lexer = bnf::parse("root ::= [^\\n]").unwrap();
     lexer
-        .tokenize(&"\n".chars().collect::<Vec<_>>())
+        .tokenize(&"\n")
         .unwrap_err();
-    lexer.tokenize(&"a".chars().collect::<Vec<_>>()).unwrap();
+    lexer.tokenize(&"a").unwrap();
 }
 
 #[test]
 fn recursion_stop1() {
     let lexer = bnf::parse(include_str!("bnf/recursive_list.bnf")).unwrap();
     lexer
-        .tokenize(&"a b c".chars().collect::<Vec<_>>())
+        .tokenize(&"a b c")
         .unwrap();
 }
 #[test]
 fn recursion_stop2() {
     let lexer = bnf::parse(include_str!("bnf/numbers.bnf")).unwrap();
-    lexer.tokenize(&"1.23".chars().collect::<Vec<_>>()).unwrap();
-    lexer.tokenize(&"-4".chars().collect::<Vec<_>>()).unwrap();
+    lexer.tokenize(&"1.23").unwrap();
+    lexer.tokenize(&"-4").unwrap();
     lexer
-        .tokenize(&"abc".chars().collect::<Vec<_>>())
+        .tokenize(&"abc")
         .unwrap_err();
 }
 
@@ -95,21 +95,21 @@ fn recursion_stop2() {
 fn paren() {
     let lexer = bnf::parse(include_str!("bnf/parens.bnf")).unwrap();
 
-    lexer.tokenize(&"".chars().collect::<Vec<_>>()).unwrap();
+    lexer.tokenize(&"").unwrap();
     lexer
-        .tokenize(&"()()()".chars().collect::<Vec<_>>())
+        .tokenize(&"()()()")
         .unwrap();
     lexer
-        .tokenize(&"()()(()())".chars().collect::<Vec<_>>())
+        .tokenize(&"()()(()())")
         .unwrap();
     lexer
-        .tokenize(&")(".chars().collect::<Vec<_>>())
+        .tokenize(&")(")
         .unwrap_err();
     lexer
-        .tokenize(&"())(()".chars().collect::<Vec<_>>())
+        .tokenize(&"())(()")
         .unwrap_err();
     lexer
-        .tokenize(&"(()()(".chars().collect::<Vec<_>>())
+        .tokenize(&"(()()(")
         .unwrap_err();
 }
 
@@ -117,10 +117,10 @@ fn paren() {
 fn quantifier1() {
     let lexer = bnf::parse("root ::= [0-9]{3,16}").unwrap();
     lexer
-        .tokenize(&"123456".chars().collect::<Vec<_>>())
+        .tokenize(&"123456")
         .unwrap();
     lexer
-        .tokenize(&"12".chars().collect::<Vec<_>>())
+        .tokenize(&"12")
         .unwrap_err();
 }
 
@@ -128,39 +128,39 @@ fn quantifier1() {
 fn quantifier2() {
     let lexer = bnf::parse("root ::= [0-9]{,16}").unwrap();
 
-    lexer.tokenize(&"12".chars().collect::<Vec<_>>()).unwrap();
+    lexer.tokenize(&"12").unwrap();
     lexer
-        .tokenize(&"12345678901234567".chars().collect::<Vec<_>>())
+        .tokenize(&"12345678901234567")
         .unwrap_err();
 }
 
 #[test]
 fn quantifier3() {
     let lexer = bnf::parse("name ::= \"a\"\nroot ::= name{3}").unwrap();
-    lexer.tokenize(&"aaa".chars().collect::<Vec<_>>()).unwrap();
+    lexer.tokenize(&"aaa").unwrap();
     lexer
-        .tokenize(&"aa".chars().collect::<Vec<_>>())
+        .tokenize(&"aa")
         .unwrap_err();
 }
 
 #[test]
 fn case_insensitive() {
     let lexer = bnf::parse("root ::= i\"abc\"").unwrap();
-    lexer.tokenize(&"abc".chars().collect::<Vec<_>>()).unwrap();
-    lexer.tokenize(&"aBc".chars().collect::<Vec<_>>()).unwrap();
-    lexer.tokenize(&"Abc".chars().collect::<Vec<_>>()).unwrap();
-    lexer.tokenize(&"ABC".chars().collect::<Vec<_>>()).unwrap();
+    lexer.tokenize(&"abc").unwrap();
+    lexer.tokenize(&"aBc").unwrap();
+    lexer.tokenize(&"Abc").unwrap();
+    lexer.tokenize(&"ABC").unwrap();
 
     let lexer2 = bnf::parse("root ::= \"abc\"").unwrap();
-    lexer2.tokenize(&"abc".chars().collect::<Vec<_>>()).unwrap();
+    lexer2.tokenize(&"abc").unwrap();
     lexer2
-        .tokenize(&"Abc".chars().collect::<Vec<_>>())
+        .tokenize(&"Abc")
         .unwrap_err();
     lexer2
-        .tokenize(&"aBc".chars().collect::<Vec<_>>())
+        .tokenize(&"aBc")
         .unwrap_err();
     lexer2
-        .tokenize(&"aBC".chars().collect::<Vec<_>>())
+        .tokenize(&"aBC")
         .unwrap_err();
 }
 
@@ -174,6 +174,6 @@ fn leading_space() {
 #[test]
 fn just_eof_test (){
     let lex = bnf::parse(r#"root ::= "a" <eof>"#).unwrap();
-    lex.tokenize(&"a".chars().collect::<Vec<_>>()).unwrap();
-    lex.tokenize(&"a ".chars().collect::<Vec<_>>()).unwrap_err();
+    lex.tokenize(&"a").unwrap();
+    lex.tokenize(&"a ").unwrap_err();
 }
