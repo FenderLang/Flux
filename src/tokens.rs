@@ -21,7 +21,11 @@ impl<'a> Debug for Token<'a> {
         let mut debug = f.debug_struct("Token");
         debug.field(
             "name",
-            &self.matcher_name.borrow().clone().unwrap_or("".to_string()),
+            &self
+                .matcher_name
+                .borrow()
+                .clone()
+                .unwrap_or_default(),
         );
         debug.field("match", &self.get_match());
         debug.field("range", &self.range);
