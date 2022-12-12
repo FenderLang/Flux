@@ -170,7 +170,7 @@ impl BNFParserState {
     }
 
     fn consume_comment(&mut self) {
-        while self.peek().map_or(false, |c| c != '\n')  {
+        while self.peek().map_or(false, |c| c != '\n') {
             self.pos += 1;
         }
     }
@@ -336,7 +336,7 @@ impl BNFParserState {
                 })?;
                 Ok(matcher)
             }
-            Some('<') =>  {
+            Some('<') => {
                 self.assert_str("<eof>")?;
                 Ok(Rc::new(EofMatcher::new()))
             }

@@ -33,7 +33,7 @@ impl Matcher for CharSetMatcher {
                 matcher_name: self.name.clone(),
                 range: pos..pos + 1,
                 source,
-                matcher_id: *self.id.borrow()
+                matcher_id: *self.id.borrow(),
             }),
             _ => Err(FluxError::new_matcher("expected", pos, self.name.clone())),
         }

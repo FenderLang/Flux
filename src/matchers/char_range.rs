@@ -35,7 +35,7 @@ impl Matcher for CharRangeMatcher {
                 children: vec![],
                 source,
                 range: pos..pos + 1,
-                matcher_id: *self.id.borrow()
+                matcher_id: *self.id.borrow(),
             }),
             _ => Err(FluxError::new_matcher("expected", pos, self.name.clone())),
         }

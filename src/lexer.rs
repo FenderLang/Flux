@@ -56,7 +56,7 @@ impl Lexer {
     pub fn tokenize(&self, input: &str) -> Result<Token> {
         let chars = Rc::new(input.chars().collect::<Vec<char>>());
         let pos = 0;
-        let token = self.root.apply(chars.clone(), pos)?;
+        let token = self.root.apply(chars, pos)?;
         if token.range.len() < input.len() {
             Err(FluxError::new("unexpected token", token.range.end))
         } else {
@@ -74,7 +74,7 @@ impl Lexer {
         self.named_rules[token.matcher_id]
     }
 
-    fn prune(& self, mut parent: Token) -> Token {
+    fn prune(&self, mut parent: Token) -> Token {
         let mut tmp_children = Vec::new();
         for child in parent.children {
             let child = self.prune(child);

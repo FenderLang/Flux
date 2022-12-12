@@ -46,7 +46,7 @@ impl Matcher for ListMatcher {
             children,
             matcher_name: self.name.clone(),
             source,
-            matcher_id: *self.id.borrow()
+            matcher_id: *self.id.borrow(),
         })
     }
 

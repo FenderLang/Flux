@@ -28,7 +28,11 @@ impl Matcher for EofMatcher {
                 matcher_id: *self.id.borrow(),
             })
         } else {
-            Err(FluxError::new_matcher("expected end of file", pos, self.name.clone()))
+            Err(FluxError::new_matcher(
+                "expected end of file",
+                pos,
+                self.name.clone(),
+            ))
         }
     }
 

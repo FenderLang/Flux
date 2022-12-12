@@ -43,7 +43,7 @@ impl Matcher for StringMatcher {
                 children: vec![],
                 source,
                 range: pos..pos + self.to_match.len(),
-                matcher_id: *self.id.borrow()
+                matcher_id: *self.id.borrow(),
             })
         } else {
             Err(FluxError::new_matcher("expected", pos, self.name.clone()))

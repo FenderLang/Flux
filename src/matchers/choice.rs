@@ -31,7 +31,7 @@ impl Matcher for ChoiceMatcher {
                     range: token.range.clone(),
                     children: vec![token],
                     source,
-                    matcher_id: *self.id.borrow()
+                    matcher_id: *self.id.borrow(),
                 });
             }
         }

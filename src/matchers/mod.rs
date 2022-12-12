@@ -31,9 +31,9 @@ impl Display for dyn Matcher {
 pub mod char_range;
 pub mod char_set;
 pub mod choice;
+pub mod eof;
 pub mod inverted;
 pub mod list;
 pub mod placeholder;
 pub mod repeating;
 pub mod string;
-pub mod eof;

@@ -28,7 +28,7 @@ impl Matcher for InvertedMatcher {
                 matcher_name: self.name.clone(),
                 source,
                 range: pos..pos,
-                matcher_id: *self.id.borrow()
+                matcher_id: *self.id.borrow(),
             }),
         }
     }

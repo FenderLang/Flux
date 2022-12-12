@@ -47,7 +47,7 @@ impl Matcher for RepeatingMatcher {
                 children,
                 matcher_name: self.name.clone(),
                 source,
-                matcher_id: *self.id.borrow()
+                matcher_id: *self.id.borrow(),
             })
         }
     }
