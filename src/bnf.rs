@@ -94,7 +94,10 @@ impl BNFParserState {
         self.call_assert("whitespace", Self::consume_whitespace)?;
         let mut matcher = self.parse_list()?;
         if matcher.is_placeholder() {
-            matcher = Rc::new(ListMatcher::new(Default::default(), vec![RefCell::new(matcher)]));
+            matcher = Rc::new(ListMatcher::new(
+                Default::default(),
+                vec![RefCell::new(matcher)],
+            ));
         }
         self.consume_whitespace();
         if self.check_str("//") {
@@ -276,7 +279,7 @@ impl BNFParserState {
             Some('+') => {
                 self.advance();
                 matcher = Rc::new(RepeatingMatcher::new(
-                        Default::default(),
+                    Default::default(),
                     1,
                     usize::MAX,
                     matcher,
@@ -285,7 +288,7 @@ impl BNFParserState {
             Some('*') => {
                 self.advance();
                 matcher = Rc::new(RepeatingMatcher::new(
-                        Default::default(),
+                    Default::default(),
                     0,
                     usize::MAX,
                     matcher,

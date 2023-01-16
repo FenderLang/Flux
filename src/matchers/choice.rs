@@ -1,4 +1,4 @@
-use super::{Matcher, MatcherRef, MatcherMeta};
+use super::{Matcher, MatcherMeta, MatcherRef};
 use crate::error::{FluxError, Result};
 use crate::tokens::Token;
 use std::{cell::RefCell, rc::Rc};

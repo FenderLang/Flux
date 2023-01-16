@@ -1,9 +1,5 @@
 use crate::matchers::MatcherName;
-use std::{
-    fmt::Debug,
-    ops::{Range},
-    rc::Rc,
-};
+use std::{fmt::Debug, ops::Range, rc::Rc};
 
 #[derive(Clone)]
 pub struct Token {
@@ -27,10 +23,7 @@ impl Token {
 impl Debug for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut debug = f.debug_struct("Token");
-        debug.field(
-            "name",
-            &*self.matcher_name,
-        );
+        debug.field("name", &*self.matcher_name);
         debug.field("match", &self.get_match());
         debug.field("range", &self.range);
         if !self.children.is_empty() {

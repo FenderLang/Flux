@@ -16,7 +16,7 @@ impl CharRangeMatcher {
             max,
             min,
             inverted,
-            meta
+            meta,
         }
     }
 

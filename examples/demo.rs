@@ -1,7 +1,4 @@
-use flux_bnf::{
-    bnf,
-    lexer::{CullStrategy},
-};
+use flux_bnf::{bnf, lexer::CullStrategy};
 
 fn main() {
     let test_json = r#"[14, true, {"serpents": ["snake", "anaconda", "python 2"]}]"#;

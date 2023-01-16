@@ -26,18 +26,24 @@ macro_rules! impl_meta {
         fn meta(&self) -> &MatcherMeta {
             &self.meta
         }
-    }
+    };
 }
 
 impl MatcherMeta {
     pub fn new(name: Option<String>, id: usize) -> MatcherMeta {
-        MatcherMeta { name: Rc::new(name), id }
+        MatcherMeta {
+            name: Rc::new(name),
+            id,
+        }
     }
 }
 
 impl Default for MatcherMeta {
     fn default() -> Self {
-        MatcherMeta { name: Rc::new(None), id: 0 }
+        MatcherMeta {
+            name: Rc::new(None),
+            id: 0,
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 use super::{Matcher, MatcherMeta};
 use crate::{error::FluxError, error::Result, tokens::Token};
-use std::{rc::Rc};
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct EofMatcher {
