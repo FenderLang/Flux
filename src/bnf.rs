@@ -48,7 +48,7 @@ impl BNFParserState {
                 rule_map.insert(name.clone(), rule.clone());
             }
         }
-        for (rule, _) in rules.iter().zip(1..) {
+        for rule in &rules {
             Self::replace_placeholders(rule, &rule_map)?;
         }
         let root = rule_map
