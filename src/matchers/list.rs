@@ -1,27 +1,26 @@
-use super::{Matcher, MatcherChildren, MatcherName, MatcherRef};
+use super::{Matcher, MatcherChildren, MatcherName, MatcherRef, MatcherMeta};
 use crate::{error::FluxError, error::Result, tokens::Token};
 use std::{cell::RefCell, rc::Rc};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ListMatcher {
-    name: MatcherName,
+    meta: MatcherMeta,
     min_length: RefCell<Option<usize>>,
     children: MatcherChildren,
-    id: RefCell<usize>,
 }
 
 impl ListMatcher {
-    pub fn new(children: Vec<RefCell<MatcherRef>>) -> ListMatcher {
+    pub fn new(meta: MatcherMeta, children: Vec<RefCell<MatcherRef>>) -> ListMatcher {
         ListMatcher {
-            name: Rc::new(RefCell::new(None)),
+            meta,
             min_length: RefCell::new(None),
             children,
-            id: RefCell::new(0),
         }
     }
 }
 
 impl Matcher for ListMatcher {
+    with_meta!();
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
         let mut children: Vec<Token> = Vec::new();
         let mut cursor = pos;
@@ -35,7 +34,7 @@ impl Matcher for ListMatcher {
                     return Err(FluxError::new_matcher(
                         "expected",
                         pos,
-                        child.borrow().get_name(),
+                        child.borrow().get_name().clone(),
                     ))
                 }
             }
@@ -44,9 +43,9 @@ impl Matcher for ListMatcher {
         Ok(Token {
             range: (pos..children.iter().last().unwrap().range.end),
             children,
-            matcher_name: self.name.clone(),
+            matcher_name: self.get_name().clone(),
             source,
-            matcher_id: *self.id.borrow(),
+            matcher_id: self.id(),
         })
     }
 
@@ -65,14 +64,6 @@ impl Matcher for ListMatcher {
         }
     }
 
-    fn get_name(&self) -> MatcherName {
-        self.name.clone()
-    }
-
-    fn set_name(&self, new_name: String) {
-        self.name.replace(Some(new_name));
-    }
-
     fn children(&self) -> Option<&super::MatcherChildren> {
         Some(&self.children)
     }
@@ -81,7 +72,7 @@ impl Matcher for ListMatcher {
         false
     }
 
-    fn id(&self) -> &RefCell<usize> {
-        &self.id
+    fn meta(&self) -> &MatcherMeta {
+        &self.meta
     }
 }

@@ -66,7 +66,7 @@ impl Lexer {
     }
 
     fn get_cull_strat(&self, token: &Token) -> CullStrategy {
-        if token.matcher_name.borrow().is_none() {
+        if token.matcher_name.is_none() {
             return self.unnamed_rule;
         }
         if token.range.is_empty() && !self.retain_empty {

@@ -36,7 +36,7 @@ impl FluxError {
         FluxError {
             description: ErrorMessage::Constant(description),
             location,
-            matcher_name: Rc::new(RefCell::new(None)),
+            matcher_name: Rc::new(None),
             backtrace: Backtrace::capture(),
         }
     }
@@ -58,7 +58,7 @@ impl FluxError {
         FluxError {
             description: ErrorMessage::Dynamic(description),
             location,
-            matcher_name: Rc::new(RefCell::new(None)),
+            matcher_name: Rc::new(None),
             backtrace: Backtrace::capture(),
         }
     }
@@ -83,7 +83,7 @@ impl Display for FluxError {
             f,
             "FluxError at {} with {} description \"{}\"",
             self.location,
-            match &self.matcher_name.as_ref().borrow().deref() {
+            match *self.matcher_name {
                 Some(m) => format!("matcher named `{}`", m),
                 None => "no matcher".into(),
             },

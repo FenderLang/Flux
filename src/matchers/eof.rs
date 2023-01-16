@@ -1,37 +1,34 @@
-use super::{Matcher, MatcherName};
+use super::{Matcher, MatcherMeta, MatcherName};
 use crate::{error::FluxError, error::Result, tokens::Token};
 use std::{cell::RefCell, rc::Rc};
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct EofMatcher {
-    name: MatcherName,
-    id: RefCell<usize>,
+    meta: MatcherMeta,
 }
 
 impl EofMatcher {
-    pub fn new() -> EofMatcher {
-        EofMatcher {
-            name: Rc::new(RefCell::new(None)),
-            id: RefCell::new(0),
-        }
+    pub fn new(meta: MatcherMeta) -> EofMatcher {
+        EofMatcher { meta }
     }
 }
 
 impl Matcher for EofMatcher {
+    with_meta!();
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
         if pos == source.len() {
             Ok(Token {
-                matcher_name: self.name.clone(),
+                matcher_name: self.get_name().clone(),
                 children: Vec::new(),
                 source,
                 range: (pos..pos),
-                matcher_id: *self.id.borrow(),
+                matcher_id: self.id(),
             })
         } else {
             Err(FluxError::new_matcher(
                 "expected end of file",
                 pos,
-                self.name.clone(),
+                self.get_name().clone(),
             ))
         }
     }
@@ -40,15 +37,7 @@ impl Matcher for EofMatcher {
         0
     }
 
-    fn get_name(&self) -> MatcherName {
-        self.name.clone()
-    }
-
-    fn set_name(&self, name: String) {
-        self.name.replace(Some(name));
-    }
-
-    fn id(&self) -> &RefCell<usize> {
-        &self.id
+    fn meta(&self) -> &MatcherMeta {
+        &self.meta
     }
 }

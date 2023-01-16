@@ -20,12 +20,7 @@ impl Token {
     }
 
     pub fn get_name(&self) -> Option<String> {
-        self.matcher_name
-            .deref()
-            .borrow()
-            .deref()
-            .as_ref()
-            .map(String::from)
+        *self.matcher_name
     }
 }
 
@@ -34,7 +29,7 @@ impl Debug for Token {
         let mut debug = f.debug_struct("Token");
         debug.field(
             "name",
-            &self.matcher_name.borrow().clone().unwrap_or_default(),
+            &*self.matcher_name,
         );
         debug.field("match", &self.get_match());
         debug.field("range", &self.range);
