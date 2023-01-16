@@ -18,7 +18,7 @@ impl InvertedMatcher {
 }
 
 impl Matcher for InvertedMatcher {
-    with_meta!();
+    impl_meta!();
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
         match self.child[0].borrow().apply(source.clone(), pos) {
             Ok(_) => Err(FluxError::new_matcher("unexpected", pos, self.get_name().clone())),
@@ -38,9 +38,5 @@ impl Matcher for InvertedMatcher {
 
     fn children(&self) -> Option<&super::MatcherChildren> {
         Some(&self.child)
-    }
-
-    fn meta(&self) -> &MatcherMeta {
-        &self.meta
     }
 }

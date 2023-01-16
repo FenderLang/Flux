@@ -21,7 +21,7 @@ impl ChoiceMatcher {
 }
 
 impl Matcher for ChoiceMatcher {
-    with_meta!();
+    impl_meta!();
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
         for child in &self.children {
             if let Ok(token) = child.borrow().apply(source.clone(), pos) {
@@ -59,9 +59,5 @@ impl Matcher for ChoiceMatcher {
 
     fn children(&self) -> Option<&Vec<RefCell<MatcherRef>>> {
         Some(&self.children)
-    }
-
-    fn meta(&self) -> &MatcherMeta {
-        &self.meta
     }
 }

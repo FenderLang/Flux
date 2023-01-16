@@ -14,7 +14,7 @@ impl EofMatcher {
 }
 
 impl Matcher for EofMatcher {
-    with_meta!();
+    impl_meta!();
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
         if pos == source.len() {
             Ok(Token {
@@ -35,9 +35,5 @@ impl Matcher for EofMatcher {
 
     fn min_length(&self) -> usize {
         0
-    }
-
-    fn meta(&self) -> &MatcherMeta {
-        &self.meta
     }
 }

@@ -28,7 +28,7 @@ impl StringMatcher {
 }
 
 impl Matcher for StringMatcher {
-    with_meta!();
+    impl_meta!();
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
         let mut zip = self
             .to_match
@@ -51,9 +51,5 @@ impl Matcher for StringMatcher {
 
     fn min_length(&self) -> usize {
         self.to_match.len()
-    }
-
-    fn meta(&self) -> &MatcherMeta {
-        &self.meta
     }
 }

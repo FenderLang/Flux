@@ -4,9 +4,9 @@ use std::cell::RefCell;
 use std::fmt::{Debug, Display};
 use std::rc::Rc;
 
-pub type MatcherRef = Rc<dyn Matcher>;
-pub type MatcherChildren = Vec<RefCell<MatcherRef>>;
-pub type MatcherName = Rc<Option<String>>;
+pub(crate) type MatcherRef = Rc<dyn Matcher>;
+pub(crate) type MatcherChildren = Vec<RefCell<MatcherRef>>;
+pub(crate) type MatcherName = Rc<Option<String>>;
 
 #[derive(Clone, Debug)]
 pub struct MatcherMeta {
@@ -14,14 +14,27 @@ pub struct MatcherMeta {
     pub id: usize,
 }
 
+pub(crate) trait CloneIntoMatcher {
+    fn clone_into(&self) -> Box<dyn Matcher>;
+}
+
+impl<T: Matcher + Clone + 'static> CloneIntoMatcher for T {
+    fn clone_into(&self) -> Box<dyn Matcher> {
+        Box::new(self.clone())
+    }
+}
+
 #[macro_export]
-macro_rules! with_meta {
+macro_rules! impl_meta {
     () => {
         fn with_meta(&self, meta: MatcherMeta) -> crate::matchers::MatcherRef {
             Rc::new(Self {
                 meta,
                 ..self.clone()
             })
+        }
+        fn meta(&self) -> &MatcherMeta {
+            &self.meta
         }
     }
 }
@@ -38,11 +51,15 @@ impl Default for MatcherMeta {
     }
 }
 
-pub trait Matcher: Debug {
+pub(crate) trait Matcher: Debug + CloneIntoMatcher {
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token>;
     fn min_length(&self) -> usize;
     fn meta(&self) -> &MatcherMeta;
-    fn with_meta(&self, meta: MatcherMeta) -> MatcherRef;
+    fn with_meta(&self, meta: MatcherMeta) -> MatcherRef {
+        let clone = self.clone_into();
+
+        todo!()
+    }
 
     fn children(&self) -> Option<&MatcherChildren> {
         None

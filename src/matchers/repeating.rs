@@ -22,7 +22,7 @@ impl RepeatingMatcher {
 }
 
 impl Matcher for RepeatingMatcher {
-    with_meta!();
+    impl_meta!();
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
         let mut children: Vec<Token> = Vec::new();
 
@@ -57,9 +57,5 @@ impl Matcher for RepeatingMatcher {
 
     fn children(&self) -> Option<&MatcherChildren> {
         Some(&self.child)
-    }
-
-    fn meta(&self) -> &MatcherMeta {
-        &self.meta
     }
 }

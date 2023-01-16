@@ -20,7 +20,7 @@ impl ListMatcher {
 }
 
 impl Matcher for ListMatcher {
-    with_meta!();
+    impl_meta!();
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
         let mut children: Vec<Token> = Vec::new();
         let mut cursor = pos;
@@ -70,9 +70,5 @@ impl Matcher for ListMatcher {
 
     fn is_placeholder(&self) -> bool {
         false
-    }
-
-    fn meta(&self) -> &MatcherMeta {
-        &self.meta
     }
 }

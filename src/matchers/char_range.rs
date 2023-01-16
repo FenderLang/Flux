@@ -26,7 +26,7 @@ impl CharRangeMatcher {
 }
 
 impl Matcher for CharRangeMatcher {
-    with_meta!();
+    impl_meta!();
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
         match source.get(pos) {
             Some(c) if self.check_char(*c) => Ok(Token {
@@ -42,9 +42,5 @@ impl Matcher for CharRangeMatcher {
 
     fn min_length(&self) -> usize {
         1
-    }
-
-    fn meta(&self) -> &MatcherMeta {
-        &self.meta
     }
 }
