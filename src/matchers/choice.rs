@@ -3,7 +3,7 @@ use crate::error::{FluxError, Result};
 use crate::tokens::Token;
 use std::{cell::RefCell, rc::Rc};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ChoiceMatcher {
     meta: MatcherMeta,
     min_length: RefCell<Option<usize>>,

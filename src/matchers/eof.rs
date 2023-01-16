@@ -2,7 +2,7 @@ use super::{Matcher, MatcherMeta, MatcherName};
 use crate::{error::FluxError, error::Result, tokens::Token};
 use std::{cell::RefCell, rc::Rc};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EofMatcher {
     meta: MatcherMeta,
 }

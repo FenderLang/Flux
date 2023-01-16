@@ -28,6 +28,7 @@ impl StringMatcher {
 }
 
 impl Matcher for StringMatcher {
+    with_meta!();
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
         let mut zip = self
             .to_match
@@ -54,12 +55,5 @@ impl Matcher for StringMatcher {
 
     fn meta(&self) -> &MatcherMeta {
         &self.meta
-    }
-
-    fn with_meta(&self, meta: MatcherMeta) -> super::MatcherRef {
-        Rc::new(Self {
-            meta,
-            ..self.clone()
-        })
     }
 }

@@ -83,7 +83,7 @@ impl Display for FluxError {
             f,
             "FluxError at {} with {} description \"{}\"",
             self.location,
-            match *self.matcher_name {
+            match &*self.matcher_name {
                 Some(m) => format!("matcher named `{}`", m),
                 None => "no matcher".into(),
             },

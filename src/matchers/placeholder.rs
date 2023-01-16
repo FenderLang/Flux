@@ -2,7 +2,7 @@ use super::{Matcher, MatcherMeta};
 use crate::{error::Result, tokens::Token};
 use std::rc::Rc;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PlaceholderMatcher {
     meta: MatcherMeta,
 }

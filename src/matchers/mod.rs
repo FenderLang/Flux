@@ -9,7 +9,7 @@ pub type MatcherChildren = Vec<RefCell<MatcherRef>>;
 pub type MatcherName = Rc<Option<String>>;
 
 #[derive(Clone, Debug)]
-pub(crate) struct MatcherMeta {
+pub struct MatcherMeta {
     pub name: MatcherName,
     pub id: usize,
 }
@@ -20,7 +20,7 @@ macro_rules! with_meta {
         fn with_meta(&self, meta: MatcherMeta) -> crate::matchers::MatcherRef {
             Rc::new(Self {
                 meta,
-                ..*self
+                ..self.clone()
             })
         }
     }
@@ -42,6 +42,7 @@ pub trait Matcher: Debug {
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token>;
     fn min_length(&self) -> usize;
     fn meta(&self) -> &MatcherMeta;
+    fn with_meta(&self, meta: MatcherMeta) -> MatcherRef;
 
     fn children(&self) -> Option<&MatcherChildren> {
         None
@@ -57,12 +58,6 @@ pub trait Matcher: Debug {
 
     fn id(&self) -> usize {
         self.meta().id
-    }
-
-    fn with_meta(&self, meta: MatcherMeta) -> MatcherRef;
-
-    fn reset_meta(&self) -> MatcherRef {
-        self.with_meta(Default::default())
     }
 }
 

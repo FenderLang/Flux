@@ -19,8 +19,8 @@ impl Token {
         self.source[self.range.clone()].iter().collect()
     }
 
-    pub fn get_name(&self) -> Option<String> {
-        *self.matcher_name
+    pub fn get_name(&self) -> &Option<String> {
+        &*self.matcher_name
     }
 }
 
