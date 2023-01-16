@@ -20,15 +20,15 @@ impl InvertedMatcher {
 }
 
 impl Matcher for InvertedMatcher {
-    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>> {
-        match self.child[0].borrow().apply(source, pos) {
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
+        match self.child[0].borrow().apply(source.clone(), pos) {
             Ok(_) => Err(FluxError::new_matcher("unexpected", pos, self.name.clone())),
             Err(_) => Ok(Token {
                 children: vec![],
                 matcher_name: self.name.clone(),
                 source,
                 range: pos..pos,
-                matcher_id: *self.id.borrow()
+                matcher_id: *self.id.borrow(),
             }),
         }
     }

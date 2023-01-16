@@ -30,7 +30,7 @@ impl StringMatcher {
 }
 
 impl Matcher for StringMatcher {
-    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>> {
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
         let mut zip = self
             .to_match
             .iter()
@@ -43,7 +43,7 @@ impl Matcher for StringMatcher {
                 children: vec![],
                 source,
                 range: pos..pos + self.to_match.len(),
-                matcher_id: *self.id.borrow()
+                matcher_id: *self.id.borrow(),
             })
         } else {
             Err(FluxError::new_matcher("expected", pos, self.name.clone()))

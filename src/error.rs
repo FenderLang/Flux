@@ -1,9 +1,9 @@
 use std::{
+    backtrace::Backtrace,
     cell::RefCell,
     fmt::{Debug, Display},
     ops::Deref,
     rc::Rc,
-    backtrace::Backtrace,
 };
 
 use crate::matchers::MatcherName;

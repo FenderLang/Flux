@@ -18,7 +18,7 @@ impl EofMatcher {
 }
 
 impl Matcher for EofMatcher {
-    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>> {
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
         if pos == source.len() {
             Ok(Token {
                 matcher_name: self.name.clone(),
@@ -28,7 +28,11 @@ impl Matcher for EofMatcher {
                 matcher_id: *self.id.borrow(),
             })
         } else {
-            Err(FluxError::new_matcher("expected end of file", pos, self.name.clone()))
+            Err(FluxError::new_matcher(
+                "expected end of file",
+                pos,
+                self.name.clone(),
+            ))
         }
     }
 

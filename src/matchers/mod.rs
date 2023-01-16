@@ -9,7 +9,7 @@ pub type MatcherChildren = Vec<RefCell<MatcherRef>>;
 pub type MatcherName = Rc<RefCell<Option<String>>>;
 
 pub trait Matcher: Debug {
-    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>>;
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token>;
     fn min_length(&self) -> usize;
     fn get_name(&self) -> MatcherName;
     fn set_name(&self, new_name: String);
@@ -31,9 +31,9 @@ impl Display for dyn Matcher {
 pub mod char_range;
 pub mod char_set;
 pub mod choice;
+pub mod eof;
 pub mod inverted;
 pub mod list;
 pub mod placeholder;
 pub mod repeating;
 pub mod string;
-pub mod eof;

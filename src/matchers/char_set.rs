@@ -26,14 +26,14 @@ impl CharSetMatcher {
 }
 
 impl Matcher for CharSetMatcher {
-    fn apply<'a>(&self, source: &'a [char], pos: usize) -> Result<Token<'a>> {
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
         match source.get(pos) {
             Some(c) if self.check_char(c) => Ok(Token {
                 children: vec![],
                 matcher_name: self.name.clone(),
                 range: pos..pos + 1,
                 source,
-                matcher_id: *self.id.borrow()
+                matcher_id: *self.id.borrow(),
             }),
             _ => Err(FluxError::new_matcher("expected", pos, self.name.clone())),
         }
