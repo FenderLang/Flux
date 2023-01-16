@@ -16,7 +16,7 @@ impl Token {
     }
 
     pub fn get_name(&self) -> &Option<String> {
-        &*self.matcher_name
+        &self.matcher_name
     }
 }
 

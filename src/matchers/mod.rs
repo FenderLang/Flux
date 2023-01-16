@@ -8,7 +8,7 @@ pub(crate) type MatcherRef = Rc<dyn Matcher>;
 pub(crate) type MatcherChildren = Vec<RefCell<MatcherRef>>;
 pub(crate) type MatcherName = Rc<Option<String>>;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct MatcherMeta {
     pub name: MatcherName,
     pub id: usize,
@@ -17,7 +17,7 @@ pub struct MatcherMeta {
 #[macro_export]
 macro_rules! impl_meta {
     () => {
-        fn with_meta(&self, meta: MatcherMeta) -> crate::matchers::MatcherRef {
+        fn with_meta(&self, meta: MatcherMeta) -> $crate::matchers::MatcherRef {
             Rc::new(Self {
                 meta,
                 ..self.clone()
@@ -34,15 +34,6 @@ impl MatcherMeta {
         MatcherMeta {
             name: Rc::new(name),
             id,
-        }
-    }
-}
-
-impl Default for MatcherMeta {
-    fn default() -> Self {
-        MatcherMeta {
-            name: Rc::new(None),
-            id: 0,
         }
     }
 }
