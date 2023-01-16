@@ -1,6 +1,6 @@
-use super::{Matcher, MatcherName, MatcherMeta};
+use super::{Matcher, MatcherMeta};
 use crate::{error::FluxError, error::Result, tokens::Token};
-use std::{cell::RefCell, collections::HashSet, rc::Rc};
+use std::{collections::HashSet, rc::Rc};
 
 #[derive(Clone, Debug)]
 pub struct CharSetMatcher {

@@ -271,7 +271,7 @@ impl BNFParserState {
     fn parse_matcher_with_modifiers(&mut self) -> Result<MatcherRef> {
         let inverted = self.check_char('!');
         let mut matcher = self.parse_matcher()?;
-        let pos = self.pos;
+        let _pos = self.pos;
         match self.peek() {
             Some('+') => {
                 self.advance();

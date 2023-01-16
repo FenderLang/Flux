@@ -1,6 +1,6 @@
 use flux_bnf::{
     bnf,
-    lexer::{self, CullStrategy},
+    lexer::{CullStrategy},
 };
 
 fn main() {

@@ -1,7 +1,7 @@
 use crate::matchers::MatcherName;
 use std::{
     fmt::Debug,
-    ops::{Deref, Range},
+    ops::{Range},
     rc::Rc,
 };
 

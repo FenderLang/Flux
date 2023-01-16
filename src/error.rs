@@ -1,8 +1,6 @@
 use std::{
     backtrace::Backtrace,
-    cell::RefCell,
     fmt::{Debug, Display},
-    ops::Deref,
     rc::Rc,
 };
 

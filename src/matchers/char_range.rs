@@ -1,6 +1,6 @@
-use super::{Matcher, MatcherName, MatcherMeta};
+use super::{Matcher, MatcherMeta};
 use crate::{error::FluxError, error::Result, tokens::Token};
-use std::{cell::RefCell, rc::Rc, vec};
+use std::{rc::Rc, vec};
 
 #[derive(Clone, Debug)]
 pub struct CharRangeMatcher {
