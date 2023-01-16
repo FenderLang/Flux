@@ -14,16 +14,6 @@ pub struct MatcherMeta {
     pub id: usize,
 }
 
-pub(crate) trait CloneIntoMatcher {
-    fn clone_into(&self) -> Box<dyn Matcher>;
-}
-
-impl<T: Matcher + Clone + 'static> CloneIntoMatcher for T {
-    fn clone_into(&self) -> Box<dyn Matcher> {
-        Box::new(self.clone())
-    }
-}
-
 #[macro_export]
 macro_rules! impl_meta {
     () => {
@@ -51,15 +41,11 @@ impl Default for MatcherMeta {
     }
 }
 
-pub(crate) trait Matcher: Debug + CloneIntoMatcher {
+pub trait Matcher: Debug {
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token>;
     fn min_length(&self) -> usize;
     fn meta(&self) -> &MatcherMeta;
-    fn with_meta(&self, meta: MatcherMeta) -> MatcherRef {
-        let clone = self.clone_into();
-
-        todo!()
-    }
+    fn with_meta(&self, meta: MatcherMeta) -> MatcherRef;
 
     fn children(&self) -> Option<&MatcherChildren> {
         None
