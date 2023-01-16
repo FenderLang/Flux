@@ -1,0 +1,5 @@
+fn f(x) = x * 2
+
+fn f(x: int) {
+   x * 2
+}
