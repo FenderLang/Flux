@@ -29,12 +29,12 @@ impl Matcher for CharSetMatcher {
         match source.get(pos) {
             Some(c) if self.check_char(c) => Ok(Token {
                 children: vec![],
-                matcher_name: self.get_name().clone(),
+                matcher_name: self.name().clone(),
                 range: pos..pos + 1,
                 source,
                 matcher_id: self.id(),
             }),
-            _ => Err(FluxError::new_matcher("expected", pos, self.get_name().clone())),
+            _ => Err(FluxError::new_matcher("expected", pos, self.name().clone())),
         }
     }
 

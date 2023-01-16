@@ -34,7 +34,7 @@ impl Matcher for ListMatcher {
                     return Err(FluxError::new_matcher(
                         "expected",
                         pos,
-                        child.borrow().get_name().clone(),
+                        child.borrow().name().clone(),
                     ))
                 }
             }
@@ -43,7 +43,7 @@ impl Matcher for ListMatcher {
         Ok(Token {
             range: (pos..children.iter().last().unwrap().range.end),
             children,
-            matcher_name: self.get_name().clone(),
+            matcher_name: self.name().clone(),
             source,
             matcher_id: self.id(),
         })

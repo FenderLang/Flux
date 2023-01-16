@@ -38,14 +38,14 @@ impl Matcher for StringMatcher {
 
         if zip.len() == self.to_match.len() && zip.all(|(a, b)| self.char_matches(a, b)) {
             Ok(Token {
-                matcher_name: self.get_name().clone(),
+                matcher_name: self.name().clone(),
                 children: vec![],
                 source,
                 range: pos..pos + self.to_match.len(),
                 matcher_id: self.id(),
             })
         } else {
-            Err(FluxError::new_matcher("expected", pos, self.get_name().clone()))
+            Err(FluxError::new_matcher("expected", pos, self.name().clone()))
         }
     }
 

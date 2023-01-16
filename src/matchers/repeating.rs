@@ -39,12 +39,12 @@ impl Matcher for RepeatingMatcher {
         }
 
         if children.len() < self.min {
-            Err(FluxError::new_matcher("expected", pos, self.get_name().clone()))
+            Err(FluxError::new_matcher("expected", pos, self.name().clone()))
         } else {
             Ok(Token {
                 range: (pos..cursor),
                 children,
-                matcher_name: self.get_name().clone(),
+                matcher_name: self.name().clone(),
                 source,
                 matcher_id: self.id(),
             })

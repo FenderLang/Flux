@@ -55,7 +55,7 @@ pub trait Matcher: Debug {
         false
     }
 
-    fn get_name(&self) -> &Rc<Option<String>> {
+    fn name(&self) -> &Rc<Option<String>> {
         &self.meta().name
     }
 

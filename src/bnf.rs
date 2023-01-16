@@ -38,7 +38,7 @@ impl BNFParserState {
         }
         let mut rule_map: HashMap<String, MatcherRef> = HashMap::new();
         for rule in &rules {
-            if let Some(name) = &**rule.get_name() {
+            if let Some(name) = &**rule.name() {
                 if rule_map.contains_key(name) {
                     return Err(FluxError::new_dyn(
                         format!("Duplicate rule name {}", name),
@@ -56,7 +56,7 @@ impl BNFParserState {
             .ok_or_else(|| FluxError::new("No root matcher specified", 0))?;
         let mut id_map = HashMap::new();
         for rule in &rules {
-            id_map.insert((**rule.get_name()).clone().unwrap(), rule.id());
+            id_map.insert((**rule.name()).clone().unwrap(), rule.id());
         }
         Ok(Lexer::new(root.clone(), id_map))
     }
@@ -71,7 +71,7 @@ impl BNFParserState {
             Self::replace_placeholders(&c.borrow(), map)?;
             if c.borrow().is_placeholder() {
                 let borrow = c.borrow();
-                let name = &**borrow.get_name();
+                let name = &**borrow.name();
                 let matcher = name.as_ref().and_then(|n| map.get(n)).ok_or_else(|| {
                     FluxError::new_dyn(format!("Missing matcher for {}", name.as_ref().unwrap()), 0)
                 })?;

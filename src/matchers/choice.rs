@@ -26,7 +26,7 @@ impl Matcher for ChoiceMatcher {
         for child in &self.children {
             if let Ok(token) = child.borrow().apply(source.clone(), pos) {
                 return Ok(Token {
-                    matcher_name: self.get_name().clone(),
+                    matcher_name: self.name().clone(),
                     range: token.range.clone(),
                     children: vec![token],
                     source,
@@ -38,7 +38,7 @@ impl Matcher for ChoiceMatcher {
         Err(FluxError::new_matcher(
             "in ChoiceMatcher all children failed",
             pos,
-            self.get_name().clone(),
+            self.name().clone(),
         ))
     }
 

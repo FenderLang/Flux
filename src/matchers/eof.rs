@@ -18,7 +18,7 @@ impl Matcher for EofMatcher {
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
         if pos == source.len() {
             Ok(Token {
-                matcher_name: self.get_name().clone(),
+                matcher_name: self.name().clone(),
                 children: Vec::new(),
                 source,
                 range: (pos..pos),
@@ -28,7 +28,7 @@ impl Matcher for EofMatcher {
             Err(FluxError::new_matcher(
                 "expected end of file",
                 pos,
-                self.get_name().clone(),
+                self.name().clone(),
             ))
         }
     }
