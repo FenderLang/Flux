@@ -8,6 +8,6 @@ fn main() {
     lexer.add_rule_for_names(vec!["sep", "lineSep"].iter().map(ToString::to_string).collect(), CullStrategy::DeleteAll);
 
     let res = lexer.tokenize(&test_input);
-
+    
     println!("{:#?}", res);
 }

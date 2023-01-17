@@ -6,7 +6,7 @@ lineSep ::= lineBreak | sep
 comment ::= "#" [^\n]*
 
 root ::= break? (statement break)* statement? break?
-statement ::= (import | functionDeclaration | declaration | assignment | returnStatement | expr) sep? comment?
+statement ::= (import | functionDeclaration | structDeclaration | declaration | assignment | returnStatement | expr) sep? comment?
 return ::= "pass" | "return" ("@" name)?
 returnStatement ::= return (lineSep expr)?
 declaration ::= "$" sep? name sep? "=" lineSep? expr
@@ -29,14 +29,12 @@ alpha ::= [a-z] | [A-Z]
 alphanum ::= [a-z] | [A-Z] | [0-9] | "_"
 name ::= ("_" | alpha) alphanum*
 
-literal ::= float | int | boolean | string | list | map | struct | closure
+literal ::= float | int | boolean | string | list | map | closure
 int ::= "-"? [0-9]+
 list ::= "[" lineSep? (expr (lineSep? "," lineSep? expr)*)? lineSep? "]"
 mapEntry ::= expr lineSep? ":" lineSep? expr
 emptyMap ::= "[" lineSep? ":" lineSep? "]"
 map ::= emptyMap | "[" lineSep? mapEntry (lineSep? "," lineSep? mapEntry)* lineSep? "]"
-structField ::= name (sep? typeAnnotation)?
-struct ::= "<" lineSep? (structField (lineSep? "," lineSep? structField)*)? ">"
 float ::= "-"? ([0-9]+)? "." [0-9]+
 string ::= "\"" (escapeSequence | [^"])* "\""
 escapeSequence ::= "\\" [^]
@@ -44,6 +42,8 @@ boolean ::= "true" | "false"
 
 invoke ::= invokeArgs | codeBody
 invokeArgs ::= "(" lineSep? (expr lineSep? ("," lineSep? expr)*)? sep? ")"
+
+structDeclaration ::= "struct" sep? name lineSep? "{" lineSep? (arg (lineSep? "," lineSep? arg)*)? lineSep? "}"
 
 arg ::= name (sep? typeAnnotation)?
 typeAnnotation ::= ":" lineSep? name
