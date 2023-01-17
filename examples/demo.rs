@@ -9,5 +9,10 @@ fn main() {
 
     let res = lexer.tokenize(&test_input);
 
+    let _script = r#"
+        struct Empty {}
+        struct Person {name: str, age: int}
+    "#;
+
     println!("{:#?}", res);
 }
