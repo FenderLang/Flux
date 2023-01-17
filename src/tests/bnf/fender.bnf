@@ -43,7 +43,7 @@ boolean ::= "true" | "false"
 invoke ::= invokeArgs | codeBody
 invokeArgs ::= "(" lineSep? (expr lineSep? ("," lineSep? expr)*)? sep? ")"
 
-structDeclaration ::= "struct" sep? name lineSep? "{" lineSep? args (lineSep? "," lineSep? args)* lineSep? "}"
+structDeclaration ::= "struct" sep? name lineSep? "{" lineSep? (arg (lineSep? "," lineSep? arg)*)? lineSep? "}"
 
 arg ::= name (sep? typeAnnotation)?
 typeAnnotation ::= ":" lineSep? name
