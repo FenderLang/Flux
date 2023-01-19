@@ -4,21 +4,60 @@ use std::cell::RefCell;
 use std::fmt::{Debug, Display};
 use std::rc::Rc;
 
-pub type MatcherRef = Rc<dyn Matcher>;
-pub type MatcherChildren = Vec<RefCell<MatcherRef>>;
-pub type MatcherName = Rc<RefCell<Option<String>>>;
+pub(crate) type MatcherRef = Rc<dyn Matcher>;
+pub(crate) type MatcherChildren = Vec<RefCell<MatcherRef>>;
+pub(crate) type MatcherName = Rc<Option<String>>;
+
+#[derive(Clone, Debug, Default)]
+pub struct MatcherMeta {
+    pub name: MatcherName,
+    pub id: usize,
+}
+
+#[macro_export]
+macro_rules! impl_meta {
+    () => {
+        fn with_meta(&self, meta: MatcherMeta) -> $crate::matchers::MatcherRef {
+            Rc::new(Self {
+                meta,
+                ..self.clone()
+            })
+        }
+        fn meta(&self) -> &MatcherMeta {
+            &self.meta
+        }
+    };
+}
+
+impl MatcherMeta {
+    pub fn new(name: Option<String>, id: usize) -> MatcherMeta {
+        MatcherMeta {
+            name: Rc::new(name),
+            id,
+        }
+    }
+}
 
 pub trait Matcher: Debug {
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token>;
     fn min_length(&self) -> usize;
-    fn get_name(&self) -> MatcherName;
-    fn set_name(&self, new_name: String);
-    fn id(&self) -> &RefCell<usize>;
+    fn meta(&self) -> &MatcherMeta;
+    fn with_meta(&self, meta: MatcherMeta) -> MatcherRef;
+
     fn children(&self) -> Option<&MatcherChildren> {
         None
     }
+
     fn is_placeholder(&self) -> bool {
         false
+    }
+
+    fn name(&self) -> &Rc<Option<String>> {
+        &self.meta().name
+    }
+
+    fn id(&self) -> usize {
+        self.meta().id
     }
 }
 

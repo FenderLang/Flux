@@ -1,22 +1,20 @@
-use super::{Matcher, MatcherName};
+use super::{Matcher, MatcherMeta};
 use crate::{error::FluxError, error::Result, tokens::Token};
-use std::{cell::RefCell, rc::Rc};
+use std::rc::Rc;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StringMatcher {
-    name: MatcherName,
+    meta: MatcherMeta,
     to_match: Vec<char>,
     case_sensitive: bool,
-    id: RefCell<usize>,
 }
 
 impl StringMatcher {
-    pub fn new(to_match: String, case_sensitive: bool) -> Self {
+    pub fn new(meta: MatcherMeta, to_match: String, case_sensitive: bool) -> Self {
         Self {
-            name: Rc::new(RefCell::new(None)),
+            meta,
             to_match: to_match.chars().collect(),
             case_sensitive,
-            id: RefCell::new(0),
         }
     }
 
@@ -30,6 +28,7 @@ impl StringMatcher {
 }
 
 impl Matcher for StringMatcher {
+    impl_meta!();
     fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
         let mut zip = self
             .to_match
@@ -39,30 +38,18 @@ impl Matcher for StringMatcher {
 
         if zip.len() == self.to_match.len() && zip.all(|(a, b)| self.char_matches(a, b)) {
             Ok(Token {
-                matcher_name: self.name.clone(),
+                matcher_name: self.name().clone(),
                 children: vec![],
                 source,
                 range: pos..pos + self.to_match.len(),
-                matcher_id: *self.id.borrow(),
+                matcher_id: self.id(),
             })
         } else {
-            Err(FluxError::new_matcher("expected", pos, self.name.clone()))
+            Err(FluxError::new_matcher("expected", pos, self.name().clone()))
         }
     }
 
     fn min_length(&self) -> usize {
         self.to_match.len()
-    }
-
-    fn get_name(&self) -> MatcherName {
-        self.name.clone()
-    }
-
-    fn set_name(&self, new_name: String) {
-        self.name.replace(Some(new_name));
-    }
-
-    fn id(&self) -> &RefCell<usize> {
-        &self.id
     }
 }

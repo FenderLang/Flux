@@ -12,6 +12,7 @@ use crate::matchers::list::ListMatcher;
 use crate::matchers::placeholder::PlaceholderMatcher;
 use crate::matchers::repeating::RepeatingMatcher;
 use crate::matchers::string::StringMatcher;
+use crate::matchers::MatcherMeta;
 use crate::matchers::{char_set::CharSetMatcher, MatcherRef};
 
 pub fn parse(input: &str) -> Result<Lexer> {
@@ -32,12 +33,12 @@ impl BNFParserState {
         let mut rules = Vec::new();
         self.consume_line_breaks();
         while self.pos < self.source.len() {
-            rules.extend(self.parse_rule()?);
+            rules.extend(self.parse_rule(rules.len() + 1)?);
             self.consume_line_breaks();
         }
         let mut rule_map: HashMap<String, MatcherRef> = HashMap::new();
         for rule in &rules {
-            if let Some(name) = rule.get_name().borrow().as_ref() {
+            if let Some(name) = &**rule.name() {
                 if rule_map.contains_key(name) {
                     return Err(FluxError::new_dyn(
                         format!("Duplicate rule name {}", name),
@@ -47,8 +48,7 @@ impl BNFParserState {
                 rule_map.insert(name.clone(), rule.clone());
             }
         }
-        for (rule, id) in rules.iter().zip(1..) {
-            rule.id().replace(id);
+        for rule in &rules {
             Self::replace_placeholders(rule, &rule_map)?;
         }
         let root = rule_map
@@ -56,10 +56,7 @@ impl BNFParserState {
             .ok_or_else(|| FluxError::new("No root matcher specified", 0))?;
         let mut id_map = HashMap::new();
         for rule in &rules {
-            id_map.insert(
-                rule.get_name().borrow().clone().unwrap(),
-                *rule.id().borrow(),
-            );
+            id_map.insert((**rule.name()).clone().unwrap(), rule.id());
         }
         Ok(Lexer::new(root.clone(), id_map))
     }
@@ -73,37 +70,40 @@ impl BNFParserState {
         for c in children {
             Self::replace_placeholders(&c.borrow(), map)?;
             if c.borrow().is_placeholder() {
-                let name = c.borrow().get_name();
-                let name = name.borrow();
-                let name = name.as_ref().unwrap();
-                let matcher = map.get(name).ok_or_else(|| {
-                    FluxError::new_dyn(format!("Missing matcher for {}", name), 0)
+                let borrow = c.borrow();
+                let name = &**borrow.name();
+                let matcher = name.as_ref().and_then(|n| map.get(n)).ok_or_else(|| {
+                    FluxError::new_dyn(format!("Missing matcher for {}", name.as_ref().unwrap()), 0)
                 })?;
+                drop(borrow);
                 c.replace(matcher.clone());
             }
         }
         Ok(())
     }
 
-    fn parse_rule(&mut self) -> Result<Option<MatcherRef>> {
+    fn parse_rule(&mut self, id: usize) -> Result<Option<MatcherRef>> {
         if self.check_str("//") {
             self.consume_comment();
             return Ok(None);
         }
         let name = self.parse_word()?;
+        let meta = MatcherMeta::new(Some(name), id);
         self.call_assert("whitespace", Self::consume_whitespace)?;
         self.assert_str("::=")?;
         self.call_assert("whitespace", Self::consume_whitespace)?;
         let mut matcher = self.parse_list()?;
         if matcher.is_placeholder() {
-            matcher = Rc::new(ListMatcher::new(vec![RefCell::new(matcher)]));
+            matcher = Rc::new(ListMatcher::new(
+                Default::default(),
+                vec![RefCell::new(matcher)],
+            ));
         }
-        matcher.set_name(name);
         self.consume_whitespace();
         if self.check_str("//") {
             self.consume_comment();
         }
-        Ok(Some(matcher))
+        Ok(Some(matcher.with_meta(meta)))
     }
 
     fn peek(&self) -> Option<char> {
@@ -258,7 +258,7 @@ impl BNFParserState {
 
     fn parse_placeholder(&mut self) -> Result<MatcherRef> {
         let name = self.parse_word()?;
-        let matcher = PlaceholderMatcher::new(name);
+        let matcher = PlaceholderMatcher::new(MatcherMeta::new(Some(name), 0));
         Ok(Rc::new(matcher))
     }
 
@@ -274,27 +274,43 @@ impl BNFParserState {
     fn parse_matcher_with_modifiers(&mut self) -> Result<MatcherRef> {
         let inverted = self.check_char('!');
         let mut matcher = self.parse_matcher()?;
+        let _pos = self.pos;
         match self.peek() {
             Some('+') => {
                 self.advance();
-                matcher = Rc::new(RepeatingMatcher::new(1, usize::MAX, matcher));
+                matcher = Rc::new(RepeatingMatcher::new(
+                    Default::default(),
+                    1,
+                    usize::MAX,
+                    matcher,
+                ));
             }
             Some('*') => {
                 self.advance();
-                matcher = Rc::new(RepeatingMatcher::new(0, usize::MAX, matcher));
+                matcher = Rc::new(RepeatingMatcher::new(
+                    Default::default(),
+                    0,
+                    usize::MAX,
+                    matcher,
+                ));
             }
             Some('?') => {
                 self.advance();
-                matcher = Rc::new(RepeatingMatcher::new(0, 1, matcher));
+                matcher = Rc::new(RepeatingMatcher::new(Default::default(), 0, 1, matcher));
             }
             Some('{') => {
                 let bounds = self.parse_repeating_bounds()?;
-                matcher = Rc::new(RepeatingMatcher::new(bounds.0, bounds.1, matcher));
+                matcher = Rc::new(RepeatingMatcher::new(
+                    Default::default(),
+                    bounds.0,
+                    bounds.1,
+                    matcher,
+                ));
             }
             _ => (),
         }
         if inverted {
-            matcher = Rc::new(InvertedMatcher::new(matcher));
+            matcher = Rc::new(InvertedMatcher::new(Default::default(), matcher));
         }
         Ok(matcher)
     }
@@ -338,7 +354,7 @@ impl BNFParserState {
             }
             Some('<') => {
                 self.assert_str("<eof>")?;
-                Ok(Rc::new(EofMatcher::new()))
+                Ok(Rc::new(EofMatcher::new(Default::default())))
             }
             Some('"') => self.parse_string(),
             Some('i') if self.source.get(self.pos + 1) == Some(&'"') => self.parse_string(),
@@ -357,7 +373,7 @@ impl BNFParserState {
         self.assert_char('-')?;
         let high = self.parse_char_or_escape_seq()?;
         self.assert_char(']')?;
-        let matcher = CharRangeMatcher::new(low, high, inverted);
+        let matcher = CharRangeMatcher::new(Default::default(), low, high, inverted);
         Ok(Rc::new(matcher))
     }
 
@@ -366,7 +382,7 @@ impl BNFParserState {
         let inverted = self.check_char('^');
         let chars = self.parse_str_chars(']')?;
         self.assert_char(']')?;
-        let matcher = CharSetMatcher::new(chars.chars().collect(), inverted);
+        let matcher = CharSetMatcher::new(Default::default(), chars.chars().collect(), inverted);
         Ok(Rc::new(matcher))
     }
 
@@ -375,7 +391,7 @@ impl BNFParserState {
         self.assert_char('"')?;
         let chars = self.parse_str_chars('"')?;
         self.assert_char('"')?;
-        let matcher = StringMatcher::new(chars, case_sensitive);
+        let matcher = StringMatcher::new(Default::default(), chars, case_sensitive);
         Ok(Rc::new(matcher))
     }
 
@@ -384,7 +400,7 @@ impl BNFParserState {
             list.remove(0)
         } else {
             let children = list.into_iter().map(RefCell::new).collect();
-            let list_matcher = ListMatcher::new(children);
+            let list_matcher = ListMatcher::new(Default::default(), children);
             Rc::new(list_matcher)
         }
     }
@@ -413,7 +429,7 @@ impl BNFParserState {
             let list_matcher = self.maybe_list(matcher_list);
             choices.push(list_matcher);
             let choices = choices.into_iter().map(RefCell::new).collect();
-            Ok(Rc::new(ChoiceMatcher::new(choices)))
+            Ok(Rc::new(ChoiceMatcher::new(Default::default(), choices)))
         } else {
             Ok(self.maybe_list(matcher_list))
         }
