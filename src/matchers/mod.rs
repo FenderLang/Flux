@@ -39,7 +39,7 @@ impl MatcherMeta {
 }
 
 pub trait Matcher: Debug {
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token>;
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token>;
     fn min_length(&self) -> usize;
     fn meta(&self) -> &MatcherMeta;
     fn with_meta(&self, meta: MatcherMeta) -> MatcherRef;

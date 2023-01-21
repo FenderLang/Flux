@@ -22,9 +22,9 @@ impl ChoiceMatcher {
 
 impl Matcher for ChoiceMatcher {
     impl_meta!();
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
         for child in &self.children {
-            if let Ok(token) = child.borrow().apply(source.clone(), pos) {
+            if let Ok(token) = child.borrow().apply(source.clone(), pos, depth + 1) {
                 return Ok(Token {
                     matcher_name: self.name().clone(),
                     range: token.range.clone(),

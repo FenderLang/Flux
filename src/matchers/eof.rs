@@ -15,7 +15,7 @@ impl EofMatcher {
 
 impl Matcher for EofMatcher {
     impl_meta!();
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
         if pos == source.len() {
             Ok(Token {
                 matcher_name: self.name().clone(),
