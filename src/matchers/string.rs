@@ -45,7 +45,12 @@ impl Matcher for StringMatcher {
                 matcher_id: self.id(),
             })
         } else {
-            Err(FluxError::new_matcher("expected", pos, self.name().clone()))
+            Err(FluxError::new_matcher(
+                "expected",
+                pos,
+                depth,
+                self.name().clone(),
+            ))
         }
     }
 

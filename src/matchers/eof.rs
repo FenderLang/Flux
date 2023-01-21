@@ -28,6 +28,7 @@ impl Matcher for EofMatcher {
             Err(FluxError::new_matcher(
                 "expected end of file",
                 pos,
+                depth,
                 self.name().clone(),
             ))
         }

@@ -30,12 +30,14 @@ impl Matcher for ListMatcher {
                     cursor = child_token.range.end;
                     children.push(child_token);
                 }
-                Err(_) => {
+                Err(err) => {
                     return Err(FluxError::new_matcher(
                         "expected",
                         pos,
+                        depth,
                         child.borrow().name().clone(),
-                    ))
+                    )
+                    .max(err))
                 }
             }
         }

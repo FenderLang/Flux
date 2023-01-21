@@ -5,9 +5,15 @@ fn main() {
     let test_input = include_str!("test_fender.fndr");
 
     let mut lexer = bnf::parse(bnf_input).unwrap();
-    lexer.add_rule_for_names(vec!["sep", "lineSep"].iter().map(ToString::to_string).collect(), CullStrategy::DeleteAll);
+    lexer.add_rule_for_names(
+        vec!["sep", "lineSep"]
+            .iter()
+            .map(ToString::to_string)
+            .collect(),
+        CullStrategy::DeleteAll,
+    );
 
     let res = lexer.tokenize(&test_input);
-    
+
     println!("{:#?}", res);
 }

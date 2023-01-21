@@ -25,6 +25,7 @@ impl ErrorMessage {
 pub struct FluxError {
     description: ErrorMessage,
     location: usize,
+    depth: usize,
     matcher_name: MatcherName,
     backtrace: Backtrace,
 }
@@ -34,6 +35,7 @@ impl FluxError {
         FluxError {
             description: ErrorMessage::Constant(description),
             location,
+            depth: 0,
             matcher_name: Rc::new(None),
             backtrace: Backtrace::capture(),
         }
@@ -42,11 +44,13 @@ impl FluxError {
     pub fn new_matcher(
         description: &'static str,
         location: usize,
+        depth: usize,
         matcher_name: MatcherName,
     ) -> FluxError {
         FluxError {
             description: ErrorMessage::Constant(description),
             location,
+            depth,
             matcher_name,
             backtrace: Backtrace::capture(),
         }
@@ -56,8 +60,27 @@ impl FluxError {
         FluxError {
             description: ErrorMessage::Dynamic(description),
             location,
+            depth: 0,
             matcher_name: Rc::new(None),
             backtrace: Backtrace::capture(),
+        }
+    }
+
+    pub fn max(self, b: FluxError) -> FluxError {
+        match (&*self.matcher_name, &*b.matcher_name) {
+            (None, None) | (Some(_), Some(_)) => {
+                if self.depth > b.depth {
+                    self
+                } else if b.depth > self.depth {
+                    b
+                } else if self.location > b.location {
+                    self
+                } else {
+                    b
+                }
+            }
+            (None, Some(_)) => b,
+            (Some(_), None) => self,
         }
     }
 }

@@ -24,6 +24,7 @@ impl Matcher for InvertedMatcher {
             Ok(_) => Err(FluxError::new_matcher(
                 "unexpected",
                 pos,
+                depth,
                 self.name().clone(),
             )),
             Err(_) => Ok(Token {

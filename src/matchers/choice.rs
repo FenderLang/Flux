@@ -23,23 +23,32 @@ impl ChoiceMatcher {
 impl Matcher for ChoiceMatcher {
     impl_meta!();
     fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
+        let mut errors: Vec<FluxError> = vec![];
         for child in &self.children {
-            if let Ok(token) = child.borrow().apply(source.clone(), pos, depth + 1) {
-                return Ok(Token {
-                    matcher_name: self.name().clone(),
-                    range: token.range.clone(),
-                    children: vec![token],
-                    source,
-                    matcher_id: self.id(),
-                });
+            let matched = child.borrow().apply(source.clone(), pos, depth + 1);
+            match matched {
+                Ok(token) => {
+                    return Ok(Token {
+                        matcher_name: self.name().clone(),
+                        range: token.range.clone(),
+                        children: vec![token],
+                        source,
+                        matcher_id: self.id(),
+                    });
+                }
+                Err(err) => errors.push(err),
             }
         }
-
-        Err(FluxError::new_matcher(
-            "in ChoiceMatcher all children failed",
+        errors.push(FluxError::new_matcher(
+            "expected",
             pos,
+            depth,
             self.name().clone(),
-        ))
+        ));
+        Err(errors
+            .into_iter()
+            .reduce(FluxError::max)
+            .expect("error always present"))
     }
 
     fn min_length(&self) -> usize {
