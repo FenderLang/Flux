@@ -1,5 +1,4 @@
 use std::{
-    backtrace::Backtrace,
     fmt::{Debug, Display},
     rc::Rc,
 };
@@ -8,6 +7,7 @@ use crate::matchers::MatcherName;
 
 pub type Result<T> = std::result::Result<T, FluxError>;
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum ErrorMessage {
     Constant(&'static str),
     Dynamic(String),
@@ -22,12 +22,12 @@ impl ErrorMessage {
     }
 }
 
+#[derive(PartialEq, Eq)]
 pub struct FluxError {
     pub description: ErrorMessage,
     pub location: usize,
     pub depth: usize,
     pub matcher_name: MatcherName,
-    pub backtrace: Backtrace,
     pub src_text: Option<Rc<Vec<char>>>,
 }
 
@@ -42,7 +42,6 @@ impl FluxError {
             location,
             depth: 0,
             matcher_name: Rc::new(None),
-            backtrace: Backtrace::capture(),
             src_text,
         }
     }
@@ -59,7 +58,6 @@ impl FluxError {
             location,
             depth,
             matcher_name,
-            backtrace: Backtrace::capture(),
             src_text,
         }
     }
@@ -74,26 +72,43 @@ impl FluxError {
             location,
             depth: 0,
             matcher_name: Rc::new(None),
-            backtrace: Backtrace::capture(),
             src_text,
         }
     }
+}
 
-    pub fn max(self, b: FluxError) -> FluxError {
-        match (&*self.matcher_name, &*b.matcher_name) {
-            (None, None) | (Some(_), Some(_)) => {
-                if self.location > b.location {
-                    self
-                } else if b.location > self.location {
-                    b
-                } else if b.depth < self.depth {
-                    b
+impl Ord for FluxError {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match (&*self.matcher_name, &*other.matcher_name) {
+            (Some(_), None) => std::cmp::Ordering::Greater,
+            (None, Some(_)) => std::cmp::Ordering::Less,
+            _ => {
+                if self.location > other.location {
+                    std::cmp::Ordering::Greater
+                } else if other.location > self.location || other.depth < self.depth {
+                    std::cmp::Ordering::Less
                 } else {
-                    self
+                    std::cmp::Ordering::Greater
                 }
             }
-            (None, Some(_)) => b,
-            (Some(_), None) => self,
+        }
+    }
+}
+
+impl PartialOrd for FluxError {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match (&*self.matcher_name, &*other.matcher_name) {
+            (Some(_), None) => Some(std::cmp::Ordering::Greater),
+            (None, Some(_)) => Some(std::cmp::Ordering::Less),
+            _ => {
+                if self.location > other.location {
+                    Some(std::cmp::Ordering::Greater)
+                } else if other.location > self.location || other.depth < self.depth {
+                    Some(std::cmp::Ordering::Less)
+                } else {
+                    Some(std::cmp::Ordering::Greater)
+                }
+            }
         }
     }
 }
@@ -106,7 +121,6 @@ impl Debug for FluxError {
             .field("description", &self.description.get_message())
             .field("location", &self.location)
             .field("match_ref", &self.matcher_name)
-            .field("backtrace", &self.backtrace)
             .finish()
     }
 }
@@ -162,7 +176,6 @@ impl Display for FluxError {
                 None => "no matcher".into(),
             },
             self.description.get_message(),
-
         )
     }
 }
