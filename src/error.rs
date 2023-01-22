@@ -110,7 +110,7 @@ impl FluxError {
                 .expect("line always exists"),
         );
         output.push_str("\n");
-        output.push_str(&("-".repeat(col) + "^\n"));
+        output.push_str(&("-".repeat(col.max(1) - 1) + "^\n"));
         output.push_str(&format!(
             "{}{} {}",
             " ".repeat(col),

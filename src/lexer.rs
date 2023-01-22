@@ -62,7 +62,7 @@ impl Lexer {
             if let Some(err) = token.failure {
                 return Err(err);
             }
-            Err(FluxError::new("unexpected token", 0))
+            Err(FluxError::new("unexpected", 0))
         } else {
             Ok(self.prune(token))
         }
