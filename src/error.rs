@@ -174,7 +174,7 @@ impl Display for FluxError {
 
             let expected = match &*self.matcher_name {
                 Some(m) => format!("expected `{}`", m),
-                None => "unexpected".into(),
+                None => "unexpected token".into(),
             };
 
             write!(f, "{} {}", expected, src_highlight)
@@ -183,11 +183,11 @@ impl Display for FluxError {
                 write!(f, "FluxError ")?;
             }
 
-            write!(f, "at position {}\n", self.location)?;
+            writeln!(f, "at position {}", self.location)?;
 
             match &*self.matcher_name {
-                Some(name) => write!(f, "expected `{}`\n", name),
-                None => write!(f, "unexpected error, no matcher\n"),
+                Some(name) => writeln!(f, "expected `{}`", name),
+                None => writeln!(f, "unexpected token error"),
             }?;
 
             write!(f, "description: {}", self.description.get_message())?;
