@@ -1,6 +1,7 @@
 use flux_bnf::{bnf, lexer::CullStrategy};
 
 fn main() {
+    unsafe { backtrace_on_stack_overflow::enable() };
     let bnf_input = include_str!("../src/tests/bnf/fender.bnf");
     let test_input = include_str!("test_fender.fndr");
 

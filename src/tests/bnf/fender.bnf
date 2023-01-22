@@ -1,3 +1,6 @@
+delimitedList<elem, delim, whitespace> ::= elem whitespace? (delim whitespace? elem)*
+wrappedDelimitedList<begin, end, elem, delim, whitespace> ::= begin whitespace? delimitedList<elem, delim, whitespace>? whitespace? end
+
 sep ::= [ \t]+
 newLine ::= "\r"? "\n"
 break ::= sep? ((";" | comment? newLine) sep?)+
@@ -31,10 +34,10 @@ name ::= ("_" | alpha) alphanum*
 
 literal ::= float | int | boolean | string | list | map | closure
 int ::= "-"? [0-9]+
-list ::= "[" lineSep? (expr (lineSep? "," lineSep? expr)*)? lineSep? "]"
+list ::= wrappedDelimitedList<"[", "]", expr, lineSep, ",">
 mapEntry ::= expr lineSep? ":" lineSep? expr
 emptyMap ::= "[" lineSep? ":" lineSep? "]"
-map ::= emptyMap | "[" lineSep? mapEntry (lineSep? "," lineSep? mapEntry)* lineSep? "]"
+map ::= emptyMap | wrappedDelimitedList<"[", "]", mapEntry, lineSep, ",">
 float ::= "-"? ([0-9]+)? "." [0-9]+
 string ::= "\"" (escapeSequence | [^"])* "\""
 escapeSequence ::= "\\" [^]
