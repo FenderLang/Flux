@@ -1,9 +1,9 @@
-sep!0 ::= [ \t]+
-newLine!0 ::= "\r"? "\n"
-break!0 ::= sep? ((";" | comment? newLine) sep?)+
-lineBreak!0 ::= sep? comment? (newLine sep?)+
-lineSep!0 ::= lineBreak | sep
-comment!0 ::= "#" [^\n]*
+sep ::= [ \t]+
+newLine ::= "\r"? "\n"
+break ::= sep? ((";" | comment? newLine) sep?)+
+lineBreak ::= sep? comment? (newLine sep?)+
+lineSep ::= lineBreak | sep
+comment ::= "#" [^\n]*
 
 root ::= break? (statement break)* statement? break?
 statement ::= (import | functionDeclaration | structDeclaration | declaration | assignment | returnStatement | expr) sep? comment?
@@ -25,9 +25,9 @@ term ::= (unaryOperator sep?)* value sep? tailOperationChain?
 lambdaParameter ::= "$"
 value ::= literal | enclosedExpr | name | lambdaParameter
 
-alpha!0 ::= [a-z] | [A-Z]
-alphanum!0 ::= [a-z] | [A-Z] | [0-9] | "_"
-name!0 ::= ("_" | alpha) alphanum*
+alpha ::= [a-z] | [A-Z]
+alphanum ::= [a-z] | [A-Z] | [0-9] | "_"
+name ::= ("_" | alpha) alphanum*
 
 literal ::= float | int | boolean | string | list | map | closure
 int ::= "-"? [0-9]+
@@ -53,7 +53,7 @@ closure ::= args? lineSep? codeBody
 functionDeclaration ::= "fn" sep? name lineSep? args lineSep? ("=" lineSep? expr | codeBody)
 
 fieldAccess ::= ":" lineSep? name
-receiverCall!0 ::= "." lineSep? name sep? invoke
+receiverCall ::= "." lineSep? name sep? invoke
 index ::= "[" expr "]"
-tailOperation!0 ::= invoke | receiverCall | index | fieldAccess
+tailOperation ::= invoke | receiverCall | index | fieldAccess
 tailOperationChain ::= tailOperation (lineSep? tailOperation)*

@@ -38,6 +38,9 @@ impl Matcher for RepeatingMatcher {
                     children.push(child_token);
                 }
                 Err(mut err) => {
+                    if self.min == 0 && err.location == pos {
+                        break;
+                    }
                     if err.matcher_name.is_none() {
                         err.matcher_name = self.name().clone();
                     }
