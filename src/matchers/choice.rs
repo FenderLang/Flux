@@ -56,7 +56,7 @@ impl Matcher for ChoiceMatcher {
             pos,
             depth,
             self.name().clone(),
-            Some(source.clone())
+            Some(source)
         ));
         Err(errors
             .into_iter()

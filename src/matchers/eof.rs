@@ -31,7 +31,7 @@ impl Matcher for EofMatcher {
                 pos,
                 depth,
                 self.name().clone(),
-                Some(source.clone())
+                Some(source)
             ))
         }
     }

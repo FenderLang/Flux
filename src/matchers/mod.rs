@@ -19,6 +19,7 @@ pub struct MatcherMeta {
 macro_rules! impl_meta {
     () => {
         fn with_meta(&self, meta: MatcherMeta) -> $crate::matchers::MatcherRef {
+            #[allow(clippy::needless_update)]
             Rc::new(Self {
                 meta,
                 ..self.clone()
