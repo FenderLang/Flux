@@ -28,16 +28,22 @@ pub struct FluxError {
     pub depth: usize,
     pub matcher_name: MatcherName,
     pub backtrace: Backtrace,
+    pub src_text: Option<Rc<Vec<char>>>,
 }
 
 impl FluxError {
-    pub fn new(description: &'static str, location: usize) -> FluxError {
+    pub fn new(
+        description: &'static str,
+        location: usize,
+        src_text: Option<Rc<Vec<char>>>,
+    ) -> FluxError {
         FluxError {
             description: ErrorMessage::Constant(description),
             location,
             depth: 0,
             matcher_name: Rc::new(None),
             backtrace: Backtrace::capture(),
+            src_text,
         }
     }
 
@@ -46,6 +52,7 @@ impl FluxError {
         location: usize,
         depth: usize,
         matcher_name: MatcherName,
+        src_text: Option<Rc<Vec<char>>>,
     ) -> FluxError {
         FluxError {
             description: ErrorMessage::Constant(description),
@@ -53,16 +60,22 @@ impl FluxError {
             depth,
             matcher_name,
             backtrace: Backtrace::capture(),
+            src_text,
         }
     }
 
-    pub fn new_dyn(description: String, location: usize) -> FluxError {
+    pub fn new_dyn(
+        description: String,
+        location: usize,
+        src_text: Option<Rc<Vec<char>>>,
+    ) -> FluxError {
         FluxError {
             description: ErrorMessage::Dynamic(description),
             location,
             depth: 0,
             matcher_name: Rc::new(None),
             backtrace: Backtrace::capture(),
+            src_text,
         }
     }
 
@@ -83,42 +96,6 @@ impl FluxError {
             (Some(_), None) => self,
         }
     }
-
-    pub fn generate_error_display(&self, source: String) -> String {
-        let (line_start, mut line_num) = source
-            .chars()
-            .take(self.location)
-            .enumerate()
-            .filter(|(_, c)| *c == '\n')
-            .map(|(i, _)| (i, 1))
-            .reduce(|(a, b), (x, y)| (a.max(x), b + y))
-            .unwrap_or((0, 0));
-        let col = self.location - line_start;
-        line_num += 1;
-        let name = (&*self.matcher_name)
-            .clone()
-            .unwrap_or_else(|| "token".to_string());
-        let mut output = String::from(format!(
-            "error on line {line_num} col {col} (position {}):",
-            self.location
-        ));
-        output.push_str("\n\n");
-        output.push_str(
-            source
-                .lines()
-                .nth(line_num - 1)
-                .unwrap_or_default(),
-        );
-        output.push_str("\n");
-        output.push_str(&("-".repeat(col.max(1) - 1) + "^\n"));
-        output.push_str(&format!(
-            "{}{} {}",
-            " ".repeat(col),
-            self.description.get_message(),
-            name
-        ));
-        output
-    }
 }
 
 impl std::error::Error for FluxError {}
@@ -136,15 +113,56 @@ impl Debug for FluxError {
 
 impl Display for FluxError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let src_highlight = match self.src_text.clone() {
+            Some(source) => {
+                let (line_start, mut line_num) = source
+                    .iter()
+                    .take(self.location)
+                    .enumerate()
+                    .filter(|(_, c)| **c == '\n')
+                    .map(|(i, _)| (i, 1))
+                    .reduce(|(a, b), (x, y)| (a.max(x), b + y))
+                    .unwrap_or((0, 0));
+                let col = self.location - line_start;
+                line_num += 1;
+
+                let mut output = format!("at line {line_num} col {col}");
+                output.push_str("\n\n");
+                output.push_str(
+                    source
+                        .iter()
+                        .collect::<String>()
+                        .lines()
+                        .nth(line_num - 1)
+                        .unwrap_or_default(),
+                );
+                output.push('\n');
+
+                let num_spaces = ((col as i32).max(1) - 6).max(0) as usize;
+                let num_underscores = col.min(6) - 1;
+
+                output.push_str(
+                    &(" ".repeat(num_spaces)
+                        + &"_".repeat(num_underscores)
+                        + "^"
+                        + &"_".repeat(num_underscores)),
+                );
+
+                output
+            }
+            None => format!("at position {}", self.location),
+        };
+
         write!(
             f,
-            "FluxError at {} with {} description \"{}\"",
+            "FluxError at {} with {}\n\ndescription: \"{}\"\n{src_highlight}",
             self.location,
             match &*self.matcher_name {
                 Some(m) => format!("matcher named `{}`", m),
                 None => "no matcher".into(),
             },
-            self.description.get_message()
+            self.description.get_message(),
+
         )
     }
 }

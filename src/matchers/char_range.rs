@@ -42,6 +42,7 @@ impl Matcher for CharRangeMatcher {
                 pos,
                 depth,
                 self.name().clone(),
+                Some(source.clone()),
             )),
         }
     }

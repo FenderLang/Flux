@@ -51,6 +51,7 @@ impl Matcher for StringMatcher {
                 pos,
                 depth,
                 self.name().clone(),
+                Some(source.clone())
             ))
         }
     }
