@@ -30,9 +30,11 @@ impl Matcher for RepeatingMatcher {
         let mut cursor = pos;
         let mut child_error = None;
         while children.len() < self.max {
-            match child.apply(source.clone(), cursor, depth + 1) {
-                Ok(child_token) => {
+            match child.apply(source.clone(), cursor, self.next_depth(depth)) {
+                Ok(mut child_token) => {
                     cursor = child_token.range.end;
+                    let err = std::mem::replace(&mut child_token.failure, None);
+                    child_error = err.or(child_error);
                     children.push(child_token);
                 }
                 Err(mut err) => {
@@ -58,7 +60,7 @@ impl Matcher for RepeatingMatcher {
                 matcher_name: self.name().clone(),
                 source,
                 matcher_id: self.id(),
-                failure: {child_error},
+                failure: child_error,
             })
         }
     }

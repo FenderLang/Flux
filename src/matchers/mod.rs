@@ -65,6 +65,13 @@ pub trait Matcher: Debug {
     fn priority(&self) -> usize {
         self.meta().priority
     }
+
+    fn next_depth(&self, depth: usize) -> usize {
+        match **self.name() {
+            Some(_) => depth + 1,
+            None => depth,
+        }
+    }
 }
 
 impl Display for dyn Matcher {

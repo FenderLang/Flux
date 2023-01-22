@@ -20,7 +20,7 @@ impl InvertedMatcher {
 impl Matcher for InvertedMatcher {
     impl_meta!();
     fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
-        match self.child[0].borrow().apply(source.clone(), pos, depth + 1) {
+        match self.child[0].borrow().apply(source.clone(), pos, self.next_depth(depth)) {
             Ok(_) => Err(FluxError::new_matcher(
                 "unexpected",
                 pos,

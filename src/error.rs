@@ -42,15 +42,15 @@ impl FluxError {
     }
 
     pub fn new_matcher(
-            description: &'static str,
-            location: usize,
-            priority: usize,
-            matcher_name: MatcherName,
-            ) -> FluxError {
+        description: &'static str,
+        location: usize,
+        depth: usize,
+        matcher_name: MatcherName,
+    ) -> FluxError {
         FluxError {
             description: ErrorMessage::Constant(description),
             location,
-            depth: priority,
+            depth,
             matcher_name,
             backtrace: Backtrace::capture(),
         }
@@ -71,9 +71,9 @@ impl FluxError {
             (None, None) | (Some(_), Some(_)) => {
                 if self.location > b.location {
                     self
-                } else if b.location >= self.location {
+                } else if b.location > self.location {
                     b
-                } else if b.depth <= self.depth {
+                } else if b.depth < self.depth {
                     b
                 } else {
                     self
@@ -110,7 +110,7 @@ impl FluxError {
                 .expect("line always exists"),
         );
         output.push_str("\n");
-        output.push_str(&("-".repeat(col - 1) + "^\n"));
+        output.push_str(&("-".repeat(col) + "^\n"));
         output.push_str(&format!(
             "{}{} {}",
             " ".repeat(col),

@@ -25,7 +25,9 @@ impl Matcher for ChoiceMatcher {
     fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
         let mut errors: Vec<FluxError> = vec![];
         for child in &self.children {
-            let matched = child.borrow().apply(source.clone(), pos, depth + 1);
+            let matched = child
+                .borrow()
+                .apply(source.clone(), pos, self.next_depth(depth));
             match matched {
                 Ok(mut token) => {
                     return Ok(Token {
@@ -43,10 +45,10 @@ impl Matcher for ChoiceMatcher {
                 }
                 Err(mut err) => {
                     if err.matcher_name.is_none() {
-                        err.matcher_name = self.name().clone()
+                        err.matcher_name = self.name().clone();
                     }
                     errors.push(err)
-                },
+                }
             }
         }
         errors.push(FluxError::new_matcher(
