@@ -34,6 +34,7 @@ impl Matcher for ChoiceMatcher {
                         children: vec![token],
                         source,
                         matcher_id: self.id(),
+                        failure: errors.into_iter().reduce(FluxError::max),
                     });
                 }
                 Err(err) => errors.push(err),

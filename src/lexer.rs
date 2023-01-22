@@ -59,7 +59,8 @@ impl Lexer {
         let pos = 0;
         let token = self.root.apply(chars, pos, 0)?;
         if token.range.len() < input.len() {
-            Err(FluxError::new("unexpected token", token.range.end))
+            println!("{:#?}", self.prune(token));
+            Err(FluxError::new("unexpected token", 0))
         } else {
             Ok(self.prune(token))
         }

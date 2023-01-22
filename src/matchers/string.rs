@@ -43,6 +43,7 @@ impl Matcher for StringMatcher {
                 source,
                 range: pos..pos + self.to_match.len(),
                 matcher_id: self.id(),
+                failure: None,
             })
         } else {
             Err(FluxError::new_matcher(

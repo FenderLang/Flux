@@ -35,6 +35,7 @@ impl Matcher for CharRangeMatcher {
                 source,
                 range: pos..pos + 1,
                 matcher_id: self.id(),
+                failure: None,
             }),
             _ => Err(FluxError::new_matcher(
                 "expected",

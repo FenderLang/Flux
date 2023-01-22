@@ -23,6 +23,7 @@ impl Matcher for EofMatcher {
                 source,
                 range: (pos..pos),
                 matcher_id: self.id(),
+                failure: None,
             })
         } else {
             Err(FluxError::new_matcher(

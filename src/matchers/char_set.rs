@@ -33,6 +33,7 @@ impl Matcher for CharSetMatcher {
                 range: pos..pos + 1,
                 source,
                 matcher_id: self.id(),
+                failure: None,
             }),
             _ => Err(FluxError::new_matcher(
                 "expected",

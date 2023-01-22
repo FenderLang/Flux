@@ -55,6 +55,7 @@ impl Matcher for RepeatingMatcher {
                 matcher_name: self.name().clone(),
                 source,
                 matcher_id: self.id(),
+                failure: child_error,
             })
         }
     }

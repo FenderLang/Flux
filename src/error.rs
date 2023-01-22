@@ -28,6 +28,7 @@ pub struct FluxError {
     depth: usize,
     matcher_name: MatcherName,
     backtrace: Backtrace,
+    losers: Vec<FluxError>,
 }
 
 impl FluxError {
@@ -38,6 +39,7 @@ impl FluxError {
             depth: 0,
             matcher_name: Rc::new(None),
             backtrace: Backtrace::capture(),
+            losers: vec![],
         }
     }
 
@@ -53,6 +55,7 @@ impl FluxError {
             depth,
             matcher_name,
             backtrace: Backtrace::capture(),
+            losers: vec![],
         }
     }
 
@@ -63,6 +66,7 @@ impl FluxError {
             depth: 0,
             matcher_name: Rc::new(None),
             backtrace: Backtrace::capture(),
+            losers: vec![],
         }
     }
 
@@ -70,18 +74,23 @@ impl FluxError {
         match (&*self.matcher_name, &*b.matcher_name) {
             (None, None) | (Some(_), Some(_)) => {
                 if self.depth > b.depth {
-                    self
+                    self.add_loser(b)
                 } else if b.depth > self.depth {
-                    b
+                    b.add_loser(self)
                 } else if self.location > b.location {
-                    self
+                    self.add_loser(b)
                 } else {
-                    b
+                    b.add_loser(self)
                 }
             }
-            (None, Some(_)) => b,
-            (Some(_), None) => self,
+            (None, Some(_)) => b.add_loser(self),
+            (Some(_), None) => self.add_loser(b),
         }
+    }
+
+    fn add_loser(mut self, b: FluxError) -> FluxError {
+        self.losers.push(b);
+        self
     }
 }
 

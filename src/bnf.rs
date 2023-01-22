@@ -31,22 +31,21 @@ struct BNFParserState {
 impl BNFParserState {
     fn parse(&mut self) -> Result<Lexer> {
         let mut rules = Vec::new();
+        let mut rule_map: HashMap<String, MatcherRef> = HashMap::new();
+        let mut id_map = HashMap::new();
         self.consume_line_breaks();
         while self.pos < self.source.len() {
-            rules.extend(self.parse_rule(rules.len() + 1)?);
-            self.consume_line_breaks();
-        }
-        let mut rule_map: HashMap<String, MatcherRef> = HashMap::new();
-        for rule in &rules {
-            if let Some(name) = &**rule.name() {
-                if rule_map.contains_key(name) {
+            if let Some((rule, name)) = self.parse_rule(rules.len() + 1)? {
+                rules.push(rule.clone());
+                id_map.insert(name.clone(), rule.id());
+                if rule_map.insert(name.clone(), rule).is_some() {
                     return Err(FluxError::new_dyn(
                         format!("Duplicate rule name {}", name),
                         0,
                     ));
                 }
-                rule_map.insert(name.clone(), rule.clone());
             }
+            self.consume_line_breaks();
         }
         for rule in &rules {
             Self::replace_placeholders(rule, &rule_map)?;
@@ -54,10 +53,6 @@ impl BNFParserState {
         let root = rule_map
             .get("root")
             .ok_or_else(|| FluxError::new("No root matcher specified", 0))?;
-        let mut id_map = HashMap::new();
-        for rule in &rules {
-            id_map.insert((**rule.name()).clone().unwrap(), rule.id());
-        }
         Ok(Lexer::new(root.clone(), id_map))
     }
 
@@ -82,13 +77,14 @@ impl BNFParserState {
         Ok(())
     }
 
-    fn parse_rule(&mut self, id: usize) -> Result<Option<MatcherRef>> {
+    fn parse_rule(&mut self, id: usize) -> Result<Option<(MatcherRef, String)>> {
         if self.check_str("//") {
             self.consume_comment();
             return Ok(None);
         }
         let name = self.parse_word()?;
-        let meta = MatcherMeta::new(Some(name), id);
+        let transparent = self.check_char('*');
+        let meta = MatcherMeta::new(Some(name.clone()), id);
         self.call_assert("whitespace", Self::consume_whitespace)?;
         self.assert_str("::=")?;
         self.call_assert("whitespace", Self::consume_whitespace)?;
@@ -103,7 +99,10 @@ impl BNFParserState {
         if self.check_str("//") {
             self.consume_comment();
         }
-        Ok(Some(matcher.with_meta(meta)))
+        if !transparent {
+            matcher = matcher.with_meta(meta);
+        }
+        Ok(Some((matcher, name)))
     }
 
     fn peek(&self) -> Option<char> {

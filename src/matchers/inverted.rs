@@ -27,12 +27,13 @@ impl Matcher for InvertedMatcher {
                 depth,
                 self.name().clone(),
             )),
-            Err(_) => Ok(Token {
+            Err(err) => Ok(Token {
                 children: vec![],
                 matcher_name: self.name().clone(),
                 source,
                 range: pos..pos,
                 matcher_id: self.id(),
+                failure: Some(err),
             }),
         }
     }
