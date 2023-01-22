@@ -57,7 +57,7 @@ impl Lexer {
         let input = input.to_string();
         let chars = Rc::new(input.chars().collect::<Vec<char>>());
         let pos = 0;
-        let token = self.root.apply(chars, pos)?;
+        let token = self.root.apply(chars, pos, 0)?;
         if token.range.len() < input.len() {
             if let Some(err) = token.failure {
                 return Err(err);

@@ -22,10 +22,10 @@ impl ChoiceMatcher {
 
 impl Matcher for ChoiceMatcher {
     impl_meta!();
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
         let mut errors: Vec<FluxError> = vec![];
         for child in &self.children {
-            let matched = child.borrow().apply(source.clone(), pos);
+            let matched = child.borrow().apply(source.clone(), pos, depth + 1);
             match matched {
                 Ok(mut token) => {
                     return Ok(Token {
@@ -52,7 +52,7 @@ impl Matcher for ChoiceMatcher {
         errors.push(FluxError::new_matcher(
             "expected",
             pos,
-            self.priority(),
+            depth,
             self.name().clone(),
         ));
         Err(errors

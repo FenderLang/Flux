@@ -25,7 +25,7 @@ impl ErrorMessage {
 pub struct FluxError {
     pub description: ErrorMessage,
     pub location: usize,
-    pub priority: usize,
+    pub depth: usize,
     pub matcher_name: MatcherName,
     pub backtrace: Backtrace,
 }
@@ -35,7 +35,7 @@ impl FluxError {
         FluxError {
             description: ErrorMessage::Constant(description),
             location,
-            priority: 0,
+            depth: 0,
             matcher_name: Rc::new(None),
             backtrace: Backtrace::capture(),
         }
@@ -44,13 +44,13 @@ impl FluxError {
     pub fn new_matcher(
             description: &'static str,
             location: usize,
-            depth: usize,
+            priority: usize,
             matcher_name: MatcherName,
             ) -> FluxError {
         FluxError {
             description: ErrorMessage::Constant(description),
             location,
-            priority: depth,
+            depth: priority,
             matcher_name,
             backtrace: Backtrace::capture(),
         }
@@ -60,7 +60,7 @@ impl FluxError {
         FluxError {
             description: ErrorMessage::Dynamic(description),
             location,
-            priority: 0,
+            depth: 0,
             matcher_name: Rc::new(None),
             backtrace: Backtrace::capture(),
         }
@@ -71,18 +71,53 @@ impl FluxError {
             (None, None) | (Some(_), Some(_)) => {
                 if self.location > b.location {
                     self
-                } else if b.location > self.location {
+                } else if b.location >= self.location {
                     b
-                } else
-                    if self.priority > b.priority {
-                    self
+                } else if b.depth <= self.depth {
+                    b
                 } else {
-                    b
+                    self
                 }
             }
             (None, Some(_)) => b,
             (Some(_), None) => self,
         }
+    }
+
+    pub fn generate_error_display(&self, source: String) -> String {
+        let (line_start, mut line_num) = source
+            .chars()
+            .take(self.location)
+            .enumerate()
+            .filter(|(_, c)| *c == '\n')
+            .map(|(i, _)| (i, 1))
+            .reduce(|(a, b), (x, y)| (a.max(x), b + y))
+            .unwrap_or((0, 0));
+        let col = self.location - line_start;
+        line_num += 1;
+        let name = (&*self.matcher_name)
+            .clone()
+            .unwrap_or_else(|| "token".to_string());
+        let mut output = String::from(format!(
+            "error on line {line_num} col {col} (position {}):",
+            self.location
+        ));
+        output.push_str("\n\n");
+        output.push_str(
+            source
+                .lines()
+                .nth(line_num - 1)
+                .expect("line always exists"),
+        );
+        output.push_str("\n");
+        output.push_str(&("-".repeat(col - 1) + "^\n"));
+        output.push_str(&format!(
+            "{}{} {}",
+            " ".repeat(col),
+            self.description.get_message(),
+            name
+        ));
+        output
     }
 }
 

@@ -23,14 +23,14 @@ impl RepeatingMatcher {
 
 impl Matcher for RepeatingMatcher {
     impl_meta!();
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
         let mut children: Vec<Token> = Vec::new();
 
         let child = self.child[0].borrow();
         let mut cursor = pos;
         let mut child_error = None;
         while children.len() < self.max {
-            match child.apply(source.clone(), cursor) {
+            match child.apply(source.clone(), cursor, depth + 1) {
                 Ok(child_token) => {
                     cursor = child_token.range.end;
                     children.push(child_token);
@@ -46,7 +46,7 @@ impl Matcher for RepeatingMatcher {
         }
 
         if children.len() < self.min {
-            let mut error = FluxError::new_matcher("expected", cursor, self.priority(), self.name().clone());
+            let mut error = FluxError::new_matcher("expected", cursor, depth, self.name().clone());
             if let Some(e) = child_error {
                 error = error.max(e);
             }
@@ -58,7 +58,7 @@ impl Matcher for RepeatingMatcher {
                 matcher_name: self.name().clone(),
                 source,
                 matcher_id: self.id(),
-                failure: if self.min == 0 && self.max == 1 {None} else {child_error},
+                failure: {child_error},
             })
         }
     }

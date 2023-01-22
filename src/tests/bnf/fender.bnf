@@ -19,11 +19,11 @@ binaryOperator ::= "||" | "&&" | "==" | "<=" | ">=" | ".." "="? | [-+*/^<>]
 unaryOperator ::= [-!]
 
 label ::= "`" name lineSep
-expr!4 ::= label? term (lineSep? binaryOperator lineSep? term)*
+expr ::= label? term (lineSep? binaryOperator lineSep? term)*
 enclosedExpr ::= "(" lineSep? expr lineSep? ")"
 term ::= (unaryOperator sep?)* value sep? tailOperationChain?
 lambdaParameter ::= "$"
-value!10 ::= literal | enclosedExpr | name | lambdaParameter
+value ::= literal | enclosedExpr | name | lambdaParameter
 
 alpha ::= [a-z] | [A-Z]
 alphanum ::= [a-z] | [A-Z] | [0-9] | "_"

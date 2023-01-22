@@ -13,7 +13,10 @@ fn main() {
         CullStrategy::DeleteAll,
     );
 
-    let res = lexer.tokenize(&test_input);
+    let res = lexer.tokenize(&test_input).map_err(|e| e.generate_error_display(test_input.to_owned()));
 
-    println!("{:#?}", res);
+    match res {
+        Ok(token) => println!("{:#?}", token),
+        Err(e) => println!("{}", e),
+    }
 }

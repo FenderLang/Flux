@@ -83,7 +83,7 @@ impl BNFParserState {
             return Ok(None);
         }
         let name = self.parse_word()?;
-        let mut priority = 0;
+        let mut priority = 1;
         if self.check_char('!') {
             priority = self.parse_number()?;
         }
@@ -94,7 +94,7 @@ impl BNFParserState {
         let mut matcher = self.parse_list()?;
         if matcher.is_placeholder() {
             matcher = Rc::new(ListMatcher::new(
-                Default::default(),
+                    Default::default(),
                 vec![RefCell::new(matcher)],
             ));
         }
@@ -102,7 +102,9 @@ impl BNFParserState {
         if self.check_str("//") {
             self.consume_comment();
         }
-        matcher = matcher.with_meta(meta);
+        if priority > 0 {
+            matcher = matcher.with_meta(meta);
+        }
         Ok(Some((matcher, name)))
     }
 
