@@ -12,7 +12,6 @@ pub(crate) type MatcherName = Rc<Option<String>>;
 pub struct MatcherMeta {
     pub name: MatcherName,
     pub id: usize,
-    pub priority: usize,
 }
 
 #[macro_export]
@@ -32,11 +31,10 @@ macro_rules! impl_meta {
 }
 
 impl MatcherMeta {
-    pub fn new(name: Option<String>, id: usize, priority: usize) -> MatcherMeta {
+    pub fn new(name: Option<String>, id: usize) -> MatcherMeta {
         MatcherMeta {
             name: Rc::new(name),
             id,
-            priority,
         }
     }
 }
@@ -61,10 +59,6 @@ pub trait Matcher: Debug {
 
     fn id(&self) -> usize {
         self.meta().id
-    }
-
-    fn priority(&self) -> usize {
-        self.meta().priority
     }
 
     fn next_depth(&self, depth: usize) -> usize {
