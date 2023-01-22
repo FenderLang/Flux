@@ -25,7 +25,7 @@ impl CharSetMatcher {
 
 impl Matcher for CharSetMatcher {
     impl_meta!();
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
         match source.get(pos) {
             Some(c) if self.check_char(c) => Ok(Token {
                 children: vec![],
@@ -38,7 +38,7 @@ impl Matcher for CharSetMatcher {
             _ => Err(FluxError::new_matcher(
                 "expected",
                 pos,
-                depth,
+                self.priority(),
                 self.name().clone(),
             )),
         }

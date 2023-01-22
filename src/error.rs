@@ -23,12 +23,11 @@ impl ErrorMessage {
 }
 
 pub struct FluxError {
-    description: ErrorMessage,
-    location: usize,
-    depth: usize,
-    matcher_name: MatcherName,
-    backtrace: Backtrace,
-    losers: Vec<FluxError>,
+    pub description: ErrorMessage,
+    pub location: usize,
+    pub priority: usize,
+    pub matcher_name: MatcherName,
+    pub backtrace: Backtrace,
 }
 
 impl FluxError {
@@ -36,26 +35,24 @@ impl FluxError {
         FluxError {
             description: ErrorMessage::Constant(description),
             location,
-            depth: 0,
+            priority: 0,
             matcher_name: Rc::new(None),
             backtrace: Backtrace::capture(),
-            losers: vec![],
         }
     }
 
     pub fn new_matcher(
-        description: &'static str,
-        location: usize,
-        depth: usize,
-        matcher_name: MatcherName,
-    ) -> FluxError {
+            description: &'static str,
+            location: usize,
+            depth: usize,
+            matcher_name: MatcherName,
+            ) -> FluxError {
         FluxError {
             description: ErrorMessage::Constant(description),
             location,
-            depth,
+            priority: depth,
             matcher_name,
             backtrace: Backtrace::capture(),
-            losers: vec![],
         }
     }
 
@@ -63,34 +60,29 @@ impl FluxError {
         FluxError {
             description: ErrorMessage::Dynamic(description),
             location,
-            depth: 0,
+            priority: 0,
             matcher_name: Rc::new(None),
             backtrace: Backtrace::capture(),
-            losers: vec![],
         }
     }
 
     pub fn max(self, b: FluxError) -> FluxError {
         match (&*self.matcher_name, &*b.matcher_name) {
             (None, None) | (Some(_), Some(_)) => {
-                if self.depth > b.depth {
-                    self.add_loser(b)
-                } else if b.depth > self.depth {
-                    b.add_loser(self)
-                } else if self.location > b.location {
-                    self.add_loser(b)
+                if self.location > b.location {
+                    self
+                } else if b.location > self.location {
+                    b
+                } else
+                    if self.priority > b.priority {
+                    self
                 } else {
-                    b.add_loser(self)
+                    b
                 }
             }
-            (None, Some(_)) => b.add_loser(self),
-            (Some(_), None) => self.add_loser(b),
+            (None, Some(_)) => b,
+            (Some(_), None) => self,
         }
-    }
-
-    fn add_loser(mut self, b: FluxError) -> FluxError {
-        self.losers.push(b);
-        self
     }
 }
 

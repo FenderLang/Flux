@@ -57,9 +57,11 @@ impl Lexer {
         let input = input.to_string();
         let chars = Rc::new(input.chars().collect::<Vec<char>>());
         let pos = 0;
-        let token = self.root.apply(chars, pos, 0)?;
+        let token = self.root.apply(chars, pos)?;
         if token.range.len() < input.len() {
-            println!("{:#?}", self.prune(token));
+            if let Some(err) = token.failure {
+                return Err(err);
+            }
             Err(FluxError::new("unexpected token", 0))
         } else {
             Ok(self.prune(token))

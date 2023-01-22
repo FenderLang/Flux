@@ -83,8 +83,11 @@ impl BNFParserState {
             return Ok(None);
         }
         let name = self.parse_word()?;
-        let transparent = self.check_char('*');
-        let meta = MatcherMeta::new(Some(name.clone()), id);
+        let mut priority = 0;
+        if self.check_char('!') {
+            priority = self.parse_number()?;
+        }
+        let meta = MatcherMeta::new(Some(name.clone()), id, priority);
         self.call_assert("whitespace", Self::consume_whitespace)?;
         self.assert_str("::=")?;
         self.call_assert("whitespace", Self::consume_whitespace)?;
@@ -99,9 +102,7 @@ impl BNFParserState {
         if self.check_str("//") {
             self.consume_comment();
         }
-        if !transparent {
-            matcher = matcher.with_meta(meta);
-        }
+        matcher = matcher.with_meta(meta);
         Ok(Some((matcher, name)))
     }
 
@@ -257,7 +258,7 @@ impl BNFParserState {
 
     fn parse_placeholder(&mut self) -> Result<MatcherRef> {
         let name = self.parse_word()?;
-        let matcher = PlaceholderMatcher::new(MatcherMeta::new(Some(name), 0));
+        let matcher = PlaceholderMatcher::new(MatcherMeta::new(Some(name), 0, 0));
         Ok(Rc::new(matcher))
     }
 

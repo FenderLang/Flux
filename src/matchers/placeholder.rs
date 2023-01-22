@@ -15,7 +15,7 @@ impl PlaceholderMatcher {
 
 impl Matcher for PlaceholderMatcher {
     impl_meta!();
-    fn apply(&self, _: Rc<Vec<char>>, _: usize, _: usize) -> Result<Token> {
+    fn apply(&self, _: Rc<Vec<char>>, _: usize) -> Result<Token> {
         unreachable!()
     }
 

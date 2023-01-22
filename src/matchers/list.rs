@@ -21,12 +21,12 @@ impl ListMatcher {
 
 impl Matcher for ListMatcher {
     impl_meta!();
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
         let mut children: Vec<Token> = Vec::new();
         let mut cursor = pos;
         let mut failures = Vec::new();
         for child in self.children.iter() {
-            match child.borrow().apply(source.clone(), cursor, depth + 1) {
+            match child.borrow().apply(source.clone(), cursor) {
                 Ok(mut child_token) => {
                     cursor = child_token.range.end;
                     let failure = std::mem::replace(&mut child_token.failure, None);
@@ -34,7 +34,10 @@ impl Matcher for ListMatcher {
                     child_token.failure = None;
                     children.push(child_token);
                 }
-                Err(err) => {
+                Err(mut err) => {
+                    if err.matcher_name.is_none() {
+                        err.matcher_name = self.name().clone()
+                    }
                     failures.push(err);
                     return Err(failures
                         .into_iter()
