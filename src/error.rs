@@ -167,15 +167,37 @@ impl Display for FluxError {
             None => format!("at position {}", self.location),
         };
 
-        write!(
-            f,
-            "FluxError at {} with {}\n\ndescription: \"{}\"\n{src_highlight}",
-            self.location,
+        if f.alternate() {
+            if f.sign_plus() {
+                write!(f, "FluxError ")?;
+            }
+
+            let expected = match &*self.matcher_name {
+                Some(m) => format!("expected `{}`", m),
+                None => "unexpected".into(),
+            };
+
+            write!(f, "{} {}", expected, src_highlight)
+        } else {
+            if !f.sign_minus() {
+                write!(f, "FluxError ")?;
+            }
+
+            write!(f, "at position {}\n", self.location)?;
+
             match &*self.matcher_name {
-                Some(m) => format!("matcher named `{}`", m),
-                None => "no matcher".into(),
-            },
-            self.description.get_message(),
-        )
+                Some(name) => write!(f, "expected `{}`\n", name),
+                None => write!(f, "unexpected error, no matcher\n"),
+            }?;
+
+            write!(f, "description: {}", self.description.get_message())?;
+
+            if self.src_text.is_some() {
+                f.write_str("\n")?;
+                f.write_str(&src_highlight)?;
+            }
+
+            Ok(())
+        }
     }
 }
