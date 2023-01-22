@@ -107,7 +107,7 @@ impl FluxError {
             source
                 .lines()
                 .nth(line_num - 1)
-                .expect("line always exists"),
+                .unwrap_or_default(),
         );
         output.push_str("\n");
         output.push_str(&("-".repeat(col.max(1) - 1) + "^\n"));
