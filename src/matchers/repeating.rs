@@ -35,7 +35,10 @@ impl Matcher for RepeatingMatcher {
                     cursor = child_token.range.end;
                     children.push(child_token);
                 }
-                Err(err) => child_error = Some(err),
+                Err(err) => {
+                    child_error = Some(err);
+                    break;
+                }
             }
         }
 

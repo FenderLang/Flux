@@ -6,7 +6,7 @@ fn main() {
 
     let mut lexer = bnf::parse(bnf_input).unwrap();
     lexer.add_rule_for_names(
-        vec!["sep", "lineSep"]
+        vec!["sep", "lineSep", "alpha", "alphanum"]
             .iter()
             .map(ToString::to_string)
             .collect(),
