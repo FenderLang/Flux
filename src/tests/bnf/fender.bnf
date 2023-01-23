@@ -5,7 +5,7 @@ sep ::= [ \t]+
 newLine ::= "\r"? "\n"
 break ::= sep? ((";" | comment? newLine) sep?)+
 lineBreak ::= sep? comment? (newLine sep?)+
-lineSep ::= lineBreak | sep
+lineSep ::= (lineBreak | sep)+
 comment ::= "#" [^\n]*
 
 root ::= break? (statement break)* statement? break?
@@ -34,10 +34,10 @@ name ::= ("_" | alpha) alphanum*
 
 literal ::= float | int | boolean | string | list | map | closure
 int ::= "-"? [0-9]+
-list ::= wrappedDelimitedList<"[", "]", expr, lineSep, ",">
+list ::= wrappedDelimitedList<"[", "]", expr, ",", lineSep>
 mapEntry ::= expr lineSep? ":" lineSep? expr
 emptyMap ::= "[" lineSep? ":" lineSep? "]"
-map ::= emptyMap | wrappedDelimitedList<"[", "]", mapEntry, lineSep, ",">
+map ::= emptyMap | wrappedDelimitedList<"[", "]", mapEntry, ",", lineSep>
 float ::= "-"? ([0-9]+)? "." [0-9]+
 string ::= "\"" (escapeSequence | [^"])* "\""
 escapeSequence ::= "\\" [^]
