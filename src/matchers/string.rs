@@ -44,29 +44,28 @@ impl Matcher for StringMatcher {
                 failure: None,
             })
         } else {
-            let size_error_pos = pos + compared_strings_zipped.len();
+            let found_string_size = compared_strings_zipped.len();
 
             let mismatched_character = compared_strings_zipped
                 .enumerate()
                 .find(|(_, (a, b))| !self.char_matches(dbg!(a), dbg!(b)))
                 .map(|(index, _)| index);
 
-            match mismatched_character {
-                Some(char_index) => Err(FluxError::new_matcher(
-                    "found text did not match expected string",
-                    pos + char_index,
-                    depth,
-                    self.name().clone(),
-                    Some(source.clone()),
-                )),
-                None => Err(FluxError::new_matcher(
+            let (error_position, description) = match mismatched_character {
+                Some(char_index) => (pos + char_index, "found text did not match expected string"),
+                None => (
+                    pos + found_string_size,
                     "too short, string began to match but ended early",
-                    size_error_pos,
-                    depth,
-                    self.name().clone(),
-                    Some(source.clone()),
-                )),
-            }
+                ),
+            };
+
+            Err(FluxError::new_matcher(
+                description,
+                error_position,
+                depth,
+                self.name().clone(),
+                Some(source.clone()),
+            ))
         }
     }
 
