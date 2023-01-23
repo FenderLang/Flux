@@ -48,9 +48,8 @@ impl Matcher for StringMatcher {
 
             let mismatched_character = compared_strings_zipped
                 .enumerate()
-                .filter(|(_, (a, b))| !self.char_matches(dbg!(a), dbg!(b)))
-                .map(|(index, _)| index)
-                .nth(0);
+                .find(|(_, (a, b))| !self.char_matches(dbg!(a), dbg!(b)))
+                .map(|(index, _)| index);
 
             match mismatched_character {
                 Some(char_index) => Err(FluxError::new_matcher(
