@@ -48,7 +48,7 @@ impl Matcher for StringMatcher {
 
             let mismatched_character = compared_strings_zipped
                 .enumerate()
-                .find(|(_, (a, b))| !self.char_matches(dbg!(a), dbg!(b)))
+                .find(|(_, (a, b))| !self.char_matches(a, b))
                 .map(|(index, _)| index);
 
             let (error_position, description) = match mismatched_character {
