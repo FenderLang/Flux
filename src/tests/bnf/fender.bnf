@@ -22,7 +22,7 @@ binaryOperator ::= "||" | "&&" | "==" | "<=" | ">=" | ".." "="? | [-+*/^<>]
 unaryOperator ::= [-!]
 
 label ::= "`" name lineSep
-expr ::= label? term (lineSep? binaryOperator lineSep? term)*
+expr ::= label? delimitedList<term, binaryOperator, lineSep>
 enclosedExpr ::= "(" lineSep? expr lineSep? ")"
 term ::= (unaryOperator sep?)* value sep? tailOperationChain?
 lambdaParameter ::= "$"
