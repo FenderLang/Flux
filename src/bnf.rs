@@ -17,7 +17,7 @@ use crate::matchers::{char_set::CharSetMatcher, MatcherRef};
 
 pub fn parse(input: &str) -> Result<Lexer> {
     BNFParserState {
-        source: input.chars().collect(),
+        source: Rc::new(input.chars().collect()),
         pos: 0,
         templates: HashMap::new(),
     }
@@ -35,7 +35,7 @@ fn replace_placeholders(rule: &MatcherRef, map: &HashMap<String, MatcherRef>, er
             let matcher = name.as_ref().and_then(|n| map.get(n));
             let Some(matcher) = matcher else {
                 if error_on_fail {
-                    return Err(FluxError::new_dyn(format!("Missing matcher for {}", name.as_ref().unwrap()), 0));
+                    return Err(FluxError::new_dyn(format!("Missing matcher for {}", name.as_ref().unwrap()), 0, None));
                 } else {
                     continue;
                 }
@@ -67,10 +67,10 @@ fn deep_copy(matcher: MatcherRef) -> MatcherRef {
 }
 
 impl TemplateRule {
-    fn to_matcher(&self, params: Vec<MatcherRef>, pos: usize) -> Result<MatcherRef> {
+    fn to_matcher(&self, params: Vec<MatcherRef>, pos: usize, source: Rc<Vec<char>>) -> Result<MatcherRef> {
         let mut names = HashMap::new();
         if params.len() != self.params.len() {
-            return Err(FluxError::new_dyn(format!("{}", ""), pos));
+            return Err(FluxError::new("wrong number of template arguments", pos, Some(source.clone())));
         }
         for (matcher, name) in params.into_iter().zip(&self.params) {
             names.insert(name.clone(), matcher);
@@ -87,8 +87,8 @@ enum ParseLineResult {
 }
 
 struct BNFParserState {
-    source: Vec<char>,
     templates: HashMap<String, TemplateRule>,
+    source: Rc<Vec<char>>,
     pos: usize,
 }
 
@@ -108,9 +108,10 @@ impl BNFParserState {
                         return Err(FluxError::new_dyn(
                             format!("Duplicate rule name {}", name),
                             0,
+                            Some(self.source.clone()),
                         ));
                     }
-                }
+                },
                 Some(Template(rule, params, name)) => {
                     self.templates.insert(name, TemplateRule { params, rule });
                 }
@@ -123,7 +124,7 @@ impl BNFParserState {
         }
         let root = rule_map
             .get("root")
-            .ok_or_else(|| FluxError::new("No root matcher specified", 0))?;
+            .ok_or_else(|| FluxError::new("No root matcher specified", 0, Some(self.source.clone())))?;
         Ok(Lexer::new(root.clone(), id_map))
     }
 
@@ -137,11 +138,8 @@ impl BNFParserState {
         if self.check_char('<') {
             template_params = Some(self.parse_template_param_names()?);
         }
-        let mut priority = 1;
-        if self.check_char('!') {
-            priority = self.parse_number()?;
-        }
-        let meta = MatcherMeta::new(Some(name.clone()), id, priority);
+        let meta = MatcherMeta::new(Some(name.clone()), id);
+        let transparent = self.check_str("!0");
         self.call_assert("whitespace", Self::consume_whitespace)?;
         self.assert_str("::=")?;
         self.call_assert("whitespace", Self::consume_whitespace)?;
@@ -156,7 +154,7 @@ impl BNFParserState {
         if self.check_str("//") {
             self.consume_comment();
         }
-        if priority > 0 {
+        if !transparent {
             matcher = matcher.with_meta(meta);
         }
         if let Some(params) = template_params {
@@ -178,7 +176,7 @@ impl BNFParserState {
                 _ => break,
             }
         }
-        Err(FluxError::new("Expected >", self.pos))
+        Err(FluxError::new("Expected >", self.pos, Some(self.source.clone())))
     }
 
     fn peek(&self) -> Option<char> {
@@ -197,6 +195,7 @@ impl BNFParserState {
             _ => Err(FluxError::new_dyn(
                 format!("Expected {}", match_char),
                 self.pos,
+                Some(self.source.clone()),
             )),
         }
     }
@@ -232,6 +231,7 @@ impl BNFParserState {
             Err(FluxError::new_dyn(
                 format!("Expected {}", error_context),
                 self.pos,
+                Some(self.source.clone()),
             ))
         } else {
             Ok(())
@@ -282,12 +282,12 @@ impl BNFParserState {
         match self.advance() {
             Some('\\') => self.parse_escape_seq(),
             Some(c) => Ok(c),
-            _ => Err(FluxError::new("Unexpected end of file", self.pos)),
+            _ => Err(FluxError::new("Unexpected end of file", self.pos, Some(self.source.clone()))),
         }
     }
 
     fn invalid_escape_sequence(&self) -> FluxError {
-        FluxError::new("Invalid escape sequence", self.pos)
+        FluxError::new("Invalid escape sequence", self.pos, Some(self.source.clone()))
     }
 
     fn parse_escape_seq(&mut self) -> Result<char> {
@@ -338,10 +338,11 @@ impl BNFParserState {
             let template = self.templates.get(&name).ok_or(FluxError::new_dyn(
                 format!("No template rule with name {name}"),
                 self.pos,
+                Some(self.source.clone()),
             ))?;
-            return Ok(template.to_matcher(params, self.pos)?);
+            return Ok(template.to_matcher(params, self.pos, self.source.clone())?);
         }
-        let matcher = PlaceholderMatcher::new(MatcherMeta::new(Some(name), 0, 0));
+        let matcher = PlaceholderMatcher::new(MatcherMeta::new(Some(name), 0));
         Ok(Rc::new(matcher))
     }
 
@@ -357,7 +358,7 @@ impl BNFParserState {
                 _ => break,
             }
         }
-        Err(FluxError::new("Expected >", self.pos))
+        Err(FluxError::new("Expected >", self.pos, Some(self.source.clone())))
     }
 
     fn parse_number(&mut self) -> Result<usize> {
@@ -366,7 +367,7 @@ impl BNFParserState {
             out.push(self.advance().unwrap());
         }
         out.parse()
-            .map_err(|_| FluxError::new("Invalid number", self.pos))
+            .map_err(|_| FluxError::new("Invalid number", self.pos, Some(self.source.clone())))
     }
 
     fn parse_matcher_with_modifiers(&mut self) -> Result<MatcherRef> {
@@ -460,6 +461,7 @@ impl BNFParserState {
             _ => Err(FluxError::new(
                 "Unexpected character or end of file",
                 self.pos,
+                Some(self.source.clone()),
             )),
         }
     }

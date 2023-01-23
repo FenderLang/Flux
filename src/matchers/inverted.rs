@@ -26,6 +26,7 @@ impl Matcher for InvertedMatcher {
                 pos,
                 depth,
                 self.name().clone(),
+                Some(source)
             )),
             Err(err) => Ok(Token {
                 children: vec![],

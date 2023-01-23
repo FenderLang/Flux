@@ -51,7 +51,7 @@ impl Matcher for RepeatingMatcher {
         }
 
         if children.len() < self.min {
-            let mut error = FluxError::new_matcher("expected", cursor, depth, self.name().clone());
+            let mut error = FluxError::new_matcher("expected", cursor, depth, self.name().clone(),Some(source));
             if let Some(e) = child_error {
                 error = error.max(e);
             }
