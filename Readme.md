@@ -65,15 +65,27 @@ numberList ::= delimitedList<number, ",", sep>
 
 # Matcher types
 `[abc]` - Character set matcher, matches any one character in the set
+
 `[a-z]` - Character range matcher, matches any character within the range specified
+
 `[^abc]`, `[^a-z]` - Inverted character set/range, matches any character NOT in the set
+
 `"hello"` - String matcher, matches the literal contents of the quotes (supports escape sequences)
+
 `i"hello"` - Case insensitive string matcher
+
 `<eof>` - Matches the end of the input
+
 `"(" [0-9] ")"` - List matcher, any matchers separated by spaces will be applied in sequence
+
 `"hello" | "hey" | "hi"` - Choice matcher, tries all matchers one-by-one until one succeeds
+
 `!"hello"` - Inverted matcher, `!` asserts that the following matcher cannot be matched at that location
+
 `number+` - Repeating matcher, `+` applies the matcher it's on from 1-unlimited times
+
 `number*` - Repeating matcher, `*` applies the matcher it's on from 0-unlimited times
+
 `number?` - Optional matcher, `?` attempts to match but will proceed even if it fails
+
 `number{3,5}` - Repeating bounds, matches 3-5 times
