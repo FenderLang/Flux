@@ -18,6 +18,7 @@ pub struct MatcherMeta {
 macro_rules! impl_meta {
     () => {
         fn with_meta(&self, meta: MatcherMeta) -> $crate::matchers::MatcherRef {
+            #[allow(clippy::needless_update)]
             Rc::new(Self {
                 meta,
                 ..self.clone()
@@ -39,7 +40,7 @@ impl MatcherMeta {
 }
 
 pub trait Matcher: Debug {
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token>;
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token>;
     fn min_length(&self) -> usize;
     fn meta(&self) -> &MatcherMeta;
     fn with_meta(&self, meta: MatcherMeta) -> MatcherRef;
@@ -58,6 +59,13 @@ pub trait Matcher: Debug {
 
     fn id(&self) -> usize {
         self.meta().id
+    }
+
+    fn next_depth(&self, depth: usize) -> usize {
+        match **self.name() {
+            Some(_) => depth + 1,
+            None => depth,
+        }
     }
 }
 

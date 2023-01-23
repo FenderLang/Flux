@@ -55,11 +55,14 @@ impl Lexer {
 
     pub fn tokenize(&self, input: impl ToString) -> Result<Token> {
         let input = input.to_string();
-        let chars = Rc::new(input.chars().collect::<Vec<char>>());
+        let source = Rc::new(input.chars().collect::<Vec<char>>());
         let pos = 0;
-        let token = self.root.apply(chars, pos)?;
+        let token = self.root.apply(source.clone(), pos, 0)?;
         if token.range.len() < input.len() {
-            Err(FluxError::new("unexpected token", token.range.end))
+            if let Some(err) = token.failure {
+                return Err(err);
+            }
+            Err(FluxError::new("unexpected", 0, Some(source)))
         } else {
             Ok(self.prune(token))
         }

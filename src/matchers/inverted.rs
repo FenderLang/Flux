@@ -19,19 +19,22 @@ impl InvertedMatcher {
 
 impl Matcher for InvertedMatcher {
     impl_meta!();
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
-        match self.child[0].borrow().apply(source.clone(), pos) {
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
+        match self.child[0].borrow().apply(source.clone(), pos, self.next_depth(depth)) {
             Ok(_) => Err(FluxError::new_matcher(
                 "unexpected",
                 pos,
+                depth,
                 self.name().clone(),
+                Some(source)
             )),
-            Err(_) => Ok(Token {
+            Err(err) => Ok(Token {
                 children: vec![],
                 matcher_name: self.name().clone(),
                 source,
                 range: pos..pos,
                 matcher_id: self.id(),
+                failure: Some(err),
             }),
         }
     }

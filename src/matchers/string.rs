@@ -29,7 +29,7 @@ impl StringMatcher {
 
 impl Matcher for StringMatcher {
     impl_meta!();
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
         let mut zip = self
             .to_match
             .iter()
@@ -43,9 +43,16 @@ impl Matcher for StringMatcher {
                 source,
                 range: pos..pos + self.to_match.len(),
                 matcher_id: self.id(),
+                failure: None,
             })
         } else {
-            Err(FluxError::new_matcher("expected", pos, self.name().clone()))
+            Err(FluxError::new_matcher(
+                "expected",
+                pos,
+                depth,
+                self.name().clone(),
+                Some(source.clone())
+            ))
         }
     }
 

@@ -23,23 +23,39 @@ impl RepeatingMatcher {
 
 impl Matcher for RepeatingMatcher {
     impl_meta!();
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
         let mut children: Vec<Token> = Vec::new();
 
         let child = self.child[0].borrow();
         let mut cursor = pos;
+        let mut child_error = None;
         while children.len() < self.max {
-            match child.apply(source.clone(), cursor) {
-                Ok(child_token) => {
+            match child.apply(source.clone(), cursor, self.next_depth(depth)) {
+                Ok(mut child_token) => {
                     cursor = child_token.range.end;
+                    let err = std::mem::replace(&mut child_token.failure, None);
+                    child_error = err.or(child_error);
                     children.push(child_token);
                 }
-                Err(_) => break,
+                Err(mut err) => {
+                    if self.min == 0 && err.location == pos {
+                        break;
+                    }
+                    if err.matcher_name.is_none() {
+                        err.matcher_name = self.name().clone();
+                    }
+                    child_error = Some(err);
+                    break;
+                }
             }
         }
 
         if children.len() < self.min {
-            Err(FluxError::new_matcher("expected", pos, self.name().clone()))
+            let mut error = FluxError::new_matcher("expected", cursor, depth, self.name().clone(),Some(source));
+            if let Some(e) = child_error {
+                error = error.max(e);
+            }
+            Err(error)
         } else {
             Ok(Token {
                 range: (pos..cursor),
@@ -47,6 +63,7 @@ impl Matcher for RepeatingMatcher {
                 matcher_name: self.name().clone(),
                 source,
                 matcher_id: self.id(),
+                failure: child_error,
             })
         }
     }

@@ -21,21 +21,32 @@ impl ListMatcher {
 
 impl Matcher for ListMatcher {
     impl_meta!();
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
         let mut children: Vec<Token> = Vec::new();
         let mut cursor = pos;
+        let mut failures = Vec::new();
         for child in self.children.iter() {
-            match child.borrow().apply(source.clone(), cursor) {
-                Ok(child_token) => {
+            match child
+                .borrow()
+                .apply(source.clone(), cursor, self.next_depth(depth))
+            {
+                Ok(mut child_token) => {
                     cursor = child_token.range.end;
+                    let failure = std::mem::replace(&mut child_token.failure, None);
+                    failures.extend(failure);
+                    child_token.failure = None;
                     children.push(child_token);
                 }
-                Err(_) => {
-                    return Err(FluxError::new_matcher(
-                        "expected",
-                        pos,
-                        child.borrow().name().clone(),
-                    ))
+                Err(mut err) => {
+                    if err.matcher_name.is_none() {
+                        err.matcher_name = self.name().clone()
+                    }
+                    failures.push(err);
+                    let reduced = failures
+                        .into_iter()
+                        .reduce(FluxError::max)
+                        .expect("error always present");
+                    return Err(reduced);
                 }
             }
         }
@@ -46,6 +57,7 @@ impl Matcher for ListMatcher {
             matcher_name: self.name().clone(),
             source,
             matcher_id: self.id(),
+            failure: failures.into_iter().reduce(FluxError::max),
         })
     }
 

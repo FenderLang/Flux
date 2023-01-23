@@ -1,13 +1,13 @@
-use crate::matchers::MatcherName;
+use crate::{matchers::MatcherName, error::FluxError};
 use std::{fmt::Debug, ops::Range, rc::Rc};
 
-#[derive(Clone)]
 pub struct Token {
     pub matcher_name: MatcherName,
     pub matcher_id: usize,
     pub children: Vec<Token>,
     pub source: Rc<Vec<char>>,
     pub range: Range<usize>,
+    pub failure: Option<FluxError>,
 }
 
 impl Token {

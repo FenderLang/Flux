@@ -22,24 +22,46 @@ impl ChoiceMatcher {
 
 impl Matcher for ChoiceMatcher {
     impl_meta!();
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize) -> Result<Token> {
+    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
+        let mut errors: Vec<FluxError> = vec![];
         for child in &self.children {
-            if let Ok(token) = child.borrow().apply(source.clone(), pos) {
-                return Ok(Token {
-                    matcher_name: self.name().clone(),
-                    range: token.range.clone(),
-                    children: vec![token],
-                    source,
-                    matcher_id: self.id(),
-                });
+            let matched = child
+                .borrow()
+                .apply(source.clone(), pos, self.next_depth(depth));
+            match matched {
+                Ok(mut token) => {
+                    return Ok(Token {
+                        matcher_name: self.name().clone(),
+                        range: token.range.clone(),
+                        failure: {
+                            let failure = std::mem::replace(&mut token.failure, None);
+                            errors.extend(failure);
+                            errors.into_iter().reduce(FluxError::max)
+                        },
+                        children: vec![token],
+                        source,
+                        matcher_id: self.id(),
+                    });
+                }
+                Err(mut err) => {
+                    if err.matcher_name.is_none() {
+                        err.matcher_name = self.name().clone();
+                    }
+                    errors.push(err)
+                }
             }
         }
-
-        Err(FluxError::new_matcher(
-            "in ChoiceMatcher all children failed",
+        errors.push(FluxError::new_matcher(
+            "expected",
             pos,
+            depth,
             self.name().clone(),
-        ))
+            Some(source)
+        ));
+        Err(errors
+            .into_iter()
+            .reduce(FluxError::max)
+            .expect("error always present"))
     }
 
     fn min_length(&self) -> usize {
