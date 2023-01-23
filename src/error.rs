@@ -153,7 +153,7 @@ impl Display for FluxError {
                 output.push('\n');
 
                 let num_spaces = ((col as i32).max(1) - 6).max(0) as usize;
-                let num_underscores = col.min(6) - 1;
+                let num_underscores = ((col as i32).min(6) - 1).max(0) as usize;
 
                 output.push_str(
                     &(" ".repeat(num_spaces)
