@@ -30,13 +30,11 @@ impl StringMatcher {
 impl Matcher for StringMatcher {
     impl_meta!();
     fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
-        let mut zip = self
-            .to_match
-            .iter()
-            .zip(&source[pos..])
-            .take(self.to_match.len());
+        let mut compared_strings_zipped = self.to_match.iter().zip(&source[pos..]);
 
-        if zip.len() == self.to_match.len() && zip.all(|(a, b)| self.char_matches(a, b)) {
+        if compared_strings_zipped.len() == self.to_match.len()
+            && compared_strings_zipped.all(|(a, b)| self.char_matches(a, b))
+        {
             Ok(Token {
                 matcher_name: self.name().clone(),
                 children: vec![],
@@ -46,12 +44,27 @@ impl Matcher for StringMatcher {
                 failure: None,
             })
         } else {
+            let found_string_size = compared_strings_zipped.len();
+
+            let mismatched_character = compared_strings_zipped
+                .enumerate()
+                .find(|(_, (a, b))| !self.char_matches(a, b))
+                .map(|(index, _)| index);
+
+            let (error_position, description) = match mismatched_character {
+                Some(char_index) => (pos + char_index, "found text did not match expected string"),
+                None => (
+                    pos + found_string_size,
+                    "too short, string began to match but ended early",
+                ),
+            };
+
             Err(FluxError::new_matcher(
-                "expected",
-                pos,
+                description,
+                error_position,
                 depth,
                 self.name().clone(),
-                Some(source.clone())
+                Some(source.clone()),
             ))
         }
     }
