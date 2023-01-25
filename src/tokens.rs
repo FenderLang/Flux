@@ -1,5 +1,8 @@
-use crate::{matchers::MatcherName, error::FluxError};
+use self::token_iterator::Iter;
+use crate::{error::FluxError, matchers::MatcherName};
 use std::{fmt::Debug, ops::Range, rc::Rc};
+
+pub mod token_iterator;
 
 pub struct Token {
     pub matcher_name: MatcherName,
@@ -11,24 +14,53 @@ pub struct Token {
 }
 
 impl Token {
-    fn get_match(&self) -> String {
+    pub fn get_match(&self) -> String {
         self.source[self.range.clone()].iter().collect()
     }
 
     pub fn get_name(&self) -> &Option<String> {
         &self.matcher_name
     }
+
+    pub fn first(&self) -> Option<&Token> {
+        self.children.get(0)
+    }
+
+    pub fn all_children(&self) -> Iter {
+        Iter::new(self)
+    }
+
+    pub fn named_children(&self) -> impl Iterator<Item = &Token> {
+        Iter::new(self).filter(|t| t.matcher_name.is_some())
+    }
+
+    pub fn iter(&self) -> Iter {
+        Iter::new(self)
+    }
 }
 
 impl Debug for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut debug = f.debug_struct("Token");
+
         debug.field("name", &*self.matcher_name);
         debug.field("match", &self.get_match());
         debug.field("range", &self.range);
         if !self.children.is_empty() {
             debug.field("children", &self.children);
+            debug.finish_non_exhaustive()
+        } else {
+            debug.finish()
         }
-        debug.finish()
+    }
+}
+
+impl<'a> IntoIterator for &'a Token {
+    type Item = &'a Token;
+
+    type IntoIter = Iter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
     }
 }
