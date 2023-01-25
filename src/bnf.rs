@@ -19,11 +19,75 @@ pub fn parse(input: &str) -> Result<Lexer> {
     BNFParserState {
         source: Rc::new(input.chars().collect()),
         pos: 0,
+        templates: HashMap::new(),
     }
     .parse()
 }
 
+fn replace_placeholders(rule: &MatcherRef, map: &HashMap<String, MatcherRef>, error_on_fail: bool) -> Result<()> {
+    let Some(children) = rule.children() else {
+        return Ok(());
+    };
+    for c in children {
+        if c.borrow().is_placeholder() {
+            let borrow = c.borrow();
+            let name = &**borrow.name();
+            let matcher = name.as_ref().and_then(|n| map.get(n));
+            let Some(matcher) = matcher else {
+                if error_on_fail {
+                    return Err(FluxError::new_dyn(format!("Missing matcher for {}", name.as_ref().unwrap()), 0, None));
+                } else {
+                    continue;
+                }
+            };
+            drop(borrow);
+            c.replace(matcher.clone());
+        } else {
+            replace_placeholders(&c.borrow(), map, error_on_fail)?;
+        }
+    }
+    Ok(())
+}
+
+struct TemplateRule {
+    params: Vec<String>,
+    rule: MatcherRef,
+}
+
+fn deep_copy(matcher: MatcherRef) -> MatcherRef {
+    let matcher = matcher.with_meta(matcher.meta().clone());
+    let Some(children) = matcher.children() else {
+        return matcher;
+    };
+    for child in children {
+        let clone = deep_copy(child.borrow().clone());
+        child.replace(clone);
+    }
+    matcher
+}
+
+impl TemplateRule {
+    fn to_matcher(&self, params: Vec<MatcherRef>, pos: usize, source: Rc<Vec<char>>) -> Result<MatcherRef> {
+        let mut names = HashMap::new();
+        if params.len() != self.params.len() {
+            return Err(FluxError::new("wrong number of template arguments", pos, Some(source.clone())));
+        }
+        for (matcher, name) in params.into_iter().zip(&self.params) {
+            names.insert(name.clone(), matcher);
+        }
+        let matcher = deep_copy(self.rule.clone());
+        replace_placeholders(&matcher, &names, false)?;
+        Ok(matcher)
+    }
+}
+
+enum ParseLineResult {
+    Rule(MatcherRef, String),
+    Template(MatcherRef, Vec<String>, String),
+}
+
 struct BNFParserState {
+    templates: HashMap<String, TemplateRule>,
     source: Rc<Vec<char>>,
     pos: usize,
 }
@@ -34,22 +98,29 @@ impl BNFParserState {
         let mut rule_map: HashMap<String, MatcherRef> = HashMap::new();
         let mut id_map = HashMap::new();
         self.consume_line_breaks();
+        use ParseLineResult::*;
         while self.pos < self.source.len() {
-            if let Some((rule, name)) = self.parse_rule(rules.len() + 1)? {
-                rules.push(rule.clone());
-                id_map.insert(name.clone(), rule.id());
-                if rule_map.insert(name.clone(), rule).is_some() {
-                    return Err(FluxError::new_dyn(
-                        format!("Duplicate rule name {}", name),
-                        0,
-                        Some(self.source.clone()),
-                    ));
+            match self.parse_rule(rules.len() + 1)? {
+                Some(Rule(rule, name)) => {
+                    rules.push(rule.clone());
+                    id_map.insert(name.clone(), rule.id());
+                    if rule_map.insert(name.clone(), rule).is_some() {
+                        return Err(FluxError::new_dyn(
+                            format!("Duplicate rule name {}", name),
+                            0,
+                            Some(self.source.clone()),
+                        ));
+                    }
+                },
+                Some(Template(rule, params, name)) => {
+                    self.templates.insert(name, TemplateRule { params, rule });
                 }
+                _ => (),
             }
             self.consume_line_breaks();
         }
         for rule in &rules {
-            Self::replace_placeholders(rule, &rule_map)?;
+            replace_placeholders(rule, &rule_map, true)?;
         }
         let root = rule_map
             .get("root")
@@ -57,39 +128,18 @@ impl BNFParserState {
         Ok(Lexer::new(root.clone(), id_map))
     }
 
-    fn replace_placeholders(rule: &MatcherRef, map: &HashMap<String, MatcherRef>) -> Result<()> {
-        let children = match rule.children() {
-            Some(children) => children,
-            None => return Ok(()),
-        };
-
-        for c in children {
-            Self::replace_placeholders(&c.borrow(), map)?;
-            if c.borrow().is_placeholder() {
-                let borrow = c.borrow();
-                let name = &**borrow.name();
-                let matcher = name.as_ref().and_then(|n| map.get(n)).ok_or_else(|| {
-                    FluxError::new_dyn(
-                        format!("Missing matcher for {}", name.as_ref().unwrap()),
-                        0,
-                        None,
-                    )
-                })?;
-                drop(borrow);
-                c.replace(matcher.clone());
-            }
-        }
-        Ok(())
-    }
-
-    fn parse_rule(&mut self, id: usize) -> Result<Option<(MatcherRef, String)>> {
+    fn parse_rule(&mut self, id: usize) -> Result<Option<ParseLineResult>> {
         if self.check_str("//") {
             self.consume_comment();
             return Ok(None);
         }
         let name = self.parse_word()?;
-        let transparent = self.check_str("!0");
+        let mut template_params = None;
+        if self.check_char('<') {
+            template_params = Some(self.parse_template_param_names()?);
+        }
         let meta = MatcherMeta::new(Some(name.clone()), id);
+        let transparent = self.check_str("!0");
         self.call_assert("whitespace", Self::consume_whitespace)?;
         self.assert_str("::=")?;
         self.call_assert("whitespace", Self::consume_whitespace)?;
@@ -107,7 +157,26 @@ impl BNFParserState {
         if !transparent {
             matcher = matcher.with_meta(meta);
         }
-        Ok(Some((matcher, name)))
+        if let Some(params) = template_params {
+            Ok(Some(ParseLineResult::Template(matcher, params, name)))
+        } else {
+            Ok(Some(ParseLineResult::Rule(matcher, name)))
+        }
+    }
+
+    fn parse_template_param_names(&mut self) -> Result<Vec<String>> {
+        let mut names = vec![self.parse_word()?];
+        while let Some(c) = self.advance() {
+            match c {
+                ',' => {
+                    self.consume_whitespace();
+                    names.push(self.parse_word()?);
+                }
+                '>' => return Ok(names),
+                _ => break,
+            }
+        }
+        Err(FluxError::new("Expected >", self.pos, Some(self.source.clone())))
     }
 
     fn peek(&self) -> Option<char> {
@@ -264,8 +333,32 @@ impl BNFParserState {
 
     fn parse_placeholder(&mut self) -> Result<MatcherRef> {
         let name = self.parse_word()?;
+        if self.check_char('<') {
+            let params = self.parse_template_params()?;
+            let template = self.templates.get(&name).ok_or(FluxError::new_dyn(
+                format!("No template rule with name {name}"),
+                self.pos,
+                Some(self.source.clone()),
+            ))?;
+            return Ok(template.to_matcher(params, self.pos, self.source.clone())?);
+        }
         let matcher = PlaceholderMatcher::new(MatcherMeta::new(Some(name), 0));
         Ok(Rc::new(matcher))
+    }
+
+    fn parse_template_params(&mut self) -> Result<Vec<MatcherRef>> {
+        let mut params = vec![self.parse_list()?];
+        while let Some(c) = self.advance() {
+            match c {
+                ',' => {
+                    self.consume_whitespace();
+                    params.push(self.parse_list()?);
+                }
+                '>' => return Ok(params),
+                _ => break,
+            }
+        }
+        Err(FluxError::new("Expected >", self.pos, Some(self.source.clone())))
     }
 
     fn parse_number(&mut self) -> Result<usize> {

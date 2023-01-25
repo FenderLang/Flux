@@ -8,8 +8,8 @@ pub(crate) type MatcherRef = Rc<dyn Matcher>;
 pub(crate) type MatcherChildren = Vec<RefCell<MatcherRef>>;
 pub(crate) type MatcherName = Rc<Option<String>>;
 
-#[derive(Clone, Debug, Default)]
-pub struct MatcherMeta {
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+pub struct MatcherMeta { 
     pub name: MatcherName,
     pub id: usize,
 }

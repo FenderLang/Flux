@@ -1,0 +1,8 @@
+delimitedList<elem, delim, whitespace> ::= elem whitespace? (delim whitespace? elem)*
+wrappedDelimitedList<begin, end, elem, delim, whitespace> ::= begin whitespace? delimitedList<elem, delim, whitespace>? whitespace? end
+
+sep ::= [ \t]+
+
+root ::= list
+list ::= wrappedDelimitedList<"[", "]", number, ",", sep>
+number ::= [0-9]+

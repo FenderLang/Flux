@@ -129,3 +129,12 @@ fn just_eof_test() {
     lex.tokenize("a").unwrap();
     lex.tokenize("a ").unwrap_err();
 }
+
+#[test]
+fn template_test() {
+    let lexer = bnf::parse(include_str!("bnf/template.bnf")).unwrap();
+    lexer.tokenize("[]").unwrap();
+    lexer.tokenize("[1]").unwrap();
+    lexer.tokenize("[1, 2]").unwrap();
+    lexer.tokenize("[1, 2").unwrap_err();
+}

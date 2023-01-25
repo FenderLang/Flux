@@ -1,8 +1,11 @@
+delimitedList<elem, delim, whitespace> ::= elem whitespace? (delim whitespace? elem)*
+wrappedDelimitedList<begin, end, elem, delim, whitespace> ::= begin whitespace? delimitedList<elem, delim, whitespace>? whitespace? end
+
 sep ::= [ \t]+
 newLine ::= "\r"? "\n"
 break ::= sep? ((";" | comment? newLine) sep?)+
 lineBreak ::= sep? comment? (newLine sep?)+
-lineSep ::= lineBreak | sep
+lineSep ::= (lineBreak | sep)+
 comment ::= "#" [^\n]*
 
 root ::= break? (statement break)* statement? break?
@@ -19,7 +22,7 @@ binaryOperator ::= "||" | "&&" | "==" | "<=" | ">=" | ".." "="? | [-+*/^<>]
 unaryOperator ::= [-!]
 
 label ::= "`" name lineSep
-expr ::= label? term (lineSep? binaryOperator lineSep? term)*
+expr ::= label? delimitedList<term, binaryOperator, lineSep>
 enclosedExpr ::= "(" lineSep? expr lineSep? ")"
 term ::= (unaryOperator sep?)* value sep? tailOperationChain?
 lambdaParameter ::= "$"
@@ -31,24 +34,25 @@ name ::= ("_" | alpha) alphanum*
 
 literal ::= float | int | boolean | string | list | map | closure
 int ::= "-"? [0-9]+
-list ::= "[" lineSep? (expr (lineSep? "," lineSep? expr)*)? lineSep? "]"
+list ::= wrappedDelimitedList<"[", "]", expr, ",", lineSep>
 mapEntry ::= expr lineSep? ":" lineSep? expr
 emptyMap ::= "[" lineSep? ":" lineSep? "]"
-map ::= emptyMap | "[" lineSep? mapEntry (lineSep? "," lineSep? mapEntry)* lineSep? "]"
+map ::= emptyMap | wrappedDelimitedList<"[", "]", mapEntry, ",", lineSep>
 float ::= "-"? ([0-9]+)? "." [0-9]+
 string ::= "\"" (escapeSequence | [^"])* "\""
 escapeSequence ::= "\\" [^]
 boolean ::= "true" | "false"
 
 invoke ::= invokeArgs | codeBody
-invokeArgs ::= "(" lineSep? (expr lineSep? ("," lineSep? expr)*)? sep? ")"
+invokeArgs ::= wrappedDelimitedList<"(", ")", expr, ",", lineSep>
 
-structDeclaration ::= "struct" sep? name lineSep? "{" lineSep? (arg (lineSep? "," lineSep? arg)*)? lineSep? "}"
+structBody ::= wrappedDelimitedList<"{", "}", arg, ",", lineSep>
+structDeclaration ::= "struct" sep? name lineSep? structBody
 
 arg ::= name (sep? typeAnnotation)?
 typeAnnotation ::= ":" lineSep? name
 codeBody ::= "{" break? (statement break)* statement? break? "}"
-args ::= "(" lineSep? (arg lineSep? ("," lineSep? arg)*)? lineSep? ")"
+args ::= wrappedDelimitedList<"(", ")", arg, ",", lineSep>
 closure ::= args? lineSep? codeBody
 functionDeclaration ::= "fn" sep? name lineSep? args lineSep? ("=" lineSep? expr | codeBody)
 
