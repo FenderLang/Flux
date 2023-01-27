@@ -7,24 +7,8 @@ fn main() {
     let mut lexer = match bnf::parse(bnf_input) {
         Ok(v) => v,
         Err(e) => {
-            let line = "-".repeat(40);
-
-            println!(
-                "Full Monty                     |  {{}} \n{line}\n{}\n{line}\n",
-                e
-            );
-            println!(
-                "\n\ndefault but with -             |  {{:-}} \n{line}\n{:-}\n{line}\n",
-                e
-            );
-            println!(
-                "\n\nuser friendly                  |  {{:#}} \n{line}\n{:#}\n{line}\n",
-                e
-            );
-            println!(
-                "\n\nuser friendly with plus sign   |  {{:+#}} \n{line}\n{:+#}\n{line}\n",
-                e
-            );
+            println!("Full error:\n{}", e);
+            println!("user friendly:\n{:+#}", e);
             return;
         }
     };
@@ -42,29 +26,15 @@ fn main() {
     let root_token = match res {
         Ok(token) => token,
         Err(e) => {
-            let line = "-".repeat(40);
-
-            println!(
-                "Full Monty                     |  {{}} \n{line}\n{}\n{line}\n",
-                e
-            );
-            println!(
-                "\n\ndefault but with -             |  {{:-}} \n{line}\n{:-}\n{line}\n",
-                e
-            );
-            println!(
-                "\n\nuser friendly                  |  {{:#}} \n{line}\n{:#}\n{line}\n",
-                e
-            );
-            println!(
-                "\n\nuser friendly with plus sign   |  {{:+#}} \n{line}\n{:+#}\n{line}\n",
-                e
-            );
+            println!("Full error:\n{}", e);
+            println!("user friendly:\n{:+#}", e);
             return;
         }
     };
 
-    println!("{:#?}", root_token);
-    root_token.iter().for_each(|t| println!("{:?}  {}", t.get_name(), t.get_match()));
+    // println!("{:#?}", root_token);
+    
+    root_token.named_children("args")
+        .for_each(|t| println!("{:?}  {}", t.get_name(), t.get_match()));
     println!("{:#?}", root_token.first());
 }
