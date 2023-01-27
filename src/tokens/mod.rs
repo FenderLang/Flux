@@ -30,6 +30,7 @@ impl Token {
     }
 
     /// Get an iterator over all children of token
+    /// 
     /// Equivalent to calling `self.iter()`
     pub fn all_children(&self) -> Iter {
         Iter::new(self)
