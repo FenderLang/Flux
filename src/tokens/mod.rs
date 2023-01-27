@@ -36,10 +36,9 @@ impl Token {
     }
 
     /// get an iterator over all children of `self` with a given `name`
-    pub fn children_named(&self, name: impl ToString) -> impl Iterator<Item = &Token> {
-        let name = name.to_string();
+    pub fn children_named(&self, name: impl AsRef<str>) -> impl Iterator<Item = &Token> {
         Iter::new(self)
-            .filter(move |t| matches!(t.matcher_name.as_ref(), Some(n) if n == &name))
+            .filter(move |t| matches!(t.matcher_name.as_ref(), Some(n) if n == name.as_ref()))
     }
 
     /// get an iterator over all children in `self`
