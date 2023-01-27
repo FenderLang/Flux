@@ -14,34 +14,34 @@ pub struct Token {
 }
 
 impl Token {
-    /// get the content the token is matching from the source
+    /// Get the content the token is matching from the source.
     pub fn get_match(&self) -> String {
         self.source[self.range.clone()].iter().collect()
     }
 
-    /// return the name of the matcher that created the token
+    /// Return the name of the matcher that created the token.
     pub fn get_name(&self) -> &Option<String> {
         &self.matcher_name
     }
 
-    /// get the first child of the token
+    /// Get the first child of the token
     pub fn first(&self) -> Option<&Token> {
         self.children.get(0)
     }
 
-    /// get an iterator over all children of token
-    /// equivalent to calling `self.iter()`
+    /// Get an iterator over all children of token
+    /// Equivalent to calling `self.iter()`
     pub fn all_children(&self) -> Iter {
         Iter::new(self)
     }
 
-    /// get an iterator over all children of `self` with a given `name`
+    /// Get an iterator over all children of `self` with a given `name`
     pub fn children_named(&self, name: impl AsRef<str>) -> impl Iterator<Item = &Token> {
         Iter::new(self)
             .filter(move |t| matches!(t.matcher_name.as_ref(), Some(n) if n == name.as_ref()))
     }
 
-    /// get an iterator over all children in `self`
+    /// Get an iterator over all children in `self`
     pub fn iter(&self) -> Iter {
         Iter::new(self)
     }
