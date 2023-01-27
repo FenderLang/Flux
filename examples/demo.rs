@@ -33,8 +33,8 @@ fn main() {
     };
 
     // println!("{:#?}", root_token);
-    
-    root_token.named_children("args")
+
+    root_token.children_named("args")
         .for_each(|t| println!("{:?}  {}", t.get_name(), t.get_match()));
     println!("{:#?}", root_token.first());
 }
