@@ -154,12 +154,12 @@ impl BNFParserState {
         if self.check_str("//") {
             self.consume_comment();
         }
-        if !transparent {
-            matcher = matcher.with_meta(meta);
-        }
         if let Some(params) = template_params {
             Ok(Some(ParseLineResult::Template(matcher, params, name)))
         } else {
+            if !transparent {
+                matcher = matcher.with_meta(meta);
+            }
             Ok(Some(ParseLineResult::Rule(matcher, name)))
         }
     }
