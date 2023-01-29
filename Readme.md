@@ -4,25 +4,77 @@ A lexer generator for any context-free syntax in 100% rust with no dependencies.
 
 Created for [Fender-lang](https://github.com/FenderLang/).
 
+# Lexer
+
+## What is a Lexer
+- A Lexer is part of an interpreter that takes sequence of characters and turns them into tokens.
+
+## How to use the Lexer
+
+First define your BNF input
+```rust
+let bnf_input = include_str!("../src/tests/bnf/fender.bnf");
+```
+
+Then you need to setup a matcher to be able to parse the bnf
+```rust
+    let mut lexer = match bnf::parse(bnf_input){
+        Ok(v) => v,
+        Err(e) => { 
+            //Error Messages
+            return;
+        },
+    };
+```
+
+## How to set Lexer Rules
+Now that you have `lexer` we can use that to now set some rules
+```rust
+lexer.add_rule_for_names(
+        vec!["sep", "lineSep", "alpha", "alphanum", "break", "newLine"]
+            .iter()
+            .map(ToString::to_string)
+            .collect(),
+        CullStrategy::DeleteAll,
+    );
+```
+
+# Tokens
+To tokenize your input we need to first define the result like so
+```rust
+let res = lexer.tokenize(test_input);
+```
+
+Then using res we can match it like this to get our tokenized BNF
+```rust
+match res {
+        Ok(token) => println!("{:#?}", token),
+        Err(e) => {
+        //Error Messages
+        },
+    }
+```
+
+
 # BNF
 
 Flux BNF is a syntax that's somewhat like regex, and will have many familiar elements if you know regex.
 
 Every BNF file defines "rules", which are named expressions specifying syntax. Every rule is a name followed by a definition.
 
-```
+```rust
 digit ::= [0-9]
 ```
 
 This defines a rule called `digit` which matches any single digit character.
 
-```
+```rust
 number ::= [0-9]+
 ```
 
 This defines a rule called `number` which matches one or more digits repeatedly.
 
-```
+```rust
 boolean ::= "true" | "false"
 ```
 
@@ -32,7 +84,7 @@ Strings can be prefixed with `i` to make them case-insensitive, like `i"text her
 
 Every BNF file must include a rule called `root`, which will always be expected to match the entire input.
 
-```
+```rust
 root ::= numberList
 number ::= [0-9]+
 numberList ::= number ("," number)*
@@ -43,7 +95,7 @@ It will match the input `1`, `1,2`, `9,1023854,16765`, but not an empty input, s
 
 Following a matcher with `?` will make it optional, though:
 
-```
+```rust
 root ::= numberList
 sep ::= " "+
 number ::= [0-9]+
@@ -54,7 +106,7 @@ Here we use `sep` optionally to allow the input to include spaces between number
 
 This pattern is very common in BNF, and is called the "delimited list pattern". You can generify it using template rules:
 
-```
+```rust
 delimitedList<elem, delim, whitespace> ::= elem whitespace? (delim whitespace? elem)*
 
 root ::= numberList
