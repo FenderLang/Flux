@@ -18,6 +18,8 @@ fn main() {
         CullStrategy::DeleteAll,
     );
 
+    lexer.add_rule_for_names(vec!["pow", "add", "mul", "range", "cmp", "and", "or"], CullStrategy::LiftNChildren(1));
+
     let res = lexer.tokenize(test_input);
 
     let root_token = match res {

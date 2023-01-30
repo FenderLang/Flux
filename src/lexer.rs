@@ -15,8 +15,8 @@ pub enum CullStrategy {
     DeleteChildren,
     /// Delete the token and replace it with its children in its parent
     LiftChildren,
-    /// Delete the token and replace it with its child only if it has zero or one children
-    LiftChild,
+    /// Delete the token and replace it with its child only if it has N or less children
+    LiftNChildren(usize),
 }
 
 #[derive(Debug, Clone)]
@@ -101,8 +101,8 @@ fn apply_cull_strat(cull_strat: CullStrategy, mut token: Token) -> Vec<Token> {
             vec![token]
         }
         CullStrategy::LiftChildren => token.children,
-        CullStrategy::LiftChild => {
-            if token.children.len() <= 1 {
+        CullStrategy::LiftNChildren(n) => {
+            if token.children.len() <= n {
                 token.children
             } else {
                 vec![token]
