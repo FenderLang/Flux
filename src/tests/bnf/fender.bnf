@@ -21,12 +21,20 @@ importAs ::= "as" sep name
 binaryOperator ::= "||" | "&&" | "==" | "<=" | ">=" | ".." "="? | [-+*/^<>]
 unaryOperator ::= [-!]
 
+expr ::= label? or
 label ::= "`" name lineSep
-expr ::= label? delimitedList<term, binaryOperator, lineSep>
 enclosedExpr ::= "(" lineSep? expr lineSep? ")"
 term ::= (unaryOperator sep?)* value sep? tailOperationChain?
 lambdaParameter ::= "$"
 value ::= literal | enclosedExpr | name | lambdaParameter
+
+pow ::= delimitedList<term, "^", lineSep>
+mul ::= delimitedList<pow, [*/], lineSep>
+add ::= delimitedList<mul, [-+], lineSep>
+range ::= delimitedList<add, ".." "="?, lineSep>
+cmp ::= delimitedList<range, ">=" | "<=" | "==" | "!=" | [<>], lineSep>
+and ::= delimitedList<cmp, "&&", lineSep>
+or ::= delimitedList<and, "||", lineSep>
 
 alpha ::= [a-z] | [A-Z]
 alphanum ::= [a-z] | [A-Z] | [0-9] | "_"

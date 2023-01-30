@@ -14,12 +14,11 @@ fn main() {
     };
 
     lexer.add_rule_for_names(
-        vec!["sep"]
-            .iter()
-            .map(ToString::to_string)
-            .collect(),
+        vec!["sep"],
         CullStrategy::DeleteAll,
     );
+
+    lexer.add_rule_for_names(vec!["pow", "add", "mul", "range", "cmp", "and", "or"], CullStrategy::LiftNChildren(1));
 
     let res = lexer.tokenize(test_input);
 
