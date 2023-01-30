@@ -14,10 +14,7 @@ fn main() {
     };
 
     lexer.add_rule_for_names(
-        vec!["sep"]
-            .iter()
-            .map(ToString::to_string)
-            .collect(),
+        vec!["sep"],
         CullStrategy::DeleteAll,
     );
 
