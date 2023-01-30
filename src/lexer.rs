@@ -15,8 +15,8 @@ pub enum CullStrategy {
     DeleteChildren,
     /// Delete the token and replace it with its children in its parent
     LiftChildren,
-    /// Delete the token and replace it with its child only if it has N or less children
-    LiftNChildren(usize),
+    /// Delete the token and replace it with its children only if it has N or less children
+    LiftAtMost(usize),
 }
 
 #[derive(Debug, Clone)]

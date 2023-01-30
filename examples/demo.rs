@@ -18,7 +18,7 @@ fn main() {
         CullStrategy::DeleteAll,
     );
 
-    lexer.add_rule_for_names(vec!["pow", "add", "mul", "range", "cmp", "and", "or"], CullStrategy::LiftNChildren(1));
+    lexer.add_rule_for_names(vec!["pow", "add", "mul", "range", "cmp", "and", "or"], CullStrategy::LiftAtMost(1));
 
     let res = lexer.tokenize(test_input);
 
