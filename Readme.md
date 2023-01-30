@@ -30,13 +30,7 @@ Then you need to setup a matcher to be able to parse the bnf
 ## How to set Lexer Rules
 Now that you have `lexer` we can use that to now set some rules
 ```rust
-lexer.add_rule_for_names(
-        vec!["sep", "lineSep", "alpha", "alphanum", "break", "newLine"]
-            .iter()
-            .map(ToString::to_string)
-            .collect(),
-        CullStrategy::DeleteAll,
-    );
+ lexer.add_rule_for_names(vec!["pow", "add", "mul", "range", "cmp", "and", "or"], CullStrategy::LiftNChildren(1));
 ```
 
 # Tokens
