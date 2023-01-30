@@ -14,7 +14,7 @@ fn main() {
     };
 
     lexer.add_rule_for_names(
-        vec!["sep", "lineSep", "alpha", "alphanum", "break", "newLine"]
+        vec!["sep"]
             .iter()
             .map(ToString::to_string)
             .collect(),
