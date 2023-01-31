@@ -101,7 +101,7 @@ fn apply_cull_strat(cull_strat: CullStrategy, mut token: Token) -> Vec<Token> {
             vec![token]
         }
         CullStrategy::LiftChildren => token.children,
-        CullStrategy::LiftNChildren(n) => {
+        CullStrategy::LiftAtMost(n) => {
             if token.children.len() <= n {
                 token.children
             } else {
