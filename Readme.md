@@ -25,7 +25,7 @@ let mut lexer = flux_bnf::bnf::parse(bnf_input).unwrap();
 Now that you have `Lexer` we can use that to now set some rules
 
 First you will need to add some rules to the BNF before we can set the rules
-```rust
+```
 NumberList ::= number (sep number)*
 sep ::= " "
 number ::= [0-9]+
@@ -73,19 +73,19 @@ Flux BNF is a syntax that's somewhat like regex, and will have many familiar ele
 
 Every BNF file defines "rules", which are named expressions specifying syntax. Every rule is a name followed by a definition.
 
-```rust
+```
 digit ::= [0-9]
 ```
 
 This defines a rule called `digit` which matches any single digit character.
 
-```rust
+```
 number ::= [0-9]+
 ```
 
 This defines a rule called `number` which matches one or more digits repeatedly.
 
-```rust
+```
 boolean ::= "true" | "false"
 ```
 
@@ -95,7 +95,7 @@ Strings can be prefixed with `i` to make them case-insensitive, like `i"text her
 
 Every BNF file must include a rule called `root`, which will always be expected to match the entire input.
 
-```rust
+```
 root ::= numberList
 number ::= [0-9]+
 numberList ::= number ("," number)*
@@ -106,7 +106,7 @@ It will match the input `1`, `1,2`, `9,1023854,16765`, but not an empty input, s
 
 Following a matcher with `?` will make it optional, though:
 
-```rust
+```
 root ::= numberList
 sep ::= " "+
 number ::= [0-9]+
@@ -117,7 +117,7 @@ Here we use `sep` optionally to allow the input to include spaces between number
 
 This pattern is very common in BNF, and is called the "delimited list pattern". You can generify it using template rules:
 
-```rust
+```
 delimitedList<elem, delim, whitespace> ::= elem whitespace? (delim whitespace? elem)*
 
 root ::= numberList
