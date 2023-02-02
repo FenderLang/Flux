@@ -13,42 +13,59 @@ Created for [Fender-lang](https://github.com/FenderLang/).
 
 First define your BNF input
 ```rust
-let bnf_input = include_str!("../src/tests/bnf/fender.bnf");
+let bnf_input = include_str!("path/to/example.bnf");
 ```
 
-Then you need to setup a matcher to be able to parse the bnf
+To parse the input you should use `flux_bnf::bnf::parse`
 ```rust
-    let mut lexer = match bnf::parse(bnf_input){
-        Ok(v) => v,
-        Err(e) => { 
-            //Error Messages
-            return;
-        },
-    };
+let mut lexer = flux_bnf::bnf::parse(bnf_input).unwrap();     
 ```
 
 ## How to set Lexer Rules
-Now that you have `lexer` we can use that to now set some rules
+Now that you have `Lexer` we can use that to now set some rules
+
+First you will need to add some rules to the BNF before we can set the rules
 ```rust
- lexer.add_rule_for_names(vec!["pow", "add", "mul", "range", "cmp", "and", "or"], CullStrategy::LiftNChildren(1));
+NumberList ::= number (sep number)*
+sep ::= " "
+number ::= [0-9]+
 ```
+`add_rule_for_names` takes in a 2 arguments. The First one being a `list` or in our case `vec!` of names you want to set a rule for.
+The second argument is the rule you want to set, specifiying how theses rules should be handled. By default the lexer will insert `CullStrategy::LiftChildren` if no argument is found. 
+
+`CullStrategy::None` - Leaves the tokens alone
+
+`CullStrategy::DeleteAll` - Deletes the token and all of its children
+
+`CullStrategy::DeleteChildren` - Deletes the children of the token but not the token itself
+
+`CullStrategy::LiftChildren` - Deletes the token and replaces it with its children in its parent
+
+`CullStrategy::LiftAtMost(usize)` - Delete the token and replace it with its children only if it has N or less children
+
+Once done it should look similar to this (depending on your rules and strategy)
+```rust
+lexer.add_rule_for_names(vec!["sep"], CullStrategy::DeleteAll);
+```
+
 
 # Tokens
-To tokenize your input we need to first define the result like so
-```rust
-let res = lexer.tokenize(test_input);
-```
 
-Then using res we can match it like this to get our tokenized BNF
+Then using res we can match it like this to get our tokenized BNF    
 ```rust
-match res {
-        Ok(token) => println!("{:#?}", token),
-        Err(e) => {
-        //Error Messages
-        },
-    }
+lexer.tokenize(test_input).unwrap()
 ```
+This can error, but we're not handling it here since this is just an example
 
+However `FluxError` has some options for debug printing to make it much nicer
+
+`{:?}` - Standard Debug
+
+`{:#?}` - Pretty Debug
+
+`{:#}` - User-friendly Debug
+
+`{:+#}` - User-friendly with more details
 
 # BNF
 
