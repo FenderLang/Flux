@@ -24,14 +24,147 @@ let mut lexer = flux_bnf::bnf::parse(bnf_input).unwrap();
 ## How to set Lexer Rules
 Now that you have `Lexer` we can use that to now set some rules
 
-First you will need to add some rules to the BNF before we can set the rules
+Before being able to set some rules you will need write a BNF describing the syntax which you can find [here](#bnf)
+
+Here is an example of what our BNF looks like
 ```
-NumberList ::= number (sep number)*
+root ::= NumberList
 sep ::= " "
 number ::= [0-9]+
+NumberList ::= number (sep number)*
 ```
-`add_rule_for_names` takes in a 2 arguments. The First one being a `list` or in our case `vec!` of names you want to set a rule for.
-The second argument is the rule you want to set, specifiying how theses rules should be handled. By default the lexer will insert `CullStrategy::LiftChildren` if no argument is found. 
+
+Token input using BNF
+`1 2 3`
+
+Token output
+```
+Some(
+    Token {
+        name: Some(
+            "NumberList",
+        ),
+        match: "1 2 3",
+        range: 0..5,
+        children: [
+            Token {
+                name: Some(
+                    "number",
+                ),
+                match: "1",
+                range: 0..1,
+            },
+            Token {
+                name: Some(
+                    "number",
+                ),
+                match: "2",
+                range: 2..3,
+            },
+            Token {
+                name: Some(
+                    "number",
+                ),
+                match: "3",
+                range: 4..5,
+            },
+        ],
+        ..
+    },
+)
+```
+To apply the rules to the `lexer` you simpily do
+```rust
+lexer.add_rule_for_names(vec!["sep"], CullStrategy::DeleteAll);
+```
+
+This is what the tokenized tree would look like before applying the rules
+```
+Some(
+    Token {
+        name: Some(
+            "NumberList",
+        ),
+        match: "1 2 3",
+        range: 0..5,
+        children: [
+            Token {
+                name: Some(
+                    "number",
+                ),
+                match: "1",
+                range: 0..1,
+            },
+            Token {
+                name: Some(
+                    "sep",
+                ),
+                match: " ",
+                range: 1..2,
+            },
+            Token {
+                name: Some(
+                    "number",
+                ),
+                match: "2",
+                range: 2..3,
+            },
+            Token {
+                name: Some(
+                    "sep",
+                ),
+                match: " ",
+                range: 3..4,
+            },
+            Token {
+                name: Some(
+                    "number",
+                ),
+                match: "3",
+                range: 4..5,
+            },
+        ],
+        ..
+    },
+)
+```
+This is what the tree would look like after the rules were applied. You can see that the seps were taken out of the tree making it easier to read. 
+```
+Some(
+    Token {
+        name: Some(
+            "NumberList",
+        ),
+        match: "1 2 3",
+        range: 0..5,
+        children: [
+            Token {
+                name: Some(
+                    "number",
+                ),
+                match: "1",
+                range: 0..1,
+            },
+            Token {
+                name: Some(
+                    "number",
+                ),
+                match: "2",
+                range: 2..3,
+            },
+            Token {
+                name: Some(
+                    "number",
+                ),
+                match: "3",
+                range: 4..5,
+            },
+        ],
+        ..
+    },
+)
+```
+`CullStrategy` is what we want to do with those name when they are in the list. By default the lexer will insert `CullStrategy::LiftChildren` if no argument is found. 
 
 `CullStrategy::None` - Leaves the tokens alone
 
@@ -43,19 +176,12 @@ The second argument is the rule you want to set, specifiying how theses rules sh
 
 `CullStrategy::LiftAtMost(usize)` - Delete the token and replace it with its children only if it has N or less children
 
-Once done it should look similar to this (depending on your rules and strategy)
-```rust
-lexer.add_rule_for_names(vec!["sep"], CullStrategy::DeleteAll);
-```
-
-
 # Tokens
 
-Then using res we can match it like this to get our tokenized BNF    
+To tokenize your input you simpily just do
 ```rust
 lexer.tokenize(test_input).unwrap()
 ```
-This can error, but we're not handling it here since this is just an example
 
 However `FluxError` has some options for debug printing to make it much nicer
 
@@ -66,6 +192,24 @@ However `FluxError` has some options for debug printing to make it much nicer
 `{:#}` - User-friendly Debug
 
 `{:+#}` - User-friendly with more details
+
+Pretty Debug Output
+```
+FluxError {
+    description: "expected",
+    location: 0,
+    match_ref: Some(
+        "number",
+    ),
+}
+```
+User-friendly with more 
+```
+FluxError expected `number` at line 1 col 0
+ 1 2 3
+^
+```
+
 
 # BNF
 
