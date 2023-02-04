@@ -11,6 +11,8 @@ Created for [Fender-lang](https://github.com/FenderLang/).
 
 ## How to use the Lexer
 
+Before we start to define anything for the lexer you will need to learn the syntax for [BNF](#bnf)
+
 First define your BNF input
 ```rust
 let bnf_input = include_str!("path/to/example.bnf");
@@ -22,9 +24,7 @@ let mut lexer = flux_bnf::bnf::parse(bnf_input).unwrap();
 ```
 
 ## How to set Lexer Rules
-Now that you have `Lexer` we can use that to now set some rules
-
-Before being able to set some rules you will need write a BNF describing the syntax which you can find [here](#bnf)
+Now that you have `Lexer` we can use that to now set up some BNF rules
 
 Here is an example of what our BNF looks like
 ```
@@ -37,48 +37,12 @@ NumberList ::= number (sep number)*
 Token input using BNF
 `1 2 3`
 
-Token output
-```
-Some(
-    Token {
-        name: Some(
-            "NumberList",
-        ),
-        match: "1 2 3",
-        range: 0..5,
-        children: [
-            Token {
-                name: Some(
-                    "number",
-                ),
-                match: "1",
-                range: 0..1,
-            },
-            Token {
-                name: Some(
-                    "number",
-                ),
-                match: "2",
-                range: 2..3,
-            },
-            Token {
-                name: Some(
-                    "number",
-                ),
-                match: "3",
-                range: 4..5,
-            },
-        ],
-        ..
-    },
-)
-```
-To apply the rules to the `lexer` you simpily do
+The BNF rules is what defines the syntax of the stuff thats being passed in. The lexer rules tell the lexer what to do with those things that are being passed in from the from the rules list in the lexer, as seen below.
 ```rust
 lexer.add_rule_for_names(vec!["sep"], CullStrategy::DeleteAll);
 ```
 
-This is what the tokenized tree would look like before applying the rules
+Below is what the tokenized tree is what it would look like before applying the rules and the second tree is what it would look like after the rules were applied. You can see that the seps were taken out of the tree making it easier to read.
 ```
 Some(
     Token {
@@ -128,7 +92,7 @@ Some(
     },
 )
 ```
-This is what the tree would look like after the rules were applied. You can see that the seps were taken out of the tree making it easier to read. 
+
 ```
 Some(
     Token {
