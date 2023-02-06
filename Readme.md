@@ -24,9 +24,9 @@ let mut lexer = flux_bnf::bnf::parse(bnf_input).unwrap();
 ```
 
 ## How to set Lexer Rules
-Now that you have `Lexer` we can use that to now set up some BNF rules
+Now that you have `Lexer` we can use that to now set up some token culling rules
 
-Here is an example of what our BNF looks like
+Here is an example of what our Token culling rules look like
 ```
 root ::= NumberList
 sep ::= " "
@@ -37,7 +37,7 @@ NumberList ::= number (sep number)*
 Token input using BNF
 `1 2 3`
 
-The BNF rules is what defines the syntax of the stuff thats being passed in. The lexer rules tell the lexer what to do with those things that are being passed in from the from the rules list in the lexer, as seen below.
+The Token culling rules is what defines the syntax of the token input that is being passed in. The lexer rules tell the lexer what to do with those things that are being passed in from the from the rules list in the lexer, as seen below.
 ```rust
 lexer.add_rule_for_names(vec!["sep"], CullStrategy::DeleteAll);
 ```
