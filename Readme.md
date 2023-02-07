@@ -37,7 +37,7 @@ NumberList ::= number (sep number)*
 Token input
 `1 2 3`
 
-The token culling rules tell the lexer what do with the objects it is being passed, allowing the lexer to take objects out before returning the token tree with them in it. 
+The token culling rules tell the lexer what do with tokens with the given names, allowing the lexer to remove tokens that match the token name before returning the token tree with them in it. 
 ```rust
 lexer.add_rule_for_names(vec!["sep"], CullStrategy::DeleteAll);
 ```
@@ -92,7 +92,7 @@ Some(
     },
 )
 ```
-You can see that in this second tree the seps were taken out of the tree making it easier to read.
+You can see that in this second tree the `sep` tokens were taken out of the tree making it easier to read.
 ```
 Some(
     Token {
@@ -128,7 +128,7 @@ Some(
     },
 )
 ```
-`CullStrategy` is what we want to do with those name when they are in the list. By default the lexer will insert `CullStrategy::LiftChildren` if no argument is found. 
+`CullStrategy` is used to define what should be done with a token meeting some parameter checked by the lexer. It says whether the token should be retained or removed, and if it should be removed, it says how. By default the lexer will use `CullStrategy::LiftChildren` for tokens with no name. 
 
 `CullStrategy::None` - Leaves the tokens alone
 
