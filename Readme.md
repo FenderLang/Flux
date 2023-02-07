@@ -26,7 +26,7 @@ let mut lexer = flux_bnf::bnf::parse(bnf_input).unwrap();
 ## How to set Lexer Rules
 Now that you have `Lexer` we can use that to now set up some token culling rules
 
-Here is an example of what our Token culling rules look like
+Here is an example of what our BNF rules look like
 ```
 root ::= NumberList
 sep ::= " "
@@ -34,15 +34,15 @@ number ::= [0-9]+
 NumberList ::= number (sep number)*
 ```
 
-Token input using BNF
+Token input
 `1 2 3`
 
-The Token culling rules is what defines the syntax of the token input that is being passed in. The lexer rules tell the lexer what to do with those things that are being passed in from the from the rules list in the lexer, as seen below.
+The token culling rules tell the lexer what do with the objects it is being passed, allowing the lexer to take objects out before returning the token tree with them in it. 
 ```rust
 lexer.add_rule_for_names(vec!["sep"], CullStrategy::DeleteAll);
 ```
 
-Below is what the tokenized tree is what it would look like before applying the rules and the second tree is what it would look like after the rules were applied. You can see that the seps were taken out of the tree making it easier to read.
+Below is what the tokenized tree is what it would look like before applying the rules.
 ```
 Some(
     Token {
@@ -92,7 +92,7 @@ Some(
     },
 )
 ```
-
+You can see that in this second tree the seps were taken out of the tree making it easier to read.
 ```
 Some(
     Token {
