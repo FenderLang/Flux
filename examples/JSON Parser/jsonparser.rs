@@ -46,8 +46,8 @@ fn parse_json(input: &[char]) -> Result(JSONValues, usize) {
         '[' => parse_list(input),
         '{' => parse_map(input),
         '"' => parse_string(input),
-        '0'..='9' => parse_number(input),
-        _ => bnf::error("Invalid JSON value"),
+        '0'..='9' | '.' => parse_number(input),
+        _ => bnf::error("Invalid JSON value")
     }
 }
 
@@ -63,6 +63,7 @@ fn parse_map(char: &[char]) -> Result(JSONValues, usize)  {
 
 }
 
+// Parses a number, either an integer or a decimal
 fn parse_number(char: &[char]) -> Result(JSONValues, usize)  {
 
 }
