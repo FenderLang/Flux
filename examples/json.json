@@ -1,0 +1,25 @@
+{
+    "name": "John",
+    "age": 30,
+    "cars": [
+        "Ford Mustang",
+        "Jeep Wrangler"
+    ],
+    "married": true,
+    "houses": [
+        {
+            "address": "123 Main St",
+            "city": "Anytown",
+            "state": "NY",
+            "zip": "12345",
+            "sq": 3456.78
+        },
+        {
+            "address": "456 Main St",
+            "city": "Anytown",
+            "state": "NY",
+            "zip": "12345",
+            "sq": 1234.56
+        }
+    ]
+}

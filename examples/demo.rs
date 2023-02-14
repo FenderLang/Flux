@@ -1,7 +1,7 @@
 use flux_bnf::{bnf, lexer::CullStrategy};
 
 fn main() {
-    let bnf_input = include_str!("../src/tests/bnf/fender.bnf");
+    let bnf_input = include_str!("../src/tests/bnf/demo.bnf");
     let test_input = include_str!("test_fender.fndr");
 
     let mut lexer = match bnf::parse(bnf_input) {
@@ -15,7 +15,7 @@ fn main() {
 
     lexer.add_rule_for_names(
         vec!["sep"],
-        CullStrategy::DeleteAll,
+        CullStrategy::LiftChildren,
     );
 
     lexer.add_rule_for_names(vec!["pow", "add", "mul", "range", "cmp", "and", "or"], CullStrategy::LiftAtMost(1));
@@ -25,7 +25,7 @@ fn main() {
     let root_token = match res {
         Ok(token) => token,
         Err(e) => {
-            println!("Full error:\n{}", e);
+            println!("Pretty error:\n{:#?}", e);
             println!("user friendly:\n{:+#}", e);
             return;
         }
