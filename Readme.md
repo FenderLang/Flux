@@ -143,7 +143,7 @@ Some(
 
 # Tokens
 
-To tokenize your input you simpily just do
+To tokenize your input you just do
 ```rust
 lexer.tokenize(test_input).unwrap()
 ```
