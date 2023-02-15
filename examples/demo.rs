@@ -1,8 +1,8 @@
 use flux_bnf::{bnf, lexer::CullStrategy};
 
 fn main() {
-    let bnf_input = include_str!("../src/tests/bnf/demo.bnf");
-    let test_input = include_str!("test_fender.fndr");
+    let bnf_input = include_str!("../src/tests/bnf/json.bnf");
+    let test_input = include_str!("JSON Parser/test.json");
 
     let mut lexer = match bnf::parse(bnf_input) {
         Ok(v) => v,
@@ -14,11 +14,11 @@ fn main() {
     };
 
     lexer.add_rule_for_names(
-        vec!["sep"],
+        vec!["sep", "null"],
         CullStrategy::LiftChildren,
     );
 
-    lexer.add_rule_for_names(vec!["pow", "add", "mul", "range", "cmp", "and", "or"], CullStrategy::LiftAtMost(1));
+    // lexer.add_rule_for_names(vec!["pow", "add", "mul", "range", "cmp", "and", "or"], CullStrategy::LiftAtMost(1));
 
     let res = lexer.tokenize(test_input);
 
