@@ -26,7 +26,7 @@ let mut lexer = flux_bnf::bnf::parse(bnf_input).unwrap();
 ## How to set Lexer Rules
 Now that you have `Lexer` we can use that to now set up some token culling rules
 
-Here is an example of what our BNF rules look like
+Here is a simple BNF example, that is defining a space, a number and a space-delimited list of numbers
 ```
 root ::= NumberList
 sep ::= " "
@@ -36,11 +36,6 @@ NumberList ::= number (sep number)*
 
 Token input
 `1 2 3`
-
-The token culling rules tell the lexer what do with tokens with the given names, allowing the lexer to remove tokens that match the token name before returning the token tree with them in it. 
-```rust
-lexer.add_rule_for_names(vec!["sep"], CullStrategy::DeleteAll);
-```
 
 Below is what the tokenized tree is what it would look like before applying the rules.
 ```
@@ -92,7 +87,13 @@ Some(
     },
 )
 ```
-You can see that in this second tree the `sep` tokens were taken out of the tree making it easier to read.
+You can see that in this first tree the `sep` tokens are being included in the tree taking up spots unnecessary spots. The token culling rules below will help with this allowing us to get rid of the `sep` tokens. 
+
+The token culling rules tell the lexer what do with tokens with the given names, allowing the lexer to remove tokens that match the token name before returning the token tree with them in it. 
+```rust
+lexer.add_rule_for_names(vec!["sep"], CullStrategy::DeleteAll);
+```
+
 ```
 Some(
     Token {
