@@ -1,7 +1,10 @@
+use std::{error::Error, collections::HashMap};
 use flux_bnf::{bnf, lexer::CullStrategy, tokens::Token};
 
+type ResultAlias<T> = Result<T, Box<dyn Error>>;
+
 fn main() {
-    let bnf_input = include_str!("json.bnf");
+    let bnf_input = include_str!("../src/tests/bnf/json.bnf");
     let json_input = include_str!("test.json");
 
     let mut lexer = match bnf::parse(bnf_input) {
@@ -26,31 +29,63 @@ fn main() {
             return;
         }
     };
+    parse_token(&root_token);
 }
 
-fn parse_tokens(token: &Token) {
-    match token.get_name().as_deref() {
-        Some("integer") => parse_int(token),
-        Some("float") => parse_float(token),
-        Some("string") => parse_string(token), 
-        Some("map") => parse_map(token),
-        _ => println!("Unknown token"),
+enum JSONValue {
+    Integer(i64),
+    Decimal(f64),
+    String(String),
+    Boolean(bool),
+    List(Vec<JSONValue>),
+    Map(HashMap<String, JSONValue>),
+    Null,
+}
+
+fn parse_token(token: &Token) -> ResultAlias<JSONValue> {
+    Ok(match token.get_name().as_deref() {
+        Some("integer") => JSONValue::Integer(parse_int(token)?),
+        Some("float") => JSONValue::Decimal(parse_float(token)?),
+        Some("string") => JSONValue::String(parse_string(token)), 
+        Some("bool") => JSONValue::Boolean(parse_bool(token)),
+        Some("list") => JSONValue::List(parse_list(token)?),
+        Some("map") => JSONValue::Map(parse_map(token)?),
+        Some("null") => JSONValue::Null,
+        _ => unreachable!("Unknown token"),
+    })
+}
+
+fn parse_int(token: &Token) -> ResultAlias<i64> {
+    Ok(token.get_match().parse()?)
+}
+
+fn parse_float(token: &Token) -> ResultAlias<f64> {
+    Ok(token.get_match().parse()?)
+}
+
+fn parse_string(token: &Token) -> String {
+   token.get_match()
+}
+
+fn parse_bool(token: &Token) -> bool {
+    token.get_match().parse().expect("Always Valid Boolean")
+}
+
+fn parse_list(token: &Token) -> ResultAlias<Vec<JSONValue>>{
+    let mut list = Vec::new();
+    for child in token.children.iter() {
+        list.push(parse_token(child)?);
     }
+    Ok(list)
 }
 
-fn parse_int(token: &Token) {
-    token.get_match().parse::<i64>();
-}
-
-fn parse_float(token: &Token) {
-
-}
-
-fn parse_string(token: &Token) {
-
-}
-
-fn parse_map(token: &Token) {
-
+fn parse_map(token: &Token) -> ResultAlias<HashMap<String, JSONValue>> {
+    let mut map = HashMap::new();
+    for child in token.children.iter() {
+        let key = child.children[0].get_match();
+        let value = parse_token(&child.children[1])?;
+        map.insert(key, value);
+    }
+    Ok(map)
 }
 

@@ -14,7 +14,7 @@ fn main() {
     };
 
     lexer.add_rule_for_names(
-        vec!["sep".to_string(), "null".to_string()],
+        vec!["sep"],
         CullStrategy::LiftChildren,
     );
 
