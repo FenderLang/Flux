@@ -19,10 +19,6 @@ impl Matcher for PlaceholderMatcher {
         unreachable!()
     }
 
-    fn min_length(&self) -> usize {
-        unreachable!()
-    }
-
     fn is_placeholder(&self) -> bool {
         true
     }

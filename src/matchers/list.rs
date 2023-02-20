@@ -5,16 +5,14 @@ use std::{cell::RefCell, sync::Arc};
 #[derive(Debug, Clone)]
 pub struct ListMatcher {
     meta: MatcherMeta,
-    min_length: RefCell<Option<usize>>,
     children: MatcherChildren,
 }
 
 impl ListMatcher {
-    pub fn new(meta: MatcherMeta, children: Vec<RefCell<MatcherRef>>) -> ListMatcher {
+    pub fn new(meta: MatcherMeta, children: Vec<MatcherRef>) -> ListMatcher {
         ListMatcher {
             meta,
-            min_length: RefCell::new(None),
-            children,
+            children: MatcherChildren::new(children),
         }
     }
 }
@@ -26,10 +24,7 @@ impl Matcher for ListMatcher {
         let mut cursor = pos;
         let mut failures = Vec::new();
         for child in self.children.iter() {
-            match child
-                .borrow()
-                .apply(source.clone(), cursor, self.next_depth(depth))
-            {
+            match child.apply(source.clone(), cursor, self.next_depth(depth)) {
                 Ok(mut child_token) => {
                     cursor = child_token.range.end;
                     let failure = std::mem::replace(&mut child_token.failure, None);
@@ -61,23 +56,8 @@ impl Matcher for ListMatcher {
         })
     }
 
-    fn min_length(&self) -> usize {
-        if let Some(len) = *self.min_length.borrow() {
-            len
-        } else {
-            let len = self
-                .children
-                .iter()
-                .map(|child| child.borrow().min_length())
-                .min()
-                .unwrap_or_default();
-            *self.min_length.borrow_mut() = Some(len);
-            len
-        }
-    }
-
-    fn children(&self) -> Option<&super::MatcherChildren> {
-        Some(&self.children)
+    fn children(&self) -> Option<&mut Vec<MatcherRef>> {
+        Some(self.children.get_mut())
     }
 
     fn is_placeholder(&self) -> bool {

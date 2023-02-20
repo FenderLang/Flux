@@ -1,21 +1,20 @@
-use super::{Matcher, MatcherMeta, MatcherRef};
+use super::{Matcher, MatcherMeta, MatcherRef, MatcherChildren};
 use crate::error::{FluxError, Result};
 use crate::tokens::Token;
-use std::{cell::RefCell, sync::Arc};
+use std::sync::RwLock;
+use std::{sync::Arc};
 
 #[derive(Debug, Clone)]
 pub struct ChoiceMatcher {
     meta: MatcherMeta,
-    min_length: RefCell<Option<usize>>,
-    children: Vec<RefCell<MatcherRef>>,
+    children: MatcherChildren,
 }
 
 impl ChoiceMatcher {
-    pub fn new(meta: MatcherMeta, children: Vec<RefCell<MatcherRef>>) -> ChoiceMatcher {
+    pub fn new(meta: MatcherMeta, children: Vec<MatcherRef>) -> ChoiceMatcher {
         ChoiceMatcher {
             meta,
-            min_length: RefCell::new(None),
-            children,
+            children: MatcherChildren::new(children),
         }
     }
 }
@@ -24,10 +23,8 @@ impl Matcher for ChoiceMatcher {
     impl_meta!();
     fn apply(&self, source: Arc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
         let mut errors: Vec<FluxError> = vec![];
-        for child in &self.children {
-            let matched = child
-                .borrow()
-                .apply(source.clone(), pos, self.next_depth(depth));
+        for child in *self.children {
+            let matched = child.apply(source.clone(), pos, self.next_depth(depth));
             match matched {
                 Ok(mut token) => {
                     return Ok(Token {
@@ -64,22 +61,7 @@ impl Matcher for ChoiceMatcher {
             .expect("error always present"))
     }
 
-    fn min_length(&self) -> usize {
-        if let Some(len) = *self.min_length.borrow() {
-            len
-        } else {
-            let len = self
-                .children
-                .iter()
-                .map(|child| child.borrow().min_length())
-                .min()
-                .unwrap_or_default();
-            *self.min_length.borrow_mut() = Some(len);
-            len
-        }
-    }
-
-    fn children(&self) -> Option<&Vec<RefCell<MatcherRef>>> {
-        Some(&self.children)
+    fn children(&self) -> Option<&mut Vec<MatcherRef>> {
+        Some(self.children.get_mut())
     }
 }

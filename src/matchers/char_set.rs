@@ -44,8 +44,4 @@ impl Matcher for CharSetMatcher {
             )),
         }
     }
-
-    fn min_length(&self) -> usize {
-        1
-    }
 }

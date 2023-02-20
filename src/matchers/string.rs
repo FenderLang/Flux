@@ -68,8 +68,4 @@ impl Matcher for StringMatcher {
             ))
         }
     }
-
-    fn min_length(&self) -> usize {
-        self.to_match.len()
-    }
 }

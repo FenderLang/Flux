@@ -35,8 +35,4 @@ impl Matcher for EofMatcher {
             ))
         }
     }
-
-    fn min_length(&self) -> usize {
-        0
-    }
 }

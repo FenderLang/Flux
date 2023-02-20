@@ -24,14 +24,17 @@ pub fn parse(input: &str) -> Result<Lexer> {
     .parse()
 }
 
-fn replace_placeholders(rule: &MatcherRef, map: &HashMap<String, MatcherRef>, error_on_fail: bool) -> Result<()> {
+fn replace_placeholders(
+    rule: &MatcherRef,
+    map: &HashMap<String, MatcherRef>,
+    error_on_fail: bool,
+) -> Result<()> {
     let Some(children) = rule.children() else {
         return Ok(());
     };
-    for c in children {
-        if c.borrow().is_placeholder() {
-            let borrow = c.borrow();
-            let name = &**borrow.name();
+    for (index, child) in children.iter().enumerate() {
+        if child.is_placeholder() {
+            let name = &**child.name();
             let matcher = name.as_ref().and_then(|n| map.get(n));
             let Some(matcher) = matcher else {
                 if error_on_fail {
@@ -40,10 +43,9 @@ fn replace_placeholders(rule: &MatcherRef, map: &HashMap<String, MatcherRef>, er
                     continue;
                 }
             };
-            drop(borrow);
-            c.replace(matcher.clone());
+            children[index] = matcher.clone();
         } else {
-            replace_placeholders(&c.borrow(), map, error_on_fail)?;
+            replace_placeholders(child, map, error_on_fail)?;
         }
     }
     Ok(())
@@ -59,18 +61,27 @@ fn deep_copy(matcher: MatcherRef) -> MatcherRef {
     let Some(children) = matcher.children() else {
         return matcher;
     };
-    for child in children {
-        let clone = deep_copy(child.borrow().clone());
-        child.replace(clone);
+    for (index, child) in children.iter().enumerate() {
+        let clone = deep_copy(child.clone());
+        children[index] = clone;
     }
     matcher
 }
 
 impl TemplateRule {
-    fn to_matcher(&self, params: Vec<MatcherRef>, pos: usize, source: Arc<Vec<char>>) -> Result<MatcherRef> {
+    fn to_matcher(
+        &self,
+        params: Vec<MatcherRef>,
+        pos: usize,
+        source: Arc<Vec<char>>,
+    ) -> Result<MatcherRef> {
         let mut names = HashMap::new();
         if params.len() != self.params.len() {
-            return Err(FluxError::new("wrong number of template arguments", pos, Some(source.clone())));
+            return Err(FluxError::new(
+                "wrong number of template arguments",
+                pos,
+                Some(source.clone()),
+            ));
         }
         for (matcher, name) in params.into_iter().zip(&self.params) {
             names.insert(name.clone(), matcher);
@@ -111,7 +122,7 @@ impl BNFParserState {
                             Some(self.source.clone()),
                         ));
                     }
-                },
+                }
                 Some(Template(rule, params, name)) => {
                     self.templates.insert(name, TemplateRule { params, rule });
                 }
@@ -122,9 +133,9 @@ impl BNFParserState {
         for rule in &rules {
             replace_placeholders(rule, &rule_map, true)?;
         }
-        let root = rule_map
-            .get("root")
-            .ok_or_else(|| FluxError::new("No root matcher specified", 0, Some(self.source.clone())))?;
+        let root = rule_map.get("root").ok_or_else(|| {
+            FluxError::new("No root matcher specified", 0, Some(self.source.clone()))
+        })?;
         Ok(Lexer::new(root.clone(), id_map))
     }
 
@@ -145,10 +156,7 @@ impl BNFParserState {
         self.call_assert("whitespace", Self::consume_whitespace)?;
         let mut matcher = self.parse_list()?;
         if matcher.is_placeholder() {
-            matcher = Arc::new(ListMatcher::new(
-                Default::default(),
-                vec![RefCell::new(matcher)],
-            ));
+            matcher = Arc::new(ListMatcher::new(Default::default(), vec![matcher]));
         }
         self.consume_whitespace();
         if self.check_str("//") {
@@ -176,7 +184,11 @@ impl BNFParserState {
                 _ => break,
             }
         }
-        Err(FluxError::new("Expected >", self.pos, Some(self.source.clone())))
+        Err(FluxError::new(
+            "Expected >",
+            self.pos,
+            Some(self.source.clone()),
+        ))
     }
 
     fn peek(&self) -> Option<char> {
@@ -282,12 +294,20 @@ impl BNFParserState {
         match self.advance() {
             Some('\\') => self.parse_escape_seq(),
             Some(c) => Ok(c),
-            _ => Err(FluxError::new("Unexpected end of file", self.pos, Some(self.source.clone()))),
+            _ => Err(FluxError::new(
+                "Unexpected end of file",
+                self.pos,
+                Some(self.source.clone()),
+            )),
         }
     }
 
     fn invalid_escape_sequence(&self) -> FluxError {
-        FluxError::new("Invalid escape sequence", self.pos, Some(self.source.clone()))
+        FluxError::new(
+            "Invalid escape sequence",
+            self.pos,
+            Some(self.source.clone()),
+        )
     }
 
     fn parse_escape_seq(&mut self) -> Result<char> {
@@ -358,7 +378,11 @@ impl BNFParserState {
                 _ => break,
             }
         }
-        Err(FluxError::new("Expected >", self.pos, Some(self.source.clone())))
+        Err(FluxError::new(
+            "Expected >",
+            self.pos,
+            Some(self.source.clone()),
+        ))
     }
 
     fn parse_number(&mut self) -> Result<usize> {
@@ -499,8 +523,7 @@ impl BNFParserState {
         if list.len() == 1 {
             list.remove(0)
         } else {
-            let children = list.into_iter().map(RefCell::new).collect();
-            let list_matcher = ListMatcher::new(Default::default(), children);
+            let list_matcher = ListMatcher::new(Default::default(), list);
             Arc::new(list_matcher)
         }
     }
@@ -528,7 +551,6 @@ impl BNFParserState {
         if !choices.is_empty() {
             let list_matcher = self.maybe_list(matcher_list);
             choices.push(list_matcher);
-            let choices = choices.into_iter().map(RefCell::new).collect();
             Ok(Arc::new(ChoiceMatcher::new(Default::default(), choices)))
         } else {
             Ok(self.maybe_list(matcher_list))

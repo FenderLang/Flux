@@ -2,10 +2,12 @@ use crate::error::Result;
 use crate::tokens::Token;
 use std::cell::RefCell;
 use std::fmt::{Debug, Display};
-use std::sync::Arc;
+use std::ops::{Deref, DerefMut};
+use std::sync::{Arc, RwLock};
 
-pub(crate) type MatcherRef = Arc<dyn Matcher>;
-pub(crate) type MatcherChildren = Vec<RefCell<MatcherRef>>;
+pub(crate) type MatcherRef = Arc<dyn Matcher + Send + Sync>;
+#[derive(Debug)]
+pub(crate) struct MatcherChildren(RwLock<Vec<MatcherRef>>);
 pub(crate) type MatcherName = Arc<Option<String>>;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
@@ -40,11 +42,10 @@ impl MatcherMeta {
 
 pub trait Matcher: Debug {
     fn apply(&self, source: Arc<Vec<char>>, pos: usize, depth: usize) -> Result<Token>;
-    fn min_length(&self) -> usize;
     fn meta(&self) -> &MatcherMeta;
     fn with_meta(&self, meta: MatcherMeta) -> MatcherRef;
 
-    fn children(&self) -> Option<&MatcherChildren> {
+    fn children(&self) -> Option<&mut Vec<MatcherRef>> {
         None
     }
 
@@ -71,6 +72,36 @@ pub trait Matcher: Debug {
 impl Display for dyn Matcher {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&format!("{:?}", self))
+    }
+}
+
+impl Clone for MatcherChildren {
+    fn clone(&self) -> Self {
+        Self(RwLock::new(self.0.write().unwrap().clone()))
+    }
+}
+
+impl MatcherChildren {
+    fn new(children: Vec<MatcherRef>) -> MatcherChildren {
+        Self(RwLock::new(children))
+    }
+
+    fn get_mut(&self) -> &mut Vec<MatcherRef> {
+        &mut self.0.write().unwrap()
+    }
+}
+
+impl Deref for MatcherChildren {
+    type Target = Vec<MatcherRef>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0.read().unwrap()
+    }
+}
+
+impl DerefMut for MatcherChildren {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0.write().unwrap()
     }
 }
 

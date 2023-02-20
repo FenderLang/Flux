@@ -46,8 +46,4 @@ impl Matcher for CharRangeMatcher {
             )),
         }
     }
-
-    fn min_length(&self) -> usize {
-        1
-    }
 }

@@ -1,6 +1,6 @@
 use super::{Matcher, MatcherChildren, MatcherMeta, MatcherRef};
-use crate::{error::FluxError, error::Result, tokens::Token};
-use std::{cell::RefCell, sync::Arc, vec};
+use crate::{error::FluxError, error::Result, tokens::Token, bnf, lexer::Lexer};
+use std::{sync::Arc, vec};
 
 #[derive(Debug, Clone)]
 pub struct InvertedMatcher {
@@ -12,7 +12,7 @@ impl InvertedMatcher {
     pub fn new(meta: MatcherMeta, child: MatcherRef) -> Self {
         Self {
             meta,
-            child: vec![RefCell::new(child)],
+            child: MatcherChildren::new(vec![child]),
         }
     }
 }
@@ -20,7 +20,7 @@ impl InvertedMatcher {
 impl Matcher for InvertedMatcher {
     impl_meta!();
     fn apply(&self, source: Arc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
-        match self.child[0].borrow().apply(source.clone(), pos, self.next_depth(depth)) {
+        match self.child[0].apply(source.clone(), pos, self.next_depth(depth)) {
             Ok(_) => Err(FluxError::new_matcher(
                 "unexpected",
                 pos,
@@ -39,11 +39,7 @@ impl Matcher for InvertedMatcher {
         }
     }
 
-    fn min_length(&self) -> usize {
-        0
-    }
-
-    fn children(&self) -> Option<&super::MatcherChildren> {
-        Some(&self.child)
+    fn children(&self) -> Option<&mut Vec<MatcherRef>> {
+        Some(self.child.get_mut())
     }
 }
