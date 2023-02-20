@@ -4,7 +4,7 @@ use flux_bnf::{bnf, lexer::CullStrategy, tokens::Token};
 type ResultAlias<T> = Result<T, Box<dyn Error>>;
 
 fn main() {
-    let bnf_input = include_str!("../src/tests/bnf/json.bnf");
+    let bnf_input = include_str!("json.bnf");
     let json_input = include_str!("test.json");
 
     let mut lexer = match bnf::parse(bnf_input) {
@@ -17,7 +17,7 @@ fn main() {
 
     lexer.add_rule_for_names(
         vec!["sep"], 
-        CullStrategy::LiftChildren
+        CullStrategy::DeleteAll
     );
 
     let result = lexer.tokenize(json_input);
@@ -29,9 +29,13 @@ fn main() {
             return;
         }
     };
+
     parse_token(&root_token);
+
+
 }
 
+#[derive(Debug)]
 enum JSONValue {
     Integer(i64),
     Decimal(f64),
@@ -73,7 +77,7 @@ fn parse_bool(token: &Token) -> bool {
 
 fn parse_list(token: &Token) -> ResultAlias<Vec<JSONValue>>{
     let mut list = Vec::new();
-    for child in token.children.iter() {
+    for child in &token.children {
         list.push(parse_token(child)?);
     }
     Ok(list)
@@ -81,7 +85,7 @@ fn parse_list(token: &Token) -> ResultAlias<Vec<JSONValue>>{
 
 fn parse_map(token: &Token) -> ResultAlias<HashMap<String, JSONValue>> {
     let mut map = HashMap::new();
-    for child in token.children.iter() {
+    for child in &token.children {
         let key = child.children[0].get_match();
         let value = parse_token(&child.children[1])?;
         map.insert(key, value);

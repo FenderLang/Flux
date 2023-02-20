@@ -1,5 +1,4 @@
 {
-    "number": 1,
-    "name": "John",
-    "age": 30
+    "testnumber": 1,
+    "Teststring": "Hello, World"
 }
