@@ -2,11 +2,11 @@ use crate::error::Result;
 use crate::tokens::Token;
 use std::cell::RefCell;
 use std::fmt::{Debug, Display};
-use std::rc::Rc;
+use std::sync::Arc;
 
-pub(crate) type MatcherRef = Rc<dyn Matcher>;
+pub(crate) type MatcherRef = Arc<dyn Matcher>;
 pub(crate) type MatcherChildren = Vec<RefCell<MatcherRef>>;
-pub(crate) type MatcherName = Rc<Option<String>>;
+pub(crate) type MatcherName = Arc<Option<String>>;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct MatcherMeta { 
@@ -18,8 +18,7 @@ pub struct MatcherMeta {
 macro_rules! impl_meta {
     () => {
         fn with_meta(&self, meta: MatcherMeta) -> $crate::matchers::MatcherRef {
-            #[allow(clippy::needless_update)]
-            Rc::new(Self {
+            std::sync::Arc::new(Self {
                 meta,
                 ..self.clone()
             })
@@ -33,14 +32,14 @@ macro_rules! impl_meta {
 impl MatcherMeta {
     pub fn new(name: Option<String>, id: usize) -> MatcherMeta {
         MatcherMeta {
-            name: Rc::new(name),
+            name: Arc::new(name),
             id,
         }
     }
 }
 
 pub trait Matcher: Debug {
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token>;
+    fn apply(&self, source: Arc<Vec<char>>, pos: usize, depth: usize) -> Result<Token>;
     fn min_length(&self) -> usize;
     fn meta(&self) -> &MatcherMeta;
     fn with_meta(&self, meta: MatcherMeta) -> MatcherRef;
@@ -53,7 +52,7 @@ pub trait Matcher: Debug {
         false
     }
 
-    fn name(&self) -> &Rc<Option<String>> {
+    fn name(&self) -> &Arc<Option<String>> {
         &self.meta().name
     }
 

@@ -1,6 +1,6 @@
 use super::{Matcher, MatcherChildren, MatcherMeta, MatcherRef};
 use crate::{error::FluxError, error::Result, tokens::Token};
-use std::{cell::RefCell, rc::Rc, vec};
+use std::{cell::RefCell, sync::Arc, vec};
 
 #[derive(Debug, Clone)]
 pub struct InvertedMatcher {
@@ -19,7 +19,7 @@ impl InvertedMatcher {
 
 impl Matcher for InvertedMatcher {
     impl_meta!();
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
+    fn apply(&self, source: Arc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
         match self.child[0].borrow().apply(source.clone(), pos, self.next_depth(depth)) {
             Ok(_) => Err(FluxError::new_matcher(
                 "unexpected",

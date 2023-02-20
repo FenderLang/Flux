@@ -2,7 +2,7 @@ use crate::error::{FluxError, Result};
 use crate::matchers::MatcherRef;
 use crate::tokens::Token;
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 use std::vec;
 
 #[derive(Clone, Copy, Debug)]
@@ -57,7 +57,7 @@ impl Lexer {
 
     pub fn tokenize(&self, input: impl ToString) -> Result<Token> {
         let input = input.to_string();
-        let source = Rc::new(input.chars().collect::<Vec<char>>());
+        let source = Arc::new(input.chars().collect::<Vec<char>>());
         let pos = 0;
         let token = self.root.apply(source.clone(), pos, 0)?;
         if token.range.len() < input.len() {

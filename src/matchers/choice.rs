@@ -1,7 +1,7 @@
 use super::{Matcher, MatcherMeta, MatcherRef};
 use crate::error::{FluxError, Result};
 use crate::tokens::Token;
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, sync::Arc};
 
 #[derive(Debug, Clone)]
 pub struct ChoiceMatcher {
@@ -22,7 +22,7 @@ impl ChoiceMatcher {
 
 impl Matcher for ChoiceMatcher {
     impl_meta!();
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
+    fn apply(&self, source: Arc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
         let mut errors: Vec<FluxError> = vec![];
         for child in &self.children {
             let matched = child

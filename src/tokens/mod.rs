@@ -1,6 +1,6 @@
 use self::token_iterator::Iter;
 use crate::{error::FluxError, matchers::MatcherName};
-use std::{fmt::Debug, ops::Range, rc::Rc};
+use std::{fmt::Debug, ops::Range, sync::Arc};
 
 pub mod token_iterator;
 
@@ -8,7 +8,7 @@ pub struct Token {
     pub matcher_name: MatcherName,
     pub matcher_id: usize,
     pub children: Vec<Token>,
-    pub source: Rc<Vec<char>>,
+    pub source: Arc<Vec<char>>,
     pub range: Range<usize>,
     pub failure: Option<FluxError>,
 }

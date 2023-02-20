@@ -1,6 +1,6 @@
 use super::{Matcher, MatcherMeta};
 use crate::{error::FluxError, error::Result, tokens::Token};
-use std::{collections::HashSet, rc::Rc};
+use std::{collections::HashSet, sync::Arc};
 
 #[derive(Clone, Debug)]
 pub struct CharSetMatcher {
@@ -25,7 +25,7 @@ impl CharSetMatcher {
 
 impl Matcher for CharSetMatcher {
     impl_meta!();
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
+    fn apply(&self, source: Arc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
         match source.get(pos) {
             Some(c) if self.check_char(c) => Ok(Token {
                 children: vec![],
