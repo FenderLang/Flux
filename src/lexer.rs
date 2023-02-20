@@ -107,6 +107,6 @@ fn apply_cull_strat(cull_strat: CullStrategy, mut token: Token) -> Vec<Token> {
             } else {
                 vec![token]
             }
-        },
+        }
     }
 }

@@ -1,6 +1,9 @@
 use super::{Matcher, MatcherChildren, MatcherMeta, MatcherRef};
-use crate::{error::FluxError, error::Result, tokens::Token, bnf, lexer::Lexer};
-use std::{sync::{Arc, RwLockWriteGuard}, vec};
+use crate::{error::FluxError, error::Result, tokens::Token};
+use std::{
+    sync::{Arc, RwLockWriteGuard},
+    vec,
+};
 
 #[derive(Debug, Clone)]
 pub struct InvertedMatcher {
@@ -26,7 +29,7 @@ impl Matcher for InvertedMatcher {
                 pos,
                 depth,
                 self.name().clone(),
-                Some(source)
+                Some(source),
             )),
             Err(err) => Ok(Token {
                 children: vec![],

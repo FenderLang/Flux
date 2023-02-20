@@ -1,6 +1,6 @@
 use super::{Matcher, MatcherChildren, MatcherMeta, MatcherRef};
 use crate::{error::FluxError, error::Result, tokens::Token};
-use std::{cell::RefCell, sync::{Arc, RwLockWriteGuard}};
+use std::sync::{Arc, RwLockWriteGuard};
 
 #[derive(Debug, Clone)]
 pub struct ListMatcher {

@@ -1,8 +1,8 @@
-use super::{Matcher, MatcherMeta, MatcherRef, MatcherChildren};
+use super::{Matcher, MatcherChildren, MatcherMeta, MatcherRef};
 use crate::error::{FluxError, Result};
 use crate::tokens::Token;
-use std::sync::{RwLock, RwLockWriteGuard};
-use std::{sync::Arc};
+use std::sync::Arc;
+use std::sync::RwLockWriteGuard;
 
 #[derive(Debug, Clone)]
 pub struct ChoiceMatcher {
@@ -53,7 +53,7 @@ impl Matcher for ChoiceMatcher {
             pos,
             depth,
             self.name().clone(),
-            Some(source)
+            Some(source),
         ));
         Err(errors
             .into_iter()

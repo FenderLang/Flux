@@ -40,7 +40,7 @@ impl Matcher for CharSetMatcher {
                 pos,
                 depth,
                 self.name().clone(),
-                Some(source.clone())
+                Some(source.clone()),
             )),
         }
     }

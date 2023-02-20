@@ -1,8 +1,8 @@
 use crate::error::Result;
 use crate::tokens::Token;
-use std::cell::RefCell;
+
 use std::fmt::{Debug, Display};
-use std::ops::{Deref, DerefMut};
+
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 pub(crate) type MatcherRef = Arc<dyn Matcher + Send + Sync>;
@@ -11,7 +11,7 @@ pub(crate) struct MatcherChildren(RwLock<Vec<MatcherRef>>);
 pub(crate) type MatcherName = Arc<Option<String>>;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
-pub struct MatcherMeta { 
+pub struct MatcherMeta {
     pub name: MatcherName,
     pub id: usize,
 }
