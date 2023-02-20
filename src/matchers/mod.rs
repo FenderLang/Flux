@@ -3,7 +3,7 @@ use crate::tokens::Token;
 use std::cell::RefCell;
 use std::fmt::{Debug, Display};
 use std::ops::{Deref, DerefMut};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 pub(crate) type MatcherRef = Arc<dyn Matcher + Send + Sync>;
 #[derive(Debug)]
@@ -45,7 +45,7 @@ pub trait Matcher: Debug {
     fn meta(&self) -> &MatcherMeta;
     fn with_meta(&self, meta: MatcherMeta) -> MatcherRef;
 
-    fn children(&self) -> Option<&mut Vec<MatcherRef>> {
+    fn children<'a>(&'a self) -> Option<RwLockWriteGuard<'a, Vec<MatcherRef>>> {
         None
     }
 
@@ -86,22 +86,12 @@ impl MatcherChildren {
         Self(RwLock::new(children))
     }
 
-    fn get_mut(&self) -> &mut Vec<MatcherRef> {
-        &mut self.0.write().unwrap()
+    pub fn get_mut<'a>(&'a self) -> RwLockWriteGuard<'a, Vec<MatcherRef>> {
+        self.0.write().unwrap()
     }
-}
 
-impl Deref for MatcherChildren {
-    type Target = Vec<MatcherRef>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0.read().unwrap()
-    }
-}
-
-impl DerefMut for MatcherChildren {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0.write().unwrap()
+    pub fn get<'a>(&'a self) -> RwLockReadGuard<'a, Vec<MatcherRef>> {
+        self.0.read().unwrap()
     }
 }
 

@@ -1,7 +1,7 @@
 use super::{Matcher, MatcherMeta, MatcherRef, MatcherChildren};
 use crate::error::{FluxError, Result};
 use crate::tokens::Token;
-use std::sync::RwLock;
+use std::sync::{RwLock, RwLockWriteGuard};
 use std::{sync::Arc};
 
 #[derive(Debug, Clone)]
@@ -23,7 +23,7 @@ impl Matcher for ChoiceMatcher {
     impl_meta!();
     fn apply(&self, source: Arc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
         let mut errors: Vec<FluxError> = vec![];
-        for child in *self.children {
+        for child in &*self.children.get() {
             let matched = child.apply(source.clone(), pos, self.next_depth(depth));
             match matched {
                 Ok(mut token) => {
@@ -61,7 +61,7 @@ impl Matcher for ChoiceMatcher {
             .expect("error always present"))
     }
 
-    fn children(&self) -> Option<&mut Vec<MatcherRef>> {
+    fn children<'a>(&'a self) -> Option<RwLockWriteGuard<'a, Vec<MatcherRef>>> {
         Some(self.children.get_mut())
     }
 }

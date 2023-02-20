@@ -29,10 +29,11 @@ fn replace_placeholders(
     map: &HashMap<String, MatcherRef>,
     error_on_fail: bool,
 ) -> Result<()> {
-    let Some(children) = rule.children() else {
+    let Some(mut children) = rule.children() else {
         return Ok(());
     };
-    for (index, child) in children.iter().enumerate() {
+    for i in 0..children.len() {
+        let child = &children[i];
         if child.is_placeholder() {
             let name = &**child.name();
             let matcher = name.as_ref().and_then(|n| map.get(n));
@@ -43,9 +44,9 @@ fn replace_placeholders(
                     continue;
                 }
             };
-            children[index] = matcher.clone();
+            children[i] = matcher.clone();
         } else {
-            replace_placeholders(child, map, error_on_fail)?;
+            replace_placeholders(&child, map, error_on_fail)?;
         }
     }
     Ok(())
@@ -58,14 +59,15 @@ struct TemplateRule {
 
 fn deep_copy(matcher: MatcherRef) -> MatcherRef {
     let matcher = matcher.with_meta(matcher.meta().clone());
-    let Some(children) = matcher.children() else {
+    let Some(mut children) = matcher.children() else {
         return matcher;
     };
-    for (index, child) in children.iter().enumerate() {
+    for i in 0..children.len() {
+        let child = &children[i];
         let clone = deep_copy(child.clone());
-        children[index] = clone;
+        children[i] = clone;
     }
-    matcher
+    matcher.clone()
 }
 
 impl TemplateRule {

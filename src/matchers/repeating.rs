@@ -1,6 +1,6 @@
 use super::{Matcher, MatcherChildren, MatcherMeta, MatcherRef};
 use crate::{error::FluxError, error::Result, tokens::Token};
-use std::{cell::RefCell, sync::Arc};
+use std::sync::{Arc, RwLockWriteGuard};
 
 #[derive(Debug, Clone)]
 pub struct RepeatingMatcher {
@@ -26,7 +26,7 @@ impl Matcher for RepeatingMatcher {
     fn apply(&self, source: Arc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
         let mut children: Vec<Token> = Vec::new();
 
-        let child = self.child[0];
+        let child = &self.child.get()[0];
         let mut cursor = pos;
         let mut child_error = None;
         while children.len() < self.max {
@@ -68,7 +68,7 @@ impl Matcher for RepeatingMatcher {
         }
     }
 
-    fn children(&self) -> Option<&mut Vec<MatcherRef>> {
+    fn children<'a>(&'a self) -> Option<RwLockWriteGuard<'a, Vec<MatcherRef>>> {
         Some(self.child.get_mut())
     }
 }

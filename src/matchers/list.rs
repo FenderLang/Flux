@@ -1,6 +1,6 @@
 use super::{Matcher, MatcherChildren, MatcherMeta, MatcherRef};
 use crate::{error::FluxError, error::Result, tokens::Token};
-use std::{cell::RefCell, sync::Arc};
+use std::{cell::RefCell, sync::{Arc, RwLockWriteGuard}};
 
 #[derive(Debug, Clone)]
 pub struct ListMatcher {
@@ -23,7 +23,7 @@ impl Matcher for ListMatcher {
         let mut children: Vec<Token> = Vec::new();
         let mut cursor = pos;
         let mut failures = Vec::new();
-        for child in self.children.iter() {
+        for child in &*self.children.get() {
             match child.apply(source.clone(), cursor, self.next_depth(depth)) {
                 Ok(mut child_token) => {
                     cursor = child_token.range.end;
@@ -56,7 +56,7 @@ impl Matcher for ListMatcher {
         })
     }
 
-    fn children(&self) -> Option<&mut Vec<MatcherRef>> {
+    fn children<'a>(&'a self) -> Option<RwLockWriteGuard<'a, Vec<MatcherRef>>> {
         Some(self.children.get_mut())
     }
 
