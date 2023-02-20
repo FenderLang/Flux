@@ -1,38 +1,24 @@
 use std::{error::Error, collections::HashMap};
 use flux_bnf::{bnf, lexer::CullStrategy, tokens::Token};
+use std::str::FromStr;
 
 type ResultAlias<T> = Result<T, Box<dyn Error>>;
 
 fn main() {
-    let bnf_input = include_str!("json.bnf");
-    let json_input = include_str!("test.json");
+    let json_input = include_str!("finaltest.json");
 
-    let mut lexer = match bnf::parse(bnf_input) {
-        Ok(v) => v,
-        Err(e) => { 
-            println!("Error parsing BNF:\n{:#?}", e);
-            return;
-        }
-    };
+    // static lexer: Lexer = {
+    //     let mut lexerbase = bnf::parse(include_str!("json.bnf")).unwrap();
+    //     lexer.add_rule_for_names(
+    //         vec!["sep", "object"],
+    //         CullStrategy::LiftChildren,
+    //     );
+    //     lexer
+    // };
 
-    lexer.add_rule_for_names(
-        vec!["sep"], 
-        CullStrategy::DeleteAll
-    );
+    let parsed = json_input.parse::<JSONValue>().unwrap();
 
-    let result = lexer.tokenize(json_input);
-
-    let root_token = match result {
-        Ok(token) => token,
-        Err(e) => { 
-            println!("Error parsing JSON:\n{:#?}", e);
-            return;
-        }
-    };
-
-    parse_token(&root_token);
-
-
+    println!("{:#?}", parsed);
 }
 
 #[derive(Debug)]
@@ -46,16 +32,30 @@ enum JSONValue {
     Null,
 }
 
+impl FromStr for JSONValue {
+    type Err = Box<dyn Error>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut lexer = bnf::parse(include_str!("json.bnf"))?;
+        lexer.add_rule_for_names(
+            vec!["sep", "object"], 
+            CullStrategy::LiftChildren        
+        );
+        let token = lexer.tokenize(s)?;
+        parse_root(&token)
+    }
+}
+
 fn parse_token(token: &Token) -> ResultAlias<JSONValue> {
     Ok(match token.get_name().as_deref() {
         Some("integer") => JSONValue::Integer(parse_int(token)?),
-        Some("float") => JSONValue::Decimal(parse_float(token)?),
+        Some("decimal") => JSONValue::Decimal(parse_float(token)?),
         Some("string") => JSONValue::String(parse_string(token)), 
-        Some("bool") => JSONValue::Boolean(parse_bool(token)),
+        Some("boolean") => JSONValue::Boolean(parse_bool(token)),
         Some("list") => JSONValue::List(parse_list(token)?),
         Some("map") => JSONValue::Map(parse_map(token)?),
         Some("null") => JSONValue::Null,
-        _ => unreachable!("Unknown token"),
+        _ => unreachable!("Unknown token: {:#?}", token),
     })
 }
 
@@ -93,3 +93,6 @@ fn parse_map(token: &Token) -> ResultAlias<HashMap<String, JSONValue>> {
     Ok(map)
 }
 
+fn parse_root(token: &Token) -> ResultAlias<JSONValue> {
+    Ok(parse_token(&token.children[0])?)
+}
