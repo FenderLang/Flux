@@ -31,8 +31,7 @@ fn replace_placeholders(
     let Some(mut children) = rule.children() else {
         return Ok(());
     };
-    for i in 0..children.len() {
-        let child = &children[i];
+    for child in children.iter_mut() {
         if child.is_placeholder() {
             let name = &**child.name();
             let matcher = name.as_ref().and_then(|n| map.get(n));
@@ -43,9 +42,9 @@ fn replace_placeholders(
                     continue;
                 }
             };
-            children[i] = matcher.clone();
+            *child = matcher.clone();
         } else {
-            replace_placeholders(&child, map, error_on_fail)?;
+            replace_placeholders(child, map, error_on_fail)?;
         }
     }
     Ok(())
@@ -81,7 +80,7 @@ impl TemplateRule {
             return Err(FluxError::new(
                 "wrong number of template arguments",
                 pos,
-                Some(source.clone()),
+                Some(source),
             ));
         }
         for (matcher, name) in params.into_iter().zip(&self.params) {
@@ -361,7 +360,7 @@ impl BNFParserState {
                 self.pos,
                 Some(self.source.clone()),
             ))?;
-            return Ok(template.to_matcher(params, self.pos, self.source.clone())?);
+            return template.to_matcher(params, self.pos, self.source.clone());
         }
         let matcher = PlaceholderMatcher::new(MatcherMeta::new(Some(name), 0));
         Ok(Arc::new(matcher))

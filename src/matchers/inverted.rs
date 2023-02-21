@@ -42,7 +42,7 @@ impl Matcher for InvertedMatcher {
         }
     }
 
-    fn children<'a>(&'a self) -> Option<RwLockWriteGuard<'a, Vec<MatcherRef>>> {
+    fn children(&self) -> Option<RwLockWriteGuard<Vec<MatcherRef>>> {
         Some(self.child.get_mut())
     }
 }

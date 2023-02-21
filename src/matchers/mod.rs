@@ -19,6 +19,7 @@ pub struct MatcherMeta {
 #[macro_export]
 macro_rules! impl_meta {
     () => {
+        #[allow(clippy::needless_update)]
         fn with_meta(&self, meta: MatcherMeta) -> $crate::matchers::MatcherRef {
             std::sync::Arc::new(Self {
                 meta,
@@ -45,7 +46,7 @@ pub trait Matcher: Debug {
     fn meta(&self) -> &MatcherMeta;
     fn with_meta(&self, meta: MatcherMeta) -> MatcherRef;
 
-    fn children<'a>(&'a self) -> Option<RwLockWriteGuard<'a, Vec<MatcherRef>>> {
+    fn children(&self) -> Option<RwLockWriteGuard<Vec<MatcherRef>>> {
         None
     }
 
@@ -86,11 +87,11 @@ impl MatcherChildren {
         Self(RwLock::new(children))
     }
 
-    pub fn get_mut<'a>(&'a self) -> RwLockWriteGuard<'a, Vec<MatcherRef>> {
+    pub fn get_mut(&self) -> RwLockWriteGuard<Vec<MatcherRef>> {
         self.0.write().unwrap()
     }
 
-    pub fn get<'a>(&'a self) -> RwLockReadGuard<'a, Vec<MatcherRef>> {
+    pub fn get(&self) -> RwLockReadGuard<Vec<MatcherRef>> {
         self.0.read().unwrap()
     }
 }

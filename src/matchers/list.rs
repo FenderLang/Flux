@@ -56,7 +56,7 @@ impl Matcher for ListMatcher {
         })
     }
 
-    fn children<'a>(&'a self) -> Option<RwLockWriteGuard<'a, Vec<MatcherRef>>> {
+    fn children(&self) -> Option<RwLockWriteGuard<Vec<MatcherRef>>> {
         Some(self.children.get_mut())
     }
 
