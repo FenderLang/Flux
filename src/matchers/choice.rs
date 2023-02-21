@@ -61,7 +61,7 @@ impl Matcher for ChoiceMatcher {
             .expect("error always present"))
     }
 
-    fn children(& self) -> Option<RwLockWriteGuard<Vec<MatcherRef>>> {
+    fn children(&self) -> Option<RwLockWriteGuard<Vec<MatcherRef>>> {
         Some(self.children.get_mut())
     }
 }
