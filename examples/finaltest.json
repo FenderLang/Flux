@@ -1,10 +1,28 @@
 {
     "name": "John",
     "age": 30,
-    "cars": [
-        "Ford Mustang",
-        "Jeep Wrangler"
-    ],
+    "cars": {
+        "Ford Mustang": {
+            "year": 2020,
+            "mileage": 12345,
+            "mods": [
+                "Exhaust",
+                "Intake",
+                "Tune"
+            ],
+            "color": "Red"
+        },
+        "Jeep Wrangler": {
+            "year": 2018,
+            "mileage": 23251,
+            "mods": [
+                "Exhaust",
+                "Intake",
+                "Tune"
+            ],
+            "color": "Black"
+        }
+    },
     "married": true,
     "houses": [
         {
@@ -20,6 +38,94 @@
             "state": "NY",
             "zip": "12345",
             "sq": 1234.56
+        }
+    ],
+    "children": [
+        {
+            "name": "Sally",
+            "age": 21,
+            "cars": {
+                "Chevy Corvette": {
+                    "year": 2021,
+                    "mileage": 6201,
+                    "mods": [
+                        "Exhaust",
+                        "Intake",
+                        "Tune"
+                    ],
+                    "color": "Red"
+                },
+                "Jeep Wrangler":    {
+                    "year": 2018,
+                    "mileage": 23251,
+                    "mods": [
+                        "Exhaust",
+                        "Intake",
+                        "Tune"
+                    ],
+                    "color": "Black"
+                }
+            },
+            "Boyfriend": {
+                "name": "Charlie",
+                "age": 18,
+                "cars": {
+                    "Ferrari 458 Italia": {
+                        "year": 2015,
+                        "mileage": 12345,
+                        "mods": [
+                            "Exhaust",
+                            "Intake",
+                            "Tune"
+                        ],
+                        "color": "Rosso Corsa"
+                    },
+                    "Lamborghini Aventador SVJ" : {
+                        "year": 2020,
+                        "mileage": 2345,
+                        "mods": [
+                            "Exhaust",
+                            "Intake",
+                            "Tune"
+                        ],
+                        "color": "Giallo Orion"
+                    }
+                }
+            }
+        },
+        {
+            "name": "Billy",
+            "age": 18,
+            "cars": {
+                "Porche 911 GT2RS" : {
+                    "year": 2020,
+                    "mileage": 2458
+                },
+                "Jeep Wrangler" : {
+                    "year": 2018,
+                    "mileage": 23251
+                },
+                "Ford F-350" : {
+                    "year": 2020,
+                    "mileage": 62321
+                }
+            },
+            "girlfriend": [
+                {
+                    "name": "Sandy",
+                    "age": 21,
+                    "cars": {
+                        "Chevy Corvette": {
+                            "year": 2021,
+                            "mileage": 6201
+                        },
+                        "Toyota Supra": {
+                            "year": 2020,
+                            "mileage": 14302
+                        }
+                    }
+                }
+            ]
         }
     ]
 }
