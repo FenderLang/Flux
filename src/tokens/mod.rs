@@ -1,6 +1,6 @@
 use self::token_iterator::Iter;
 use crate::{error::FluxError, matchers::MatcherName};
-use std::{fmt::Debug, ops::Range, rc::Rc};
+use std::{fmt::Debug, ops::Range, sync::Arc};
 
 pub mod token_iterator;
 
@@ -8,7 +8,7 @@ pub struct Token {
     pub matcher_name: MatcherName,
     pub matcher_id: usize,
     pub children: Vec<Token>,
-    pub source: Rc<Vec<char>>,
+    pub source: Arc<Vec<char>>,
     pub range: Range<usize>,
     pub failure: Option<FluxError>,
 }
@@ -30,16 +30,18 @@ impl Token {
     }
 
     /// Get an iterator over all children of token
-    /// 
+    ///
     /// Equivalent to calling `self.iter()`
     pub fn all_children(&self) -> Iter {
         Iter::new(self)
     }
 
     /// Get an iterator over all children of `self` with a given `name`
-    pub fn children_named<'a, 'b: 'a>(&'a self, name: &'b str) -> impl Iterator<Item = &'a Token> + 'a {
-        Iter::new(self)
-            .filter(move |t| matches!(t.matcher_name.as_ref(), Some(n) if n == name))
+    pub fn children_named<'a, 'b: 'a>(
+        &'a self,
+        name: &'b str,
+    ) -> impl Iterator<Item = &'a Token> + 'a {
+        Iter::new(self).filter(move |t| matches!(t.matcher_name.as_ref(), Some(n) if n == name))
     }
 
     /// Get an iterator over all children in `self`

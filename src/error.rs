@@ -1,6 +1,6 @@
 use std::{
     fmt::{Debug, Display},
-    rc::Rc,
+    sync::Arc,
 };
 
 use crate::matchers::MatcherName;
@@ -28,20 +28,20 @@ pub struct FluxError {
     pub location: usize,
     pub depth: usize,
     pub matcher_name: MatcherName,
-    pub src_text: Option<Rc<Vec<char>>>,
+    pub src_text: Option<Arc<Vec<char>>>,
 }
 
 impl FluxError {
     pub fn new(
         description: &'static str,
         location: usize,
-        src_text: Option<Rc<Vec<char>>>,
+        src_text: Option<Arc<Vec<char>>>,
     ) -> FluxError {
         FluxError {
             description: ErrorMessage::Constant(description),
             location,
             depth: 0,
-            matcher_name: Rc::new(None),
+            matcher_name: Arc::new(None),
             src_text,
         }
     }
@@ -51,7 +51,7 @@ impl FluxError {
         location: usize,
         depth: usize,
         matcher_name: MatcherName,
-        src_text: Option<Rc<Vec<char>>>,
+        src_text: Option<Arc<Vec<char>>>,
     ) -> FluxError {
         FluxError {
             description: ErrorMessage::Constant(description),
@@ -65,13 +65,13 @@ impl FluxError {
     pub fn new_dyn(
         description: String,
         location: usize,
-        src_text: Option<Rc<Vec<char>>>,
+        src_text: Option<Arc<Vec<char>>>,
     ) -> FluxError {
         FluxError {
             description: ErrorMessage::Dynamic(description),
             location,
             depth: 0,
-            matcher_name: Rc::new(None),
+            matcher_name: Arc::new(None),
             src_text,
         }
     }

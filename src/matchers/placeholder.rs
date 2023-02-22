@@ -1,6 +1,6 @@
 use super::{Matcher, MatcherMeta};
 use crate::{error::Result, tokens::Token};
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct PlaceholderMatcher {
@@ -15,11 +15,7 @@ impl PlaceholderMatcher {
 
 impl Matcher for PlaceholderMatcher {
     impl_meta!();
-    fn apply(&self, _: Rc<Vec<char>>, _: usize, _: usize) -> Result<Token> {
-        unreachable!()
-    }
-
-    fn min_length(&self) -> usize {
+    fn apply(&self, _: Arc<Vec<char>>, _: usize, _: usize) -> Result<Token> {
         unreachable!()
     }
 

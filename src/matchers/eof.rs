@@ -1,6 +1,6 @@
 use super::{Matcher, MatcherMeta};
 use crate::{error::FluxError, error::Result, tokens::Token};
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct EofMatcher {
@@ -15,7 +15,7 @@ impl EofMatcher {
 
 impl Matcher for EofMatcher {
     impl_meta!();
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
+    fn apply(&self, source: Arc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
         if pos == source.len() {
             Ok(Token {
                 matcher_name: self.name().clone(),
@@ -31,12 +31,8 @@ impl Matcher for EofMatcher {
                 pos,
                 depth,
                 self.name().clone(),
-                Some(source)
+                Some(source),
             ))
         }
-    }
-
-    fn min_length(&self) -> usize {
-        0
     }
 }
