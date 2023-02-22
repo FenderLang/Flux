@@ -253,7 +253,7 @@ impl BNFParserState {
     /// Consume all whitespace including line breaks
     fn consume_line_breaks(&mut self) {
         self.consume_whitespace();
-        while self.peek() == Some('\n') {
+        while let Some('\n' | '\r') = self.peek() {
             self.advance();
             self.consume_whitespace();
         }
