@@ -55,8 +55,8 @@ impl Lexer {
         }
     }
 
-    pub fn tokenize(&self, input: impl ToString) -> Result<Token> {
-        let input = input.to_string();
+    pub fn tokenize(&self, input: impl AsRef<str>) -> Result<Token> {
+        let input = input.as_ref();
         let source = Arc::new(input.chars().collect::<Vec<char>>());
         let pos = 0;
         let token = self.root.apply(source.clone(), pos, 0)?;
