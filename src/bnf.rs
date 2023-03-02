@@ -136,7 +136,7 @@ impl BNFParserState {
         let root = rule_map.get("root").ok_or_else(|| {
             FluxError::new("No root matcher specified", 0, Some(self.source.clone()))
         })?;
-        Ok(Lexer::new(root.clone(), id_map))
+        Ok(Lexer::new(root.clone(), id_map, rules))
     }
 
     fn parse_rule(&mut self, id: usize) -> Result<Option<ParseLineResult>> {

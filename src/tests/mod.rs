@@ -138,3 +138,16 @@ fn template_test() {
     lexer.tokenize("[1, 2]").unwrap();
     lexer.tokenize("[1, 2").unwrap_err();
 }
+
+#[test]
+fn alt_root_test() {
+    let lexer = bnf::parse(include_str!("bnf/numbers.bnf")).unwrap();
+    lexer.tokenize("4").unwrap();
+    lexer.tokenize_with("root", "4").unwrap();
+    lexer.tokenize_with("number", "4").unwrap();
+    lexer.tokenize_with("decimal", "4.0").unwrap();
+    lexer.tokenize_with("int", "4.0").unwrap_err();
+    lexer.tokenize_with("int", "4").unwrap();
+    lexer.tokenize_with("digit", "4").unwrap();
+    lexer.tokenize_with("digit", "40").unwrap_err();
+}
