@@ -31,7 +31,7 @@ impl Token {
 
     /// Get an iterator over all children of `self`, recursively
     ///
-    /// Equivalent to calling `self.iter()`
+    /// Equivalent to calling `self.rec_iter()`
     pub fn recursive_children(&self) -> RecursiveIter {
         RecursiveIter::new(self)
     }
