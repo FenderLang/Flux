@@ -1,16 +1,18 @@
+use std::collections::HashSet;
+
 use super::Token;
 
 pub struct Iter<'a> {
     token: &'a Token,
     index: usize,
-    ignore_list: Vec<String>,
+    ignore_list: HashSet<String>,
 }
 
 pub struct RecursiveIter<'a> {
     token: &'a Token,
     index: usize,
     stack: Vec<(&'a Token, usize)>,
-    ignore_list: Vec<String>,
+    ignore_list: HashSet<String>,
 }
 
 impl<'a> Iter<'a> {
