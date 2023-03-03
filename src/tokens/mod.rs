@@ -29,7 +29,7 @@ impl Token {
         self.children.get(0)
     }
 
-    /// Get an iterator over all children of token
+    /// Get an iterator over all children of tokens, recursively
     ///
     /// Equivalent to calling `self.iter()`
     pub fn all_children(&self) -> Iter {
@@ -44,7 +44,17 @@ impl Token {
         Iter::new(self).filter(move |t| matches!(t.matcher_name.as_ref(), Some(n) if n == name))
     }
 
-    /// Get an iterator over all children in `self`
+    /// Get an iterator over the direct children of `self` with a given name `name`
+    pub fn direct_children_named<'a, 'b: 'a>(
+        &'a self,
+        name: &'b str,
+    ) -> impl Iterator<Item = &'a Token> {
+        self.children
+            .iter()
+            .filter(move |t| matches!(t.matcher_name.as_ref(), Some(n) if n == name))
+    }
+
+    /// Get an iterator over all children in `self`, recursively
     pub fn iter(&self) -> Iter {
         Iter::new(self)
     }
