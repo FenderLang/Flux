@@ -32,12 +32,12 @@ impl Token {
     /// Get an iterator over all children of `self`, recursively
     ///
     /// Equivalent to calling `self.iter()`
-    pub fn all_children(&self) -> Iter {
+    pub fn recurisve_children(&self) -> Iter {
         Iter::new(self)
     }
 
     /// Get an iterator over all children of `self` with a given `name`
-    pub fn children_named<'a, 'b: 'a>(
+    pub fn recursive_children_named<'a, 'b: 'a>(
         &'a self,
         name: &'b str,
     ) -> impl Iterator<Item = &'a Token> + 'a {
@@ -45,7 +45,7 @@ impl Token {
     }
 
     /// Get an iterator over the direct children of `self` with a given name `name`
-    pub fn direct_children_named<'a, 'b: 'a>(
+    pub fn children_named<'a, 'b: 'a>(
         &'a self,
         name: &'b str,
     ) -> impl Iterator<Item = &'a Token> {
