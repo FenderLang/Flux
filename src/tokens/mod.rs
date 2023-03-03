@@ -1,8 +1,13 @@
-use self::token_iterator::{Iter, RecursiveIter};
 use crate::{error::FluxError, matchers::MatcherName};
 use std::{fmt::Debug, ops::Range, sync::Arc};
 
-pub mod token_iterator;
+use self::iterators::{rec_iter::RecursiveIter, iter::Iter};
+
+pub mod iterators {
+    pub mod ignore_iter;
+    pub mod iter;
+    pub mod rec_iter;
+}
 
 pub struct Token {
     pub matcher_name: MatcherName,
