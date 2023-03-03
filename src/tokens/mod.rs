@@ -1,4 +1,4 @@
-use self::token_iterator::Iter;
+use self::token_iterator::{Iter, RecursiveIter};
 use crate::{error::FluxError, matchers::MatcherName};
 use std::{fmt::Debug, ops::Range, sync::Arc};
 
@@ -32,31 +32,34 @@ impl Token {
     /// Get an iterator over all children of `self`, recursively
     ///
     /// Equivalent to calling `self.iter()`
-    pub fn recurisve_children(&self) -> Iter {
-        Iter::new(self)
+    pub fn recursive_children(&self) -> RecursiveIter {
+        RecursiveIter::new(self)
     }
 
-    /// Get an iterator over all children of `self` with a given `name`
+    /// Get an iterator over all children of `self` with a given `name`, recursively
     pub fn recursive_children_named<'a, 'b: 'a>(
         &'a self,
         name: &'b str,
     ) -> impl Iterator<Item = &'a Token> + 'a {
-        Iter::new(self).filter(move |t| matches!(t.matcher_name.as_ref(), Some(n) if n == name))
+        RecursiveIter::new(self)
+            .filter(move |t| matches!(t.matcher_name.as_ref(), Some(n) if n == name))
     }
 
     /// Get an iterator over the direct children of `self` with a given name `name`
-    pub fn children_named<'a, 'b: 'a>(
-        &'a self,
-        name: &'b str,
-    ) -> impl Iterator<Item = &'a Token> {
+    pub fn children_named<'a, 'b: 'a>(&'a self, name: &'b str) -> impl Iterator<Item = &'a Token> {
         self.children
             .iter()
             .filter(move |t| matches!(t.matcher_name.as_ref(), Some(n) if n == name))
     }
 
-    /// Get an iterator over all children in `self`, recursively
+    /// Get an iterator over children of `self`
     pub fn iter(&self) -> Iter {
         Iter::new(self)
+    }
+
+    /// Get an iterator over all children in `self`, recursively
+    pub fn rec_iter(&self) -> RecursiveIter {
+        RecursiveIter::new(self)
     }
 }
 
@@ -79,9 +82,9 @@ impl Debug for Token {
 impl<'a> IntoIterator for &'a Token {
     type Item = &'a Token;
 
-    type IntoIter = Iter<'a>;
+    type IntoIter = RecursiveIter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.iter()
+        self.rec_iter()
     }
 }

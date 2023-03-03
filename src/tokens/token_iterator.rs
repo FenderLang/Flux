@@ -3,7 +3,14 @@ use super::Token;
 pub struct Iter<'a> {
     token: &'a Token,
     index: usize,
+    ignore_list: Vec<String>,
+}
+
+pub struct RecursiveIter<'a> {
+    token: &'a Token,
+    index: usize,
     stack: Vec<(&'a Token, usize)>,
+    ignore_list: Vec<String>,
 }
 
 impl<'a> Iter<'a> {
@@ -11,12 +18,56 @@ impl<'a> Iter<'a> {
         Self {
             token,
             index: 0,
-            stack: vec![(token, 0)],
+            ignore_list: Vec::new(),
         }
+    }
+    pub fn ignore<S: AsRef<str>>(mut self, name: S) -> Iter<'a> {
+        self.ignore_list.push(name.as_ref().into());
+        self
+    }
+}
+
+impl<'a> RecursiveIter<'a> {
+    pub fn new(token: &'a Token) -> Self {
+        Self {
+            token,
+            index: 0,
+            stack: vec![(token, 0)],
+            ignore_list: Vec::new(),
+        }
+    }
+
+    pub fn ignore<S: AsRef<str>>(mut self, name: S) -> RecursiveIter<'a> {
+        self.ignore_list.push(name.as_ref().into());
+        self
     }
 }
 
 impl<'a> Iterator for Iter<'a> {
+    type Item = &'a Token;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index >= self.token.children.len() {
+            return None;
+        }
+
+        let next_token = &self.token.children[self.index];
+
+        self.index += 1;
+
+        if let Some(true) = next_token
+            .get_name()
+            .as_ref()
+            .map(|name| self.ignore_list.contains(name))
+        {
+            self.next()
+        } else {
+            Some(next_token)
+        }
+    }
+}
+
+impl<'a> Iterator for RecursiveIter<'a> {
     type Item = &'a Token;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -36,6 +87,15 @@ impl<'a> Iterator for Iter<'a> {
         self.index = 0;
         self.token = next_child;
 
-        Some(self.token)
+        if let Some(true) = self
+            .token
+            .get_name()
+            .as_ref()
+            .map(|name| self.ignore_list.contains(name))
+        {
+            self.next()
+        } else {
+            Some(self.token)
+        }
     }
 }
