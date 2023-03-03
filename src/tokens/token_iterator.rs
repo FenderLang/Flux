@@ -20,11 +20,11 @@ impl<'a> Iter<'a> {
         Self {
             token,
             index: 0,
-            ignore_list: Vec::new(),
+            ignore_list: HashSet::new(),
         }
     }
     pub fn ignore<S: AsRef<str>>(mut self, name: S) -> Iter<'a> {
-        self.ignore_list.push(name.as_ref().into());
+        self.ignore_list.insert(name.as_ref().into());
         self
     }
 }
@@ -35,12 +35,12 @@ impl<'a> RecursiveIter<'a> {
             token,
             index: 0,
             stack: vec![(token, 0)],
-            ignore_list: Vec::new(),
+            ignore_list: HashSet::new(),
         }
     }
 
     pub fn ignore<S: AsRef<str>>(mut self, name: S) -> RecursiveIter<'a> {
-        self.ignore_list.push(name.as_ref().into());
+        self.ignore_list.insert(name.as_ref().into());
         self
     }
 }
