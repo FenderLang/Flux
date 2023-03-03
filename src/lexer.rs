@@ -30,14 +30,18 @@ pub struct Lexer {
 }
 
 impl Lexer {
-    pub fn new(root: MatcherRef, names: HashMap<String, usize>, matchers: Vec<MatcherRef>) -> Lexer {
+    pub fn new(
+        root: MatcherRef,
+        names: HashMap<String, usize>,
+        matchers: Vec<MatcherRef>,
+    ) -> Lexer {
         Lexer {
             root,
             retain_empty: false,
             unnamed_rule: CullStrategy::LiftChildren,
             named_rules: vec![CullStrategy::None; names.len() + 1],
             names,
-            matchers
+            matchers,
         }
     }
 
