@@ -29,7 +29,7 @@ impl Token {
         self.children.get(0)
     }
 
-    /// Get an iterator over all children of tokens, recursively
+    /// Get an iterator over all children of `self`, recursively
     ///
     /// Equivalent to calling `self.iter()`
     pub fn all_children(&self) -> Iter {
