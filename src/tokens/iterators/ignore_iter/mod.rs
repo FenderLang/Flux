@@ -26,4 +26,4 @@ pub trait IgnoreTokensIteratorExt<'a>: Iterator {
     }
 }
 
-impl<'a, I: Iterator> IgnoreTokensIteratorExt<'a> for I {}
+impl<'a, I: Iterator<Item = &'a Token>> IgnoreTokensIteratorExt<'a> for I {}
