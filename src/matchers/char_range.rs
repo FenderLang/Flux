@@ -31,7 +31,7 @@ impl Matcher for CharRangeMatcher {
         match source.get(pos) {
             Some(c) if self.check_char(*c) => Ok(Token {
                 matcher_name: self.name().clone(),
-                children: vec![],
+                children: Vec::with_capacity(0),
                 source,
                 range: pos..pos + 1,
                 matcher_id: self.id(),

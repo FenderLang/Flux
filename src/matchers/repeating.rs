@@ -24,7 +24,7 @@ impl RepeatingMatcher {
 impl Matcher for RepeatingMatcher {
     impl_meta!();
     fn apply(&self, source: Arc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
-        let mut children: Vec<Token> = Vec::new();
+        let mut children: Vec<Token> = Vec::with_capacity(self.min);
 
         let child = &self.child.get()[0];
         let mut cursor = pos;

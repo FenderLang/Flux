@@ -37,7 +37,7 @@ impl Matcher for StringMatcher {
         {
             Ok(Token {
                 matcher_name: self.name().clone(),
-                children: vec![],
+                children: Vec::with_capacity(0),
                 source,
                 range: pos..pos + self.to_match.len(),
                 matcher_id: self.id(),
