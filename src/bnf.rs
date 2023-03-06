@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::matchers::{Matcher, MatcherType};
 use crate::error::{FluxError, Result};
 use crate::lexer::Lexer;
+use crate::matchers::{Matcher, MatcherType};
 
 pub fn parse(input: &str) -> Result<Lexer> {
     let id_map: HashMap<String, usize> = input
@@ -11,6 +11,7 @@ pub fn parse(input: &str) -> Result<Lexer> {
         .map(str::trim_start)
         .filter(|s| s.len() > 0 && !s.starts_with('#'))
         .map(|s| s.chars().take_while(|c| !c.is_whitespace()).collect())
+        .filter(|s: &String| !s.contains('<'))
         .enumerate()
         .map(|(i, s)| (s, i))
         .collect();
@@ -23,6 +24,7 @@ pub fn parse(input: &str) -> Result<Lexer> {
             };
             id_map.len()
         ],
+        templates: HashMap::new(),
         id_map,
         source: Arc::new(input.chars().collect()),
         pos: 0,
@@ -32,6 +34,7 @@ pub fn parse(input: &str) -> Result<Lexer> {
 
 struct BNFParserState {
     id_map: HashMap<String, usize>,
+    templates: HashMap<String, TemplateRule>,
     matchers: Vec<Matcher>,
     source: Arc<Vec<char>>,
     pos: usize,
@@ -42,13 +45,21 @@ struct TemplateRule {
     names: Vec<String>,
 }
 
+enum ParseLineOutput {
+    Rule(MatcherType, String),
+    TemplateRule(TemplateRule, String),
+}
+
 impl BNFParserState {
     fn parse(mut self) -> Result<Lexer> {
         self.consume_line_breaks();
         while self.pos < self.source.len() {
             match self.parse_rule()? {
-                Some((rule, name)) => {
+                Some(ParseLineOutput::Rule(rule, name)) => {
                     self.add_named_matcher(rule, name);
+                }
+                Some(ParseLineOutput::TemplateRule(rule, name)) => {
+                    self.templates.insert(name, rule);
                 }
                 _ => (),
             }
@@ -81,21 +92,41 @@ impl BNFParserState {
         &self.matchers[id]
     }
 
-    fn parse_rule(&mut self) -> Result<Option<(MatcherType, String)>> {
+    fn parse_rule(&mut self) -> Result<Option<ParseLineOutput>> {
         if self.check_str("//") {
             self.consume_comment();
             return Ok(None);
         }
         let name = self.parse_word()?;
+        let template = self.check_char('<').then(|| self.parse_generic_params());
         self.call_assert("whitespace", Self::consume_whitespace)?;
         self.assert_str("::=")?;
         self.call_assert("whitespace", Self::consume_whitespace)?;
-        let matcher = self.parse_list()?;
+        if let Some(params) = template {
+            let template_rule = TemplateRule {
+                rule_start: self.pos,
+                names: params?,
+            };
+            return Ok(Some(ParseLineOutput::TemplateRule(template_rule, name)));
+        }
+        let matcher = self.parse_list(&None)?;
         self.consume_whitespace();
         if self.check_str("//") {
             self.consume_comment();
         }
-        Ok(Some((matcher, name)))
+        Ok(Some(ParseLineOutput::Rule(matcher, name)))
+    }
+
+    fn parse_generic_params(&mut self) -> Result<Vec<String>> {
+        let mut names = vec![];
+        while !self.check_char('>') {
+            let name = self.parse_word()?;
+            names.push(name);
+            if self.check_char(',') {
+                self.consume_whitespace();
+            }
+        }
+        Ok(names)
     }
 
     fn peek(&self) -> Option<char> {
@@ -267,9 +298,12 @@ impl BNFParserState {
             .map_err(|_| FluxError::new("Invalid number", self.pos, Some(self.source.clone())))
     }
 
-    fn parse_matcher_with_modifiers(&mut self) -> Result<MatcherType> {
+    fn parse_matcher_with_modifiers(
+        &mut self,
+        extras: &Option<HashMap<String, usize>>,
+    ) -> Result<MatcherType> {
         let inverted = self.check_char('!');
-        let mut matcher = self.parse_matcher()?;
+        let mut matcher = self.parse_matcher(extras)?;
         let _pos = self.pos;
         match self.peek() {
             Some('+') => {
@@ -322,11 +356,11 @@ impl BNFParserState {
         }
     }
 
-    fn parse_matcher(&mut self) -> Result<MatcherType> {
+    fn parse_matcher(&mut self, extras: &Option<HashMap<String, usize>>) -> Result<MatcherType> {
         match self.peek() {
             Some('(') => {
                 self.assert_char('(')?;
-                let list = self.parse_list()?;
+                let list = self.parse_list(extras)?;
                 self.assert_char(')')?;
                 Ok(list)
             }
@@ -346,7 +380,11 @@ impl BNFParserState {
             Some('i') if self.source.get(self.pos + 1) == Some(&'"') => self.parse_string(),
             Some(c) if c.is_alphabetic() => {
                 let name = self.parse_word()?;
-                let id = self.id_map.get(&name).ok_or_else(|| {
+                let id = extras
+                    .as_ref()
+                    .and_then(|m| m.get(&name))
+                    .or_else(|| self.id_map.get(&name));
+                let id = id.ok_or_else(|| {
                     FluxError::new_dyn(
                         format!("No template rule with name {name}"),
                         self.pos,
@@ -361,6 +399,33 @@ impl BNFParserState {
                 Some(self.source.clone()),
             )),
         }
+    }
+
+    fn parse_template(
+        &mut self,
+        template: &TemplateRule,
+        extras: &Option<HashMap<String, usize>>,
+    ) -> Result<MatcherType> {
+        let mut params = Vec::with_capacity(template.names.len());
+        for _ in 0..template.names.len() - 1 {
+            self.consume_whitespace();
+            let param = self.parse_list(extras)?;
+            let id = self.add_matcher(param).id;
+            params.push(id);
+            self.assert_char(',')?;
+            self.consume_whitespace();
+        }
+        let last = self.parse_list(extras)?;
+        let last_id = self.add_matcher(last).id;
+        params.push(last_id);
+        self.consume_whitespace();
+        self.assert_char('>')?;
+        let new_extras: HashMap<_, _> = template.names.iter().cloned().zip(params).collect();
+        let old_pos = self.pos;
+        self.pos = template.rule_start;
+        let parsed = self.parse_list(&Some(new_extras))?;
+        self.pos = old_pos;
+        Ok(parsed)
     }
 
     fn parse_char_range(&mut self) -> Result<MatcherType> {
@@ -403,11 +468,11 @@ impl BNFParserState {
         next != Some('\n') && next != Some('/')
     }
 
-    fn parse_list(&mut self) -> Result<MatcherType> {
+    fn parse_list(&mut self, extras: &Option<HashMap<String, usize>>) -> Result<MatcherType> {
         let mut matcher_list = Vec::new();
         let mut choices = Vec::new();
         while self.pos < self.source.len() && self.list_should_continue() {
-            matcher_list.push(self.parse_matcher_with_modifiers()?);
+            matcher_list.push(self.parse_matcher_with_modifiers(extras)?);
             if !self.call_check(Self::consume_whitespace) {
                 break;
             }
