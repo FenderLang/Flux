@@ -30,10 +30,6 @@ pub fn parse(input: &str) -> Result<Lexer> {
     .parse()
 }
 
-enum ParseLineResult {
-    Rule(MatcherType, String),
-}
-
 struct BNFParserState {
     id_map: HashMap<String, usize>,
     matchers: Vec<Matcher>,
@@ -44,10 +40,9 @@ struct BNFParserState {
 impl BNFParserState {
     fn parse(mut self) -> Result<Lexer> {
         self.consume_line_breaks();
-        use ParseLineResult::*;
         while self.pos < self.source.len() {
             match self.parse_rule()? {
-                Some(Rule(rule, name)) => {
+                Some((rule, name)) => {
                     self.add_named_matcher(rule, name);
                 }
                 _ => (),
@@ -81,7 +76,7 @@ impl BNFParserState {
         &self.matchers[id]
     }
 
-    fn parse_rule(&mut self) -> Result<Option<ParseLineResult>> {
+    fn parse_rule(&mut self) -> Result<Option<(MatcherType, String)>> {
         if self.check_str("//") {
             self.consume_comment();
             return Ok(None);
@@ -95,7 +90,7 @@ impl BNFParserState {
         if self.check_str("//") {
             self.consume_comment();
         }
-        Ok(Some(ParseLineResult::Rule(matcher, name)))
+        Ok(Some((matcher, name)))
     }
 
     fn peek(&self) -> Option<char> {
