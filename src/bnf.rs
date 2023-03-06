@@ -3,192 +3,130 @@ use std::sync::Arc;
 
 use crate::error::{FluxError, Result};
 use crate::lexer::Lexer;
-use crate::matchers::char_range::CharRangeMatcher;
-use crate::matchers::choice::ChoiceMatcher;
-use crate::matchers::eof::EofMatcher;
-use crate::matchers::inverted::InvertedMatcher;
-use crate::matchers::list::ListMatcher;
-use crate::matchers::placeholder::PlaceholderMatcher;
-use crate::matchers::repeating::RepeatingMatcher;
-use crate::matchers::string::StringMatcher;
-use crate::matchers::MatcherMeta;
-use crate::matchers::{char_set::CharSetMatcher, MatcherRef};
+use crate::matchers::{Matcher, MatcherType};
 
 pub fn parse(input: &str) -> Result<Lexer> {
+    let id_map: HashMap<String, usize> = input
+        .lines()
+        .map(str::trim_start)
+        .filter(|s| s.len() > 0 && !s.starts_with('#'))
+        .map(|s| s.chars().take_while(|c| !c.is_whitespace()).collect())
+        .filter(|s: &String| !s.contains('<'))
+        .enumerate()
+        .map(|(i, s)| (s, i))
+        .collect();
     BNFParserState {
+        matchers: vec![
+            Matcher {
+                name: None.into(),
+                id: 0,
+                matcher_type: MatcherType::Placeholder
+            };
+            id_map.len()
+        ],
+        templates: HashMap::new(),
+        id_map,
         source: Arc::new(input.chars().collect()),
         pos: 0,
-        templates: HashMap::new(),
     }
     .parse()
 }
 
-fn replace_placeholders(
-    rule: &MatcherRef,
-    map: &HashMap<String, MatcherRef>,
-    error_on_fail: bool,
-) -> Result<()> {
-    let Some(mut children) = rule.children() else {
-        return Ok(());
-    };
-    for child in children.iter_mut() {
-        if child.is_placeholder() {
-            let name = &**child.name();
-            let matcher = name.as_ref().and_then(|n| map.get(n));
-            let Some(matcher) = matcher else {
-                if error_on_fail {
-                    return Err(FluxError::new_dyn(format!("Missing matcher for {}", name.as_ref().unwrap()), 0, None));
-                } else {
-                    continue;
-                }
-            };
-            *child = matcher.clone();
-        } else {
-            replace_placeholders(child, map, error_on_fail)?;
-        }
-    }
-    Ok(())
-}
-
-struct TemplateRule {
-    params: Vec<String>,
-    rule: MatcherRef,
-}
-
-fn deep_copy(matcher: MatcherRef) -> MatcherRef {
-    let matcher = matcher.with_meta(matcher.meta().clone());
-    let Some(mut children) = matcher.children() else {
-        return matcher;
-    };
-    for i in 0..children.len() {
-        let child = &children[i];
-        let clone = deep_copy(child.clone());
-        children[i] = clone;
-    }
-    matcher.clone()
-}
-
-impl TemplateRule {
-    fn to_matcher(
-        &self,
-        params: Vec<MatcherRef>,
-        pos: usize,
-        source: Arc<Vec<char>>,
-    ) -> Result<MatcherRef> {
-        let mut names = HashMap::new();
-        if params.len() != self.params.len() {
-            return Err(FluxError::new(
-                "wrong number of template arguments",
-                pos,
-                Some(source),
-            ));
-        }
-        for (matcher, name) in params.into_iter().zip(&self.params) {
-            names.insert(name.clone(), matcher);
-        }
-        let matcher = deep_copy(self.rule.clone());
-        replace_placeholders(&matcher, &names, false)?;
-        Ok(matcher)
-    }
-}
-
-enum ParseLineResult {
-    Rule(MatcherRef, String),
-    Template(MatcherRef, Vec<String>, String),
-}
-
 struct BNFParserState {
+    id_map: HashMap<String, usize>,
     templates: HashMap<String, TemplateRule>,
+    matchers: Vec<Matcher>,
     source: Arc<Vec<char>>,
     pos: usize,
 }
 
+struct TemplateRule {
+    rule_start: usize,
+    names: Vec<String>,
+}
+
+enum ParseLineOutput {
+    Rule(MatcherType, String),
+    TemplateRule(TemplateRule, String),
+}
+
 impl BNFParserState {
-    fn parse(&mut self) -> Result<Lexer> {
-        let mut rules = Vec::new();
-        let mut rule_map: HashMap<String, MatcherRef> = HashMap::new();
-        let mut id_map = HashMap::new();
+    fn parse(mut self) -> Result<Lexer> {
         self.consume_line_breaks();
-        use ParseLineResult::*;
         while self.pos < self.source.len() {
-            match self.parse_rule(rules.len() + 1)? {
-                Some(Rule(rule, name)) => {
-                    rules.push(rule.clone());
-                    id_map.insert(name.clone(), rule.id());
-                    if rule_map.insert(name.clone(), rule).is_some() {
-                        return Err(FluxError::new_dyn(
-                            format!("Duplicate rule name {}", name),
-                            0,
-                            Some(self.source.clone()),
-                        ));
-                    }
+            match self.parse_rule()? {
+                Some(ParseLineOutput::Rule(rule, name)) => {
+                    self.add_named_matcher(rule, name);
                 }
-                Some(Template(rule, params, name)) => {
-                    self.templates.insert(name, TemplateRule { params, rule });
+                Some(ParseLineOutput::TemplateRule(rule, name)) => {
+                    self.templates.insert(name, rule);
                 }
                 _ => (),
             }
             self.consume_line_breaks();
         }
-        for rule in &rules {
-            replace_placeholders(rule, &rule_map, true)?;
-        }
-        let root = rule_map.get("root").ok_or_else(|| {
+        let root = self.id_map.get("root").ok_or_else(|| {
             FluxError::new("No root matcher specified", 0, Some(self.source.clone()))
         })?;
-        Ok(Lexer::new(root.clone(), id_map, rules))
+        Ok(Lexer::new(*root, self.id_map, self.matchers))
     }
 
-    fn parse_rule(&mut self, id: usize) -> Result<Option<ParseLineResult>> {
+    fn add_matcher(&mut self, matcher_type: MatcherType) -> &Matcher {
+        let matcher = Matcher {
+            name: None.into(),
+            id: self.matchers.len(),
+            matcher_type,
+        };
+        self.matchers.push(matcher);
+        &self.matchers[self.matchers.len() - 1]
+    }
+
+    fn add_named_matcher(&mut self, matcher_type: MatcherType, name: String) -> &Matcher {
+        let id = self.id_map[&name];
+        let matcher = Matcher {
+            name: Some(name).into(),
+            id,
+            matcher_type,
+        };
+        self.matchers[id] = matcher;
+        &self.matchers[id]
+    }
+
+    fn parse_rule(&mut self) -> Result<Option<ParseLineOutput>> {
         if self.check_str("//") {
             self.consume_comment();
             return Ok(None);
         }
         let name = self.parse_word()?;
-        let mut template_params = None;
-        if self.check_char('<') {
-            template_params = Some(self.parse_template_param_names()?);
-        }
-        let meta = MatcherMeta::new(Some(name.clone()), id);
-        let transparent = self.check_str("!0");
+        let template = self.check_char('<').then(|| self.parse_generic_params());
         self.call_assert("whitespace", Self::consume_whitespace)?;
         self.assert_str("::=")?;
         self.call_assert("whitespace", Self::consume_whitespace)?;
-        let mut matcher = self.parse_list()?;
-        if matcher.is_placeholder() {
-            matcher = Arc::new(ListMatcher::new(Default::default(), vec![matcher]));
+        if let Some(params) = template {
+            let template_rule = TemplateRule {
+                rule_start: self.pos,
+                names: params?,
+            };
+            return Ok(Some(ParseLineOutput::TemplateRule(template_rule, name)));
         }
+        let matcher = self.parse_list(&None)?;
         self.consume_whitespace();
         if self.check_str("//") {
             self.consume_comment();
         }
-        if let Some(params) = template_params {
-            Ok(Some(ParseLineResult::Template(matcher, params, name)))
-        } else {
-            if !transparent {
-                matcher = matcher.with_meta(meta);
-            }
-            Ok(Some(ParseLineResult::Rule(matcher, name)))
-        }
+        Ok(Some(ParseLineOutput::Rule(matcher, name)))
     }
 
-    fn parse_template_param_names(&mut self) -> Result<Vec<String>> {
-        let mut names = vec![self.parse_word()?];
-        while let Some(c) = self.advance() {
-            match c {
-                ',' => {
-                    self.consume_whitespace();
-                    names.push(self.parse_word()?);
-                }
-                '>' => return Ok(names),
-                _ => break,
+    fn parse_generic_params(&mut self) -> Result<Vec<String>> {
+        let mut names = vec![];
+        while !self.check_char('>') {
+            let name = self.parse_word()?;
+            names.push(name);
+            if self.check_char(',') {
+                self.consume_whitespace();
             }
         }
-        Err(FluxError::new(
-            "Expected >",
-            self.pos,
-            Some(self.source.clone()),
-        ))
+        Ok(names)
     }
 
     fn peek(&self) -> Option<char> {
@@ -351,40 +289,6 @@ impl BNFParserState {
         Ok(out)
     }
 
-    fn parse_placeholder(&mut self) -> Result<MatcherRef> {
-        let name = self.parse_word()?;
-        if self.check_char('<') {
-            let params = self.parse_template_params()?;
-            let template = self.templates.get(&name).ok_or(FluxError::new_dyn(
-                format!("No template rule with name {name}"),
-                self.pos,
-                Some(self.source.clone()),
-            ))?;
-            return template.to_matcher(params, self.pos, self.source.clone());
-        }
-        let matcher = PlaceholderMatcher::new(MatcherMeta::new(Some(name), 0));
-        Ok(Arc::new(matcher))
-    }
-
-    fn parse_template_params(&mut self) -> Result<Vec<MatcherRef>> {
-        let mut params = vec![self.parse_list()?];
-        while let Some(c) = self.advance() {
-            match c {
-                ',' => {
-                    self.consume_whitespace();
-                    params.push(self.parse_list()?);
-                }
-                '>' => return Ok(params),
-                _ => break,
-            }
-        }
-        Err(FluxError::new(
-            "Expected >",
-            self.pos,
-            Some(self.source.clone()),
-        ))
-    }
-
     fn parse_number(&mut self) -> Result<usize> {
         let mut out = String::new();
         while self.peek().map_or(false, |c| c.is_ascii_digit()) {
@@ -394,46 +298,39 @@ impl BNFParserState {
             .map_err(|_| FluxError::new("Invalid number", self.pos, Some(self.source.clone())))
     }
 
-    fn parse_matcher_with_modifiers(&mut self) -> Result<MatcherRef> {
+    fn parse_matcher_with_modifiers(
+        &mut self,
+        extras: &Option<HashMap<String, usize>>,
+    ) -> Result<MatcherType> {
         let inverted = self.check_char('!');
-        let mut matcher = self.parse_matcher()?;
+        let mut matcher = self.parse_matcher(extras)?;
         let _pos = self.pos;
         match self.peek() {
             Some('+') => {
                 self.advance();
-                matcher = Arc::new(RepeatingMatcher::new(
-                    Default::default(),
-                    1,
-                    usize::MAX,
-                    matcher,
-                ));
+                let child = self.add_matcher(matcher);
+                matcher = MatcherType::Repeating(child.id, 1..=usize::MAX);
             }
             Some('*') => {
                 self.advance();
-                matcher = Arc::new(RepeatingMatcher::new(
-                    Default::default(),
-                    0,
-                    usize::MAX,
-                    matcher,
-                ));
+                let child = self.add_matcher(matcher);
+                matcher = MatcherType::Repeating(child.id, 0..=usize::MAX);
             }
             Some('?') => {
                 self.advance();
-                matcher = Arc::new(RepeatingMatcher::new(Default::default(), 0, 1, matcher));
+                let child = self.add_matcher(matcher);
+                matcher = MatcherType::Repeating(child.id, 0..=1);
             }
             Some('{') => {
                 let bounds = self.parse_repeating_bounds()?;
-                matcher = Arc::new(RepeatingMatcher::new(
-                    Default::default(),
-                    bounds.0,
-                    bounds.1,
-                    matcher,
-                ));
+                let child = self.add_matcher(matcher);
+                matcher = MatcherType::Repeating(child.id, bounds.0..=bounds.1);
             }
             _ => (),
         }
         if inverted {
-            matcher = Arc::new(InvertedMatcher::new(Default::default(), matcher));
+            let child = self.add_matcher(matcher);
+            matcher = MatcherType::Inverted(child.id);
         }
         Ok(matcher)
     }
@@ -459,11 +356,11 @@ impl BNFParserState {
         }
     }
 
-    fn parse_matcher(&mut self) -> Result<MatcherRef> {
+    fn parse_matcher(&mut self, extras: &Option<HashMap<String, usize>>) -> Result<MatcherType> {
         match self.peek() {
             Some('(') => {
                 self.assert_char('(')?;
-                let list = self.parse_list()?;
+                let list = self.parse_list(extras)?;
                 self.assert_char(')')?;
                 Ok(list)
             }
@@ -477,11 +374,25 @@ impl BNFParserState {
             }
             Some('<') => {
                 self.assert_str("<eof>")?;
-                Ok(Arc::new(EofMatcher::new(Default::default())))
+                Ok(MatcherType::Eof)
             }
             Some('"') => self.parse_string(),
             Some('i') if self.source.get(self.pos + 1) == Some(&'"') => self.parse_string(),
-            Some(c) if c.is_alphabetic() => self.parse_placeholder(),
+            Some(c) if c.is_alphabetic() => {
+                let name = self.parse_word()?;
+                let id = extras
+                    .as_ref()
+                    .and_then(|m| m.get(&name))
+                    .or_else(|| self.id_map.get(&name));
+                let id = id.ok_or_else(|| {
+                    FluxError::new_dyn(
+                        format!("No template rule with name {name}"),
+                        self.pos,
+                        Some(self.source.clone()),
+                    )
+                })?;
+                Ok(MatcherType::Wrapper(*id))
+            }
             _ => Err(FluxError::new(
                 "Unexpected character or end of file",
                 self.pos,
@@ -490,41 +401,65 @@ impl BNFParserState {
         }
     }
 
-    fn parse_char_range(&mut self) -> Result<MatcherRef> {
+    fn parse_template(
+        &mut self,
+        template: &TemplateRule,
+        extras: &Option<HashMap<String, usize>>,
+    ) -> Result<MatcherType> {
+        let mut params = Vec::with_capacity(template.names.len());
+        for _ in 0..template.names.len() - 1 {
+            self.consume_whitespace();
+            let param = self.parse_list(extras)?;
+            let id = self.add_matcher(param).id;
+            params.push(id);
+            self.assert_char(',')?;
+            self.consume_whitespace();
+        }
+        let last = self.parse_list(extras)?;
+        let last_id = self.add_matcher(last).id;
+        params.push(last_id);
+        self.consume_whitespace();
+        self.assert_char('>')?;
+        let new_extras: HashMap<_, _> = template.names.iter().cloned().zip(params).collect();
+        let old_pos = self.pos;
+        self.pos = template.rule_start;
+        let parsed = self.parse_list(&Some(new_extras))?;
+        self.pos = old_pos;
+        Ok(parsed)
+    }
+
+    fn parse_char_range(&mut self) -> Result<MatcherType> {
         self.assert_char('[')?;
         let inverted = self.check_char('^');
         let low = self.parse_char_or_escape_seq()?;
         self.assert_char('-')?;
         let high = self.parse_char_or_escape_seq()?;
         self.assert_char(']')?;
-        let matcher = CharRangeMatcher::new(Default::default(), low, high, inverted);
-        Ok(Arc::new(matcher))
+        Ok(MatcherType::CharRange(low..=high, inverted))
     }
 
-    fn parse_char_set(&mut self) -> Result<MatcherRef> {
+    fn parse_char_set(&mut self) -> Result<MatcherType> {
         self.assert_char('[')?;
         let inverted = self.check_char('^');
         let chars = self.parse_str_chars(']')?;
         self.assert_char(']')?;
-        let matcher = CharSetMatcher::new(Default::default(), chars.chars().collect(), inverted);
-        Ok(Arc::new(matcher))
+        Ok(MatcherType::CharSet(chars.chars().collect(), inverted))
     }
 
-    fn parse_string(&mut self) -> Result<MatcherRef> {
+    fn parse_string(&mut self) -> Result<MatcherType> {
         let case_sensitive = !self.check_char('i');
         self.assert_char('"')?;
         let chars = self.parse_str_chars('"')?;
         self.assert_char('"')?;
-        let matcher = StringMatcher::new(Default::default(), chars, case_sensitive);
-        Ok(Arc::new(matcher))
+        Ok(MatcherType::String(chars.chars().collect(), case_sensitive))
     }
 
-    fn maybe_list(&mut self, mut list: Vec<MatcherRef>) -> MatcherRef {
+    fn maybe_list(&mut self, mut list: Vec<MatcherType>) -> MatcherType {
         if list.len() == 1 {
             list.remove(0)
         } else {
-            let list_matcher = ListMatcher::new(Default::default(), list);
-            Arc::new(list_matcher)
+            let children = list.into_iter().map(|m| self.add_matcher(m).id).collect();
+            MatcherType::List(children)
         }
     }
 
@@ -533,11 +468,11 @@ impl BNFParserState {
         next != Some('\n') && next != Some('/')
     }
 
-    fn parse_list(&mut self) -> Result<MatcherRef> {
+    fn parse_list(&mut self, extras: &Option<HashMap<String, usize>>) -> Result<MatcherType> {
         let mut matcher_list = Vec::new();
         let mut choices = Vec::new();
         while self.pos < self.source.len() && self.list_should_continue() {
-            matcher_list.push(self.parse_matcher_with_modifiers()?);
+            matcher_list.push(self.parse_matcher_with_modifiers(extras)?);
             if !self.call_check(Self::consume_whitespace) {
                 break;
             }
@@ -551,7 +486,11 @@ impl BNFParserState {
         if !choices.is_empty() {
             let list_matcher = self.maybe_list(matcher_list);
             choices.push(list_matcher);
-            Ok(Arc::new(ChoiceMatcher::new(Default::default(), choices)))
+            let choices = choices
+                .into_iter()
+                .map(|m| self.add_matcher(m).id)
+                .collect();
+            Ok(MatcherType::Choice(choices))
         } else {
             Ok(self.maybe_list(matcher_list))
         }

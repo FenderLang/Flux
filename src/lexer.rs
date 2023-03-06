@@ -1,5 +1,5 @@
+use crate::matchers::Matcher;
 use crate::error::{FluxError, Result};
-use crate::matchers::MatcherRef;
 use crate::tokens::Token;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -21,20 +21,16 @@ pub enum CullStrategy {
 
 #[derive(Debug, Clone)]
 pub struct Lexer {
-    root: MatcherRef,
+    root: usize,
     retain_empty: bool,
     unnamed_rule: CullStrategy,
     names: HashMap<String, usize>,
-    matchers: Vec<MatcherRef>,
+    matchers: Vec<Matcher>,
     named_rules: Vec<CullStrategy>,
 }
 
 impl Lexer {
-    pub fn new(
-        root: MatcherRef,
-        names: HashMap<String, usize>,
-        matchers: Vec<MatcherRef>,
-    ) -> Lexer {
+    pub fn new(root: usize, names: HashMap<String, usize>, matchers: Vec<Matcher>) -> Lexer {
         Lexer {
             root,
             retain_empty: false,
@@ -62,19 +58,20 @@ impl Lexer {
     }
 
     pub fn tokenize(&self, input: impl AsRef<str>) -> Result<Token> {
-        self.do_tokenize(self.root.clone(), input)
+        let root = &self.matchers[self.root];
+        self.do_tokenize(root, input)
     }
 
     pub fn tokenize_with(&self, matcher: &str, input: impl AsRef<str>) -> Result<Token> {
-        let matcher = self.matchers[self.names[matcher] - 1].clone();
+        let matcher = &self.matchers[self.names[matcher]];
         self.do_tokenize(matcher, input)
     }
 
-    fn do_tokenize(&self, root: MatcherRef, input: impl AsRef<str>) -> Result<Token> {
+    fn do_tokenize(&self, root: &Matcher, input: impl AsRef<str>) -> Result<Token> {
         let input = input.as_ref();
         let source = Arc::new(input.chars().collect::<Vec<char>>());
         let pos = 0;
-        let token = root.apply(source.clone(), pos, 0)?;
+        let token = root.apply(source.clone(), &self.matchers, pos, 0)?;
         if token.range.len() < input.len() {
             if let Some(err) = token.failure {
                 return Err(err);
