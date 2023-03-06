@@ -37,6 +37,11 @@ struct BNFParserState {
     pos: usize,
 }
 
+struct TemplateRule {
+    rule_start: usize,
+    names: Vec<String>,
+}
+
 impl BNFParserState {
     fn parse(mut self) -> Result<Lexer> {
         self.consume_line_breaks();
