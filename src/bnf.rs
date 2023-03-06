@@ -40,6 +40,7 @@ struct BNFParserState {
     pos: usize,
 }
 
+#[derive(Clone)]
 struct TemplateRule {
     rule_start: usize,
     names: Vec<String>,
@@ -107,6 +108,9 @@ impl BNFParserState {
                 rule_start: self.pos,
                 names: params?,
             };
+            while !self.check_char('\n') {
+                self.advance();
+            }
             return Ok(Some(ParseLineOutput::TemplateRule(template_rule, name)));
         }
         let matcher = self.parse_list(&None)?;
@@ -378,21 +382,7 @@ impl BNFParserState {
             }
             Some('"') => self.parse_string(),
             Some('i') if self.source.get(self.pos + 1) == Some(&'"') => self.parse_string(),
-            Some(c) if c.is_alphabetic() => {
-                let name = self.parse_word()?;
-                let id = extras
-                    .as_ref()
-                    .and_then(|m| m.get(&name))
-                    .or_else(|| self.id_map.get(&name));
-                let id = id.ok_or_else(|| {
-                    FluxError::new_dyn(
-                        format!("No template rule with name {name}"),
-                        self.pos,
-                        Some(self.source.clone()),
-                    )
-                })?;
-                Ok(MatcherType::Wrapper(*id))
-            }
+            Some(c) if c.is_alphabetic() => self.parse_named(extras),
             _ => Err(FluxError::new(
                 "Unexpected character or end of file",
                 self.pos,
@@ -401,9 +391,26 @@ impl BNFParserState {
         }
     }
 
+    fn parse_named(&mut self, extras: &Option<HashMap<String, usize>>) -> Result<MatcherType> {
+        let name = self.parse_word()?;
+        if self.check_char('<') {
+            let template = self
+                .templates
+                .get(&name)
+                .ok_or_else(|| self.create_error(format!("No template rule with name {name}")))?;
+            return self.parse_template(template.clone(), extras);
+        }
+        let id = extras
+            .as_ref()
+            .and_then(|m| m.get(&name))
+            .or_else(|| self.id_map.get(&name));
+        let id = id.ok_or_else(|| self.create_error(format!("No rule with name {name}")))?;
+        Ok(MatcherType::Wrapper(*id))
+    }
+
     fn parse_template(
         &mut self,
-        template: &TemplateRule,
+        template: TemplateRule,
         extras: &Option<HashMap<String, usize>>,
     ) -> Result<MatcherType> {
         let mut params = Vec::with_capacity(template.names.len());
@@ -494,5 +501,9 @@ impl BNFParserState {
         } else {
             Ok(self.maybe_list(matcher_list))
         }
+    }
+
+    fn create_error(&self, msg: String) -> FluxError {
+        FluxError::new_dyn(msg, self.pos, Some(self.source.clone()))
     }
 }
