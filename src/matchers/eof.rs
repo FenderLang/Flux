@@ -19,7 +19,7 @@ impl Matcher for EofMatcher {
         if pos == source.len() {
             Ok(Token {
                 matcher_name: self.name().clone(),
-                children: Vec::new(),
+                children: Vec::with_capacity(0),
                 source,
                 range: (pos..pos),
                 matcher_id: self.id(),

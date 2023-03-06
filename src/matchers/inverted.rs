@@ -32,7 +32,7 @@ impl Matcher for InvertedMatcher {
                 Some(source),
             )),
             Err(err) => Ok(Token {
-                children: vec![],
+                children: Vec::with_capacity(0),
                 matcher_name: self.name().clone(),
                 source,
                 range: pos..pos,

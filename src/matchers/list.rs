@@ -20,7 +20,7 @@ impl ListMatcher {
 impl Matcher for ListMatcher {
     impl_meta!();
     fn apply(&self, source: Arc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
-        let mut children: Vec<Token> = Vec::new();
+        let mut children: Vec<Token> = Vec::with_capacity(self.children.get().len());
         let mut cursor = pos;
         let mut failures = Vec::new();
         for child in &*self.children.get() {

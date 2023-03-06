@@ -28,7 +28,7 @@ impl Matcher for CharSetMatcher {
     fn apply(&self, source: Arc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
         match source.get(pos) {
             Some(c) if self.check_char(c) => Ok(Token {
-                children: vec![],
+                children: Vec::with_capacity(0),
                 matcher_name: self.name().clone(),
                 range: pos..pos + 1,
                 source,
