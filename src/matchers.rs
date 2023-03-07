@@ -70,16 +70,16 @@ impl Matcher {
         }
     }
 
-    pub fn children(&self) -> Option<Vec<usize>> {
-        match &self.matcher_type {
+    pub fn children(&mut self) -> Option<Vec<&mut usize>> {
+        match &mut self.matcher_type {
             MatcherType::String(_, _) => None,
             MatcherType::CharSet(_, _) => None,
             MatcherType::CharRange(_, _) => None,
-            MatcherType::List(children) => Some(children.clone()),
-            MatcherType::Choice(children) => Some(children.clone()),
-            MatcherType::Repeating(child, _) => Some(vec![*child]),
-            MatcherType::Inverted(child) => Some(vec![*child]),
-            MatcherType::Wrapper(child) => Some(vec![*child]),
+            MatcherType::List(children) => Some(children.iter_mut().collect()),
+            MatcherType::Choice(children) => Some(children.iter_mut().collect()),
+            MatcherType::Repeating(child, _) => Some(vec![child]),
+            MatcherType::Inverted(child) => Some(vec![child]),
+            MatcherType::Wrapper(child) => Some(vec![child]),
             MatcherType::Eof => None,
             MatcherType::Placeholder => None,
         }

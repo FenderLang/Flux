@@ -67,10 +67,26 @@ impl BNFParserState {
             }
             self.consume_line_breaks();
         }
+        self.flatten_wrappers();
         let root = self.id_map.get("root").ok_or_else(|| {
             FluxError::new("No root matcher specified", 0, Some(self.source.clone()))
         })?;
         Ok(Lexer::new(*root, self.id_map, self.matchers))
+    }
+
+    fn flatten_wrappers(&mut self) {
+        let mut wrappers: HashMap<usize, usize> = HashMap::new();
+        for (index, matcher) in self.matchers.iter().enumerate() {
+            if let MatcherType::Wrapper(child) = matcher.matcher_type {
+                wrappers.insert(index, child);
+            };
+        }
+        for index in 0..self.matchers.len() {
+            let Some(children) = self.matchers[index].children() else {continue};
+            for child in children {
+                *child = *wrappers.get(child).unwrap_or(child);
+            }
+        }
     }
 
     fn add_matcher(&mut self, matcher_type: MatcherType) -> &Matcher {
