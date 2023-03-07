@@ -11,7 +11,7 @@ pub enum CullStrategy {
     None,
     /// Delete the token and all of its children
     DeleteAll,
-    /// Delete the children of the token but not the token itself
+    /// Delete the children of the token
     DeleteChildren,
     /// Delete the token and replace it with its children in its parent
     LiftChildren,
@@ -23,10 +23,8 @@ pub enum CullStrategy {
 pub struct Lexer {
     root: usize,
     retain_empty: bool,
-    unnamed_rule: CullStrategy,
     names: HashMap<String, usize>,
     matchers: Vec<Matcher>,
-    named_rules: Vec<CullStrategy>,
 }
 
 impl Lexer {
@@ -34,8 +32,6 @@ impl Lexer {
         Lexer {
             root,
             retain_empty: false,
-            unnamed_rule: CullStrategy::LiftChildren,
-            named_rules: vec![CullStrategy::None; names.len() + 1],
             names,
             matchers,
         }
@@ -46,13 +42,17 @@ impl Lexer {
     }
 
     pub fn set_unnamed_rule(&mut self, unnamed_rule: CullStrategy) {
-        self.unnamed_rule = unnamed_rule;
+        for matcher in &mut self.matchers {
+            if matcher.name.is_none() {
+                matcher.cull_strategy = unnamed_rule;
+            }
+        }
     }
 
     pub fn add_rule_for_names(&mut self, names: Vec<&str>, rule: CullStrategy) {
-        for name in names.into_iter() {
-            if let Some(id) = self.names.get(name) {
-                self.named_rules[*id] = rule;
+        for matcher in &mut self.matchers {
+            if matcher.name.as_deref().map_or(false, |name| names.contains(&name)) {
+                matcher.cull_strategy = rule;
             }
         }
     }
@@ -69,56 +69,18 @@ impl Lexer {
 
     fn do_tokenize(&self, root: &Matcher, input: impl AsRef<str>) -> Result<Token> {
         let input = input.as_ref();
-        let source = Arc::new(input.chars().collect::<Vec<char>>());
+        let source: Arc<[char]> = input.chars().collect();
         let pos = 0;
-        let token = root.apply(source.clone(), &self.matchers, pos, 0)?;
-        if token.range.len() < input.len() {
-            if let Some(err) = token.failure {
+        let mut output = vec![];
+        let range = root.apply(source.clone(), &mut output, &self.matchers, pos, 0)?;
+        let token = (!output.is_empty()).then_some(output.remove(0));
+        if range.len() < input.len() {
+            if let Some(Token {failure: Some(err), ..}) = token {
                 return Err(err);
             }
             Err(FluxError::new("unexpected", 0, Some(source)))
         } else {
-            Ok(self.prune(token))
-        }
-    }
-
-    fn get_cull_strat(&self, token: &Token) -> CullStrategy {
-        if token.matcher_name.is_none() {
-            return self.unnamed_rule;
-        }
-        if token.range.is_empty() && !self.retain_empty {
-            return CullStrategy::DeleteAll;
-        }
-        self.named_rules[token.matcher_id]
-    }
-
-    fn prune(&self, mut parent: Token) -> Token {
-        let mut tmp_children = Vec::new();
-        for child in parent.children {
-            let child = self.prune(child);
-            let strat = self.get_cull_strat(&child);
-            tmp_children.extend(apply_cull_strat(strat, child));
-        }
-        parent.children = tmp_children;
-        parent
-    }
-}
-
-fn apply_cull_strat(cull_strat: CullStrategy, mut token: Token) -> Vec<Token> {
-    match cull_strat {
-        CullStrategy::None => vec![token],
-        CullStrategy::DeleteAll => Vec::new(),
-        CullStrategy::DeleteChildren => {
-            token.children = Vec::new();
-            vec![token]
-        }
-        CullStrategy::LiftChildren => token.children,
-        CullStrategy::LiftAtMost(n) => {
-            if token.children.len() <= n {
-                token.children
-            } else {
-                vec![token]
-            }
+            Ok(token.unwrap())
         }
     }
 }
