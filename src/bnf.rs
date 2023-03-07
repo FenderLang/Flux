@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::error::{FluxError, Result};
-use crate::lexer::Lexer;
+use crate::lexer::{CullStrategy, Lexer};
 use crate::matchers::{Matcher, MatcherType};
 
 pub fn parse(input: &str) -> Result<Lexer> {
@@ -20,7 +20,8 @@ pub fn parse(input: &str) -> Result<Lexer> {
             Matcher {
                 name: None.into(),
                 id: 0,
-                matcher_type: MatcherType::Placeholder
+                matcher_type: MatcherType::Placeholder,
+                cull_strategy: CullStrategy::None,
             };
             id_map.len()
         ],
@@ -77,6 +78,7 @@ impl BNFParserState {
             name: None.into(),
             id: self.matchers.len(),
             matcher_type,
+            cull_strategy: CullStrategy::None,
         };
         self.matchers.push(matcher);
         &self.matchers[self.matchers.len() - 1]
@@ -88,6 +90,7 @@ impl BNFParserState {
             name: Some(name).into(),
             id,
             matcher_type,
+            cull_strategy: CullStrategy::None,
         };
         self.matchers[id] = matcher;
         &self.matchers[id]
