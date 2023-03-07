@@ -69,7 +69,7 @@ impl Lexer {
 
     fn do_tokenize(&self, root: &Matcher, input: impl AsRef<str>) -> Result<Token> {
         let input = input.as_ref();
-        let source = Arc::new(input.chars().collect::<Vec<char>>());
+        let source: Arc<[char]> = input.chars().collect();
         let pos = 0;
         let mut output = vec![];
         let range = root.apply(source.clone(), &mut output, &self.matchers, pos, 0)?;
@@ -81,25 +81,6 @@ impl Lexer {
             Err(FluxError::new("unexpected", 0, Some(source)))
         } else {
             Ok(token.unwrap())
-        }
-    }
-}
-
-fn apply_cull_strat(cull_strat: CullStrategy, mut token: Token) -> Vec<Token> {
-    match cull_strat {
-        CullStrategy::None => vec![token],
-        CullStrategy::DeleteAll => Vec::new(),
-        CullStrategy::DeleteChildren => {
-            token.children = Vec::new();
-            vec![token]
-        }
-        CullStrategy::LiftChildren => token.children,
-        CullStrategy::LiftAtMost(n) => {
-            if token.children.len() <= n {
-                token.children
-            } else {
-                vec![token]
-            }
         }
     }
 }

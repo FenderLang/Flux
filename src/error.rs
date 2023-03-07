@@ -28,14 +28,14 @@ pub struct FluxError {
     pub location: usize,
     pub depth: usize,
     pub matcher_name: MatcherName,
-    pub src_text: Option<Arc<Vec<char>>>,
+    pub src_text: Option<Arc<[char]>>,
 }
 
 impl FluxError {
     pub fn new(
         description: &'static str,
         location: usize,
-        src_text: Option<Arc<Vec<char>>>,
+        src_text: Option<Arc<[char]>>,
     ) -> FluxError {
         FluxError {
             description: ErrorMessage::Constant(description),
@@ -51,7 +51,7 @@ impl FluxError {
         location: usize,
         depth: usize,
         matcher_name: MatcherName,
-        src_text: Option<Arc<Vec<char>>>,
+        src_text: Option<Arc<[char]>>,
     ) -> FluxError {
         FluxError {
             description: ErrorMessage::Constant(description),
@@ -65,7 +65,7 @@ impl FluxError {
     pub fn new_dyn(
         description: String,
         location: usize,
-        src_text: Option<Arc<Vec<char>>>,
+        src_text: Option<Arc<[char]>>,
     ) -> FluxError {
         FluxError {
             description: ErrorMessage::Dynamic(description),

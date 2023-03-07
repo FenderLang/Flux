@@ -27,7 +27,7 @@ pub fn parse(input: &str) -> Result<Lexer> {
         ],
         templates: HashMap::new(),
         id_map,
-        source: Arc::new(input.chars().collect()),
+        source: input.chars().collect(),
         pos: 0,
     }
     .parse()
@@ -37,7 +37,7 @@ struct BNFParserState {
     id_map: HashMap<String, usize>,
     templates: HashMap<String, TemplateRule>,
     matchers: Vec<Matcher>,
-    source: Arc<Vec<char>>,
+    source: Arc<[char]>,
     pos: usize,
 }
 

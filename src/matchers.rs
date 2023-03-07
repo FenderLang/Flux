@@ -34,7 +34,7 @@ pub enum MatcherType {
 impl Matcher {
     pub fn apply(
         &self,
-        source: Arc<Vec<char>>,
+        source: Arc<[char]>,
         output: &mut TokenOutput,
         matchers: &[Matcher],
         pos: usize,
@@ -94,7 +94,7 @@ impl Matcher {
 
     fn process_children(
         &self,
-        source: Arc<Vec<char>>,
+        source: Arc<[char]>,
         range: Range<usize>,
         output: &mut TokenOutput,
         start: usize,
@@ -118,7 +118,7 @@ impl Matcher {
 
     fn create_parent(
         &self,
-        source: Arc<Vec<char>>,
+        source: Arc<[char]>,
         range: Range<usize>,
         output: &mut Vec<Token>,
         start: usize,
@@ -129,7 +129,7 @@ impl Matcher {
         output.push(token);
     }
 
-    fn create_token(&self, source: Arc<Vec<char>>, range: Range<usize>) -> Token {
+    fn create_token(&self, source: Arc<[char]>, range: Range<usize>) -> Token {
         Token {
             matcher_name: self.name.clone(),
             matcher_id: self.id,
@@ -158,7 +158,7 @@ fn next_depth(matcher: &Matcher, depth: usize) -> usize {
 
 fn apply_string(
     matcher: &Matcher,
-    source: Arc<Vec<char>>,
+    source: Arc<[char]>,
     output: &mut TokenOutput,
     pos: usize,
     depth: usize,
@@ -201,7 +201,7 @@ fn apply_string(
 
 fn apply_char_set(
     matcher: &Matcher,
-    source: Arc<Vec<char>>,
+    source: Arc<[char]>,
     output: &mut TokenOutput,
     pos: usize,
     depth: usize,
@@ -226,7 +226,7 @@ fn apply_char_set(
 
 fn apply_char_range(
     matcher: &Matcher,
-    source: Arc<Vec<char>>,
+    source: Arc<[char]>,
     output: &mut TokenOutput,
     pos: usize,
     depth: usize,
@@ -251,7 +251,7 @@ fn apply_char_range(
 
 fn apply_list(
     matcher: &Matcher,
-    source: Arc<Vec<char>>,
+    source: Arc<[char]>,
     output: &mut TokenOutput,
     pos: usize,
     depth: usize,
@@ -287,7 +287,7 @@ fn apply_list(
 
 fn apply_choice(
     matcher: &Matcher,
-    source: Arc<Vec<char>>,
+    source: Arc<[char]>,
     output: &mut TokenOutput,
     pos: usize,
     depth: usize,
@@ -333,7 +333,7 @@ fn apply_choice(
 
 fn apply_repeating(
     matcher: &Matcher,
-    source: Arc<Vec<char>>,
+    source: Arc<[char]>,
     output: &mut TokenOutput,
     pos: usize,
     depth: usize,
@@ -392,7 +392,7 @@ fn apply_repeating(
     }
 }
 
-fn apply_eof(matcher: &Matcher, source: Arc<Vec<char>>, pos: usize, depth: usize) -> TokenResult {
+fn apply_eof(matcher: &Matcher, source: Arc<[char]>, pos: usize, depth: usize) -> TokenResult {
     if pos == source.len() {
         Ok(pos..pos)
     } else {
@@ -408,7 +408,7 @@ fn apply_eof(matcher: &Matcher, source: Arc<Vec<char>>, pos: usize, depth: usize
 
 fn apply_inverted(
     matcher: &Matcher,
-    source: Arc<Vec<char>>,
+    source: Arc<[char]>,
     output: &mut TokenOutput,
     pos: usize,
     depth: usize,
@@ -443,7 +443,7 @@ fn apply_inverted(
 }
 
 fn apply_wrapper(
-    source: Arc<Vec<char>>,
+    source: Arc<[char]>,
     output: &mut TokenOutput,
     pos: usize,
     depth: usize,

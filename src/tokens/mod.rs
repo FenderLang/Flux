@@ -13,7 +13,7 @@ pub struct Token {
     pub matcher_name: MatcherName,
     pub matcher_id: usize,
     pub children: Vec<Token>,
-    pub source: Arc<Vec<char>>,
+    pub source: Arc<[char]>,
     pub range: Range<usize>,
     pub failure: Option<FluxError>,
 }
