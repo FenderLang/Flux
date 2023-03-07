@@ -275,6 +275,7 @@ fn apply_list(
                 if err.matcher_name.is_none() {
                     err.matcher_name = matcher.name.clone()
                 }
+                output.drain(output_start..);
                 return Err(err);
             }
         }
@@ -379,6 +380,7 @@ fn apply_repeating(
             matcher.name.clone(),
             Some(source),
         );
+        output.drain(output_start..);
         if let Some(e) = child_error {
             error = error.max(e);
         }
@@ -421,14 +423,17 @@ fn apply_inverted(
         pos,
         next_depth(matcher, depth),
     );
+    let output_start = output.len();
     match matched {
-        Ok(_) => Err(FluxError::new_matcher(
+        Ok(_) => {
+            output.drain(output_start..);
+            Err(FluxError::new_matcher(
             "unexpected",
             pos,
             depth,
             matcher.name.clone(),
             Some(source),
-        )),
+        ))},
         Err(_) => {
             let range = pos..pos;
             matcher.push_token(output, matcher.create_token(source, range.clone()));
