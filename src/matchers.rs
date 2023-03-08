@@ -312,7 +312,6 @@ fn apply_choice(
     matchers: &[Matcher],
 ) -> TokenResult {
     let output_start = output.len();
-    let last_success = output.last_success.end;
     for child in children {
         let child = &matchers[*child];
         let matched = child.apply(
@@ -329,9 +328,6 @@ fn apply_choice(
             }
             None => (),
         }
-    }
-    if output.last_success.end > last_success && matcher.show_in_errors {
-//        output.last_success.matcher = Some(matcher.id);
     }
     None
 }
