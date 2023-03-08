@@ -1,17 +1,8 @@
-use crate::{error::FluxError, matchers::MatcherName};
-use std::{
-    fmt::{Debug, Display},
-    ops::Range,
-    sync::Arc,
-};
-
 use self::iterators::{iter::Iter, rec_iter::RecursiveIter};
+use crate::{error::FluxError, matchers::MatcherName};
+use std::{fmt::Debug, ops::Range, sync::Arc};
 
-pub mod iterators {
-    pub mod iter;
-    pub mod rec_iter;
-    pub mod select_iter;
-}
+pub mod iterators;
 
 pub struct Token {
     pub matcher_name: MatcherName,
@@ -38,13 +29,6 @@ impl Token {
         self.children.get(0)
     }
 
-    /// Get an iterator over all children of `self`, recursively
-    ///
-    /// Equivalent to calling `self.rec_iter()`
-    pub fn recursive_children(&self) -> RecursiveIter {
-        RecursiveIter::new(self)
-    }
-
     /// Get an iterator over the direct children of `self` with a given name `name`
     pub fn children_named<'a, 'b: 'a>(&'a self, name: &'b str) -> impl Iterator<Item = &'a Token> {
         self.children
@@ -67,6 +51,10 @@ impl Token {
             Some(v) => format!("|--{}", v.clone()),
             None => "|--NO_NAME".into(),
         };
+
+        if self.children.is_empty(){
+            rec_str.push_str(&format!("({})", self.get_match()));
+        }
 
         for c in self.children.iter() {
             rec_str += "\n";
