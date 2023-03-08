@@ -5,11 +5,13 @@ use crate::error::{FluxError, Result};
 use crate::lexer::{CullStrategy, Lexer};
 use crate::matchers::{Matcher, MatcherType};
 
+const COMMENT_SYMBOL: &str = "//";
+
 pub fn parse(input: &str) -> Result<Lexer> {
     let id_map: HashMap<String, usize> = input
         .lines()
         .map(str::trim_start)
-        .filter(|s| s.len() > 0 && !s.starts_with('#'))
+        .filter(|s| s.len() > 0 && !s.starts_with(COMMENT_SYMBOL))
         .map(|s| s.chars().take_while(|c| !c.is_whitespace() && *c != '!').collect())
         .filter(|s: &String| !s.contains('<'))
         .enumerate()
@@ -116,7 +118,7 @@ impl BNFParserState {
     }
 
     fn parse_rule(&mut self) -> Result<Option<ParseLineOutput>> {
-        if self.check_str("//") {
+        if self.check_str(COMMENT_SYMBOL) {
             self.consume_comment();
             return Ok(None);
         }
@@ -138,7 +140,7 @@ impl BNFParserState {
         }
         let matcher = self.parse_list(&None)?;
         self.consume_whitespace();
-        if self.check_str("//") {
+        if self.check_str(COMMENT_SYMBOL) {
             self.consume_comment();
         }
         Ok(Some(ParseLineOutput::Rule(matcher, name, show_in_errors)))
