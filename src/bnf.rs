@@ -10,7 +10,7 @@ pub fn parse(input: &str) -> Result<Lexer> {
         .lines()
         .map(str::trim_start)
         .filter(|s| s.len() > 0 && !s.starts_with('#'))
-        .map(|s| s.chars().take_while(|c| !c.is_whitespace()).collect())
+        .map(|s| s.chars().take_while(|c| !c.is_whitespace() && *c != '!').collect())
         .filter(|s: &String| !s.contains('<'))
         .enumerate()
         .map(|(i, s)| (s, i))
@@ -22,6 +22,7 @@ pub fn parse(input: &str) -> Result<Lexer> {
                 id: 0,
                 matcher_type: MatcherType::Placeholder,
                 cull_strategy: CullStrategy::None,
+                show_in_errors: true,
             };
             id_map.len()
         ],
@@ -48,7 +49,7 @@ struct TemplateRule {
 }
 
 enum ParseLineOutput {
-    Rule(MatcherType, String),
+    Rule(MatcherType, String, bool),
     TemplateRule(TemplateRule, String),
 }
 
@@ -57,8 +58,8 @@ impl BNFParserState {
         self.consume_line_breaks();
         while self.pos < self.source.len() {
             match self.parse_rule()? {
-                Some(ParseLineOutput::Rule(rule, name)) => {
-                    self.add_named_matcher(rule, name);
+                Some(ParseLineOutput::Rule(rule, name, show_in_errors)) => {
+                    self.add_named_matcher(rule, name, show_in_errors);
                 }
                 Some(ParseLineOutput::TemplateRule(rule, name)) => {
                     self.templates.insert(name, rule);
@@ -95,18 +96,20 @@ impl BNFParserState {
             id: self.matchers.len(),
             matcher_type,
             cull_strategy: CullStrategy::None,
+            show_in_errors: false,
         };
         self.matchers.push(matcher);
         &self.matchers[self.matchers.len() - 1]
     }
 
-    fn add_named_matcher(&mut self, matcher_type: MatcherType, name: String) -> &Matcher {
+    fn add_named_matcher(&mut self, matcher_type: MatcherType, name: String, show_in_errors: bool) -> &Matcher {
         let id = self.id_map[&name];
         let matcher = Matcher {
             name: Some(name).into(),
             id,
             matcher_type,
             cull_strategy: CullStrategy::None,
+            show_in_errors,
         };
         self.matchers[id] = matcher;
         &self.matchers[id]
@@ -118,6 +121,7 @@ impl BNFParserState {
             return Ok(None);
         }
         let name = self.parse_word()?;
+        let show_in_errors = !self.check_char('!');
         let template = self.check_char('<').then(|| self.parse_generic_params());
         self.call_assert("whitespace", Self::consume_whitespace)?;
         self.assert_str("::=")?;
@@ -137,7 +141,7 @@ impl BNFParserState {
         if self.check_str("//") {
             self.consume_comment();
         }
-        Ok(Some(ParseLineOutput::Rule(matcher, name)))
+        Ok(Some(ParseLineOutput::Rule(matcher, name, show_in_errors)))
     }
 
     fn parse_generic_params(&mut self) -> Result<Vec<String>> {

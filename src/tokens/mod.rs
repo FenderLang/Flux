@@ -1,4 +1,4 @@
-use crate::{error::FluxError, matchers::MatcherName};
+use crate::matchers::MatcherName;
 use std::{fmt::Debug, ops::Range, sync::Arc};
 
 use self::iterators::{rec_iter::RecursiveIter, iter::Iter};
@@ -15,7 +15,6 @@ pub struct Token {
     pub children: Vec<Token>,
     pub source: Arc<[char]>,
     pub range: Range<usize>,
-    pub failure: Option<FluxError>,
 }
 
 impl Token {
