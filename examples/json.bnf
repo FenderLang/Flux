@@ -1,13 +1,15 @@
 root ::= object
 sep ::= [ \t\n]*
 object ::= boolean | null | string | decimal | integer | map | list
-string ::= "\"" (escape | [^"])+ "\""
-escape ::= "\\" [^]
-integer ::=  "-"? [0-9]+
-decimal ::=  "-"? [0-9]+ "." [0-9]+
+strbody ::= (escape | stringChar)*
+string ::= "\"" strbody "\""
+//escape ::= "\\" [^]
+escape ::= "\\" ([\\/\"bfnrt] | "u" ([0-9] | [a-f]){4})
+stringChar ::= [^"]
+integer ::= "-"? [0-9]+
+decimal ::= "-"? [0-9]+ "." [0-9]+
 boolean ::= "true" | "false"
 list ::= sep "[" sep (object sep ("," sep object)*)? sep "]" sep
 map ::= "{" sep (mapEntry sep ("," sep mapEntry)*)? sep "}" sep
- // comment
 mapEntry ::= string sep ":" sep object
 null ::= "null"

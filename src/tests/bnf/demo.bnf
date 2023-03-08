@@ -1,0 +1,4 @@
+root ::= NumberList
+sep ::= " "
+number ::= [0-9]+
+NumberList ::= number (sep number)*

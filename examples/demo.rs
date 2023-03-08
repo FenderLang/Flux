@@ -1,8 +1,8 @@
 use flux_bnf::{bnf, lexer::CullStrategy};
 
 fn main() {
-    let bnf_input = include_str!("../src/tests/bnf/fender.bnf");
-    let test_input = include_str!("test_fender.fndr");
+    let bnf_input = include_str!("../src/tests/bnf/json.bnf");
+    let test_input = include_str!("test.json");
 
     let mut lexer = match bnf::parse(bnf_input) {
         Ok(v) => v,
@@ -36,3 +36,4 @@ fn main() {
 
     println!("{:#?}", root_token);
 }
+
