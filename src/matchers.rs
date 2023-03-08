@@ -40,9 +40,6 @@ impl TokenOutput {
         if end < self.last_success.end {
             return;
         }
-        if matcher.show_in_errors {
-            dbg!(end, depth, &matcher.name);
-        }
         if end > self.last_success.end {
             self.last_success.depth = depth;
         }
