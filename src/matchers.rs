@@ -45,7 +45,7 @@ impl TokenOutput {
         }
         self.last_success.begin = begin;
         self.last_success.end = end;
-        if matcher.show_in_errors && depth < self.last_success.depth {
+        if matcher.show_in_errors && depth <= self.last_success.depth {
             self.last_success.matcher.replace(matcher.id);
             self.last_success.depth = depth;
         }
