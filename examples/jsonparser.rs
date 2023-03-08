@@ -97,22 +97,6 @@ fn parse_list(token: &Token) -> ResultAlias<Vec<JSONValue>>{
     Ok(list)
 }
 
-/*'b' => "\u{0008}".to_string(),
-        'f' => "\u{000C}".to_string(),
-        'n' => "\u{000A}".to_string(),
-        'r' => "\u{000D}".to_string(),
-        't' => "\u{0009}".to_string(),
-        'u' => {
-            let mut hex = String::new();
-            for child in &token.children {
-                hex.push_str(&child.get_match());
-            }
-            let codepoint = u32::from_str_radix(&hex, 16).expect("Always Valid Hex");
-            let mut string = String::new();
-            string.push(std::char::from_u32(codepoint).expect("Always Valid Codepoint"));
-            string
-        } */
-
 fn parse_map(token: &Token) -> ResultAlias<HashMap<String, JSONValue>> {
     let mut map = HashMap::new();
     for child in &token.children {
