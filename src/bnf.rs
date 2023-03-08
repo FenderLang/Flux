@@ -313,7 +313,7 @@ impl BNFParserState {
 
     fn parse_word(&mut self) -> Result<String> {
         let mut out = String::new();
-        while matches!(self.peek(), Some(c) if c.is_alphabetic()) {
+        while matches!(self.peek(), Some(c) if c.is_alphabetic() || c == '_') {
             out.push(self.advance().unwrap());
         }
         Ok(out)
