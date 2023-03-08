@@ -1,5 +1,5 @@
 use self::iterators::{iter::Iter, rec_iter::RecursiveIter};
-use crate::{error::FluxError, matchers::MatcherName};
+use crate::matchers::MatcherName;
 use std::{fmt::Debug, ops::Range, sync::Arc};
 
 pub mod iterators;
@@ -10,7 +10,6 @@ pub struct Token {
     pub children: Vec<Token>,
     pub source: Arc<[char]>,
     pub range: Range<usize>,
-    pub failure: Option<FluxError>,
 }
 
 impl Token {

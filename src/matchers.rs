@@ -1,13 +1,65 @@
 use std::ops::Range;
 use std::{ops::RangeInclusive, sync::Arc};
 
-use crate::error::{FluxError, Result};
+use crate::error::FluxError;
 use crate::lexer::CullStrategy;
 use crate::tokens::Token;
 
 pub type MatcherName = Arc<Option<String>>;
-pub type TokenResult = Result<Range<usize>>;
-type TokenOutput = Vec<Token>;
+pub type TokenResult = Option<Range<usize>>;
+
+pub struct SuccessMark {
+    pub(crate) begin: usize,
+    pub(crate) end: usize,
+    pub(crate) depth: usize,
+    pub(crate) matcher: Option<usize>,
+}
+
+impl Default for SuccessMark {
+    fn default() -> Self {
+        Self {
+            begin: 0,
+            end: 0,
+            depth: usize::MAX,
+            matcher: None,
+        }
+    }
+}
+
+pub struct TokenOutput {
+    pub(crate) tokens: Vec<Token>,
+    pub(crate) last_success: SuccessMark,
+}
+
+impl TokenOutput {
+    fn len(&self) -> usize {
+        self.tokens.len()
+    }
+
+    fn mark_success(&mut self, begin: usize, end: usize, depth: usize, matcher: &Matcher) {
+        if end < self.last_success.end {
+            return;
+        }
+        if end > self.last_success.end {
+            self.last_success.depth = depth;
+        }
+        self.last_success.begin = begin;
+        self.last_success.end = end;
+        if matcher.show_in_errors && depth <= self.last_success.depth {
+            self.last_success.matcher.replace(matcher.id);
+            self.last_success.depth = depth;
+        }
+    }
+
+    pub(crate) fn create_error(&self, source: Arc<[char]>, matchers: &[Matcher]) -> FluxError {
+        if let Some(matcher) = self.last_success.matcher {
+            let name = matchers[matcher].name.clone();
+            FluxError::new_matcher("expected", self.last_success.end, 0, name, Some(source))
+        } else {
+            FluxError::new("unexpected token", self.last_success.end, Some(source))
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Matcher {
@@ -15,6 +67,7 @@ pub struct Matcher {
     pub(crate) name: MatcherName,
     pub(crate) id: usize,
     pub(crate) matcher_type: MatcherType,
+    pub(crate) show_in_errors: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -45,10 +98,10 @@ impl Matcher {
                 apply_string(self, source, output, pos, depth, to_match, *case_sensitive)
             }
             MatcherType::CharSet(chars, inverted) => {
-                apply_char_set(self, source, output, pos, depth, chars, *inverted)
+                apply_char_set(self, source, output, pos, chars, *inverted)
             }
             MatcherType::CharRange(range, inverted) => {
-                apply_char_range(self, source, output, pos, depth, range, *inverted)
+                apply_char_range(self, source, output, pos, range, *inverted)
             }
             MatcherType::List(children) => {
                 apply_list(self, source, output, pos, depth, children, matchers)
@@ -65,7 +118,7 @@ impl Matcher {
             MatcherType::Wrapper(child) => {
                 apply_wrapper(source, output, pos, depth, *child, matchers)
             }
-            MatcherType::Eof => apply_eof(self, source, pos, depth),
+            MatcherType::Eof => apply_eof(source, pos),
             MatcherType::Placeholder => unreachable!(),
         }
     }
@@ -88,7 +141,7 @@ impl Matcher {
     fn push_token(&self, output: &mut TokenOutput, token: Token) {
         match self.cull_strategy {
             CullStrategy::DeleteAll | CullStrategy::LiftChildren => (),
-            _ => output.push(token),
+            _ => output.tokens.push(token),
         }
     }
 
@@ -99,19 +152,18 @@ impl Matcher {
         output: &mut TokenOutput,
         start: usize,
     ) {
-        // TODO: Error handling
         match self.cull_strategy {
-            CullStrategy::None => self.create_parent(source, range, output, start),
+            CullStrategy::None => self.create_parent(source, range, &mut output.tokens, start),
             CullStrategy::DeleteAll => (),
             CullStrategy::LiftChildren => (),
             CullStrategy::LiftAtMost(n) => {
                 if output.len() - start > n {
-                    self.create_parent(source, range, output, start);
+                    self.create_parent(source, range, &mut output.tokens, start);
                 }
             }
             CullStrategy::DeleteChildren => {
-                output.drain(start..);
-                output.push(self.create_token(source, range));
+                output.tokens.drain(start..);
+                output.tokens.push(self.create_token(source, range));
             }
         }
     }
@@ -123,7 +175,7 @@ impl Matcher {
         output: &mut Vec<Token>,
         start: usize,
     ) {
-        let children: Vec<_> = output.drain(start + 0..).collect();
+        let children: Vec<_> = output.drain(start..).collect();
         let mut token = self.create_token(source, range);
         token.children = children;
         output.push(token);
@@ -136,7 +188,6 @@ impl Matcher {
             children: Vec::with_capacity(0),
             source,
             range,
-            failure: None,
         }
     }
 }
@@ -165,37 +216,21 @@ fn apply_string(
     to_match: &[char],
     case_sensitive: bool,
 ) -> TokenResult {
-    let mut compared_strings_zipped = to_match.iter().zip(&source[pos..]);
+    let matched_chars = to_match
+        .iter()
+        .zip(&source[pos..])
+        .take_while(|(a, b)| char_matches(a, b, case_sensitive))
+        .count();
 
-    if compared_strings_zipped.len() == to_match.len()
-        && compared_strings_zipped.all(|(a, b)| char_matches(a, b, case_sensitive))
-    {
+    if matched_chars > 0 {
+        output.mark_success(pos, pos + matched_chars, depth, matcher);
+    }
+    if matched_chars == to_match.len() {
         let range = pos..pos + to_match.len();
         matcher.push_token(output, matcher.create_token(source, range.clone()));
-        Ok(range)
+        Some(range)
     } else {
-        let found_string_size = compared_strings_zipped.len();
-
-        let mismatched_character = compared_strings_zipped
-            .enumerate()
-            .find(|(_, (a, b))| !char_matches(a, b, case_sensitive))
-            .map(|(index, _)| index);
-
-        let (error_position, description) = match mismatched_character {
-            Some(char_index) => (pos + char_index, "found text did not match expected string"),
-            None => (
-                pos + found_string_size,
-                "too short, string began to match but ended early",
-            ),
-        };
-
-        Err(FluxError::new_matcher(
-            description,
-            error_position,
-            depth,
-            matcher.name.clone(),
-            Some(source.clone()),
-        ))
+        None
     }
 }
 
@@ -204,7 +239,6 @@ fn apply_char_set(
     source: Arc<[char]>,
     output: &mut TokenOutput,
     pos: usize,
-    depth: usize,
     to_match: &[char],
     inverted: bool,
 ) -> TokenResult {
@@ -212,15 +246,9 @@ fn apply_char_set(
         Some(c) if to_match.contains(c) ^ inverted => {
             let range = pos..pos + 1;
             matcher.push_token(output, matcher.create_token(source, range.clone()));
-            Ok(range)
+            Some(range)
         }
-        _ => Err(FluxError::new_matcher(
-            "expected",
-            pos,
-            depth,
-            matcher.name.clone(),
-            Some(source.clone()),
-        )),
+        _ => None,
     }
 }
 
@@ -229,7 +257,6 @@ fn apply_char_range(
     source: Arc<[char]>,
     output: &mut TokenOutput,
     pos: usize,
-    depth: usize,
     range: &RangeInclusive<char>,
     inverted: bool,
 ) -> TokenResult {
@@ -237,15 +264,9 @@ fn apply_char_range(
         Some(c) if range.contains(c) ^ inverted => {
             let range = pos..pos + 1;
             matcher.push_token(output, matcher.create_token(source, range.clone()));
-            Ok(range)
+            Some(range)
         }
-        _ => Err(FluxError::new_matcher(
-            "expected",
-            pos,
-            depth,
-            matcher.name.clone(),
-            Some(source.clone()),
-        )),
+        _ => None,
     }
 }
 
@@ -269,20 +290,16 @@ fn apply_list(
             cursor,
             next_depth(matcher, depth),
         ) {
-            Ok(child_token) => cursor = child_token.end,
-
-            Err(mut err) => {
-                if err.matcher_name.is_none() {
-                    err.matcher_name = matcher.name.clone()
-                }
-                output.drain(output_start..);
-                return Err(err);
+            Some(child_token) => {
+                cursor = child_token.end;
+                output.mark_success(pos, cursor, depth, matcher);
             }
+            None => return None,
         }
     }
     let range = pos..cursor;
     matcher.process_children(source, range.clone(), output, output_start);
-    Ok(range)
+    Some(range)
 }
 
 fn apply_choice(
@@ -295,7 +312,7 @@ fn apply_choice(
     matchers: &[Matcher],
 ) -> TokenResult {
     let output_start = output.len();
-    let mut best_error: Option<FluxError> = None;
+    output.mark_success(pos, pos, depth, matcher);
     for child in children {
         let child = &matchers[*child];
         let matched = child.apply(
@@ -306,29 +323,14 @@ fn apply_choice(
             next_depth(matcher, depth),
         );
         match matched {
-            Ok(range) => {
+            Some(range) => {
                 matcher.process_children(source, range.clone(), output, output_start);
-                return Ok(range);
+                return Some(range);
             }
-            Err(mut err) => {
-                if err.matcher_name.is_none() {
-                    err.matcher_name = matcher.name.clone();
-                }
-                best_error = Some(match best_error {
-                    Some(e) => e.max(err),
-                    _ => err,
-                });
-            }
+            None => (),
         }
     }
-
-    Err(best_error.unwrap_or(FluxError::new_matcher(
-        "expected",
-        pos,
-        depth,
-        matcher.name.clone(),
-        Some(source),
-    )))
+    None
 }
 
 fn apply_repeating(
@@ -344,7 +346,6 @@ fn apply_repeating(
     let output_start = output.len();
     let child = &matchers[child];
     let mut cursor = pos;
-    let mut child_error = None;
     let mut child_count = 0;
     while child_count < *range.end() {
         let matched = child.apply(
@@ -355,55 +356,27 @@ fn apply_repeating(
             next_depth(matcher, depth),
         );
         match matched {
-            Ok(child_token) => {
+            Some(child_token) => {
                 cursor = child_token.end;
                 child_count += 1;
+                output.mark_success(pos, cursor, depth, matcher);
             }
-            Err(mut err) => {
-                if *range.start() == 0 && err.location == pos {
-                    break;
-                }
-                if err.matcher_name.is_none() {
-                    err.matcher_name = matcher.name.clone();
-                }
-                child_error = Some(err);
-                break;
-            }
+            None => break,
         }
     }
 
     if child_count < *range.start() {
-        let mut error = FluxError::new_matcher(
-            "expected",
-            cursor,
-            depth,
-            matcher.name.clone(),
-            Some(source),
-        );
-        output.drain(output_start..);
-        if let Some(e) = child_error {
-            error = error.max(e);
-        }
-        Err(error)
+        output.tokens.drain(output_start..);
+        None
     } else {
         let range = pos..cursor;
         matcher.process_children(source, range.clone(), output, output_start);
-        Ok(range)
+        Some(range)
     }
 }
 
-fn apply_eof(matcher: &Matcher, source: Arc<[char]>, pos: usize, depth: usize) -> TokenResult {
-    if pos == source.len() {
-        Ok(pos..pos)
-    } else {
-        Err(FluxError::new_matcher(
-            "expected end of file",
-            pos,
-            depth,
-            matcher.name.clone(),
-            Some(source),
-        ))
-    }
+fn apply_eof(source: Arc<[char]>, pos: usize) -> TokenResult {
+    (pos == source.len()).then(|| pos..pos)
 }
 
 fn apply_inverted(
@@ -425,19 +398,14 @@ fn apply_inverted(
     );
     let output_start = output.len();
     match matched {
-        Ok(_) => {
-            output.drain(output_start..);
-            Err(FluxError::new_matcher(
-            "unexpected",
-            pos,
-            depth,
-            matcher.name.clone(),
-            Some(source),
-        ))},
-        Err(_) => {
+        Some(_) => {
+            output.tokens.drain(output_start..);
+            None
+        }
+        None => {
             let range = pos..pos;
             matcher.push_token(output, matcher.create_token(source, range.clone()));
-            Ok(range)
+            Some(range)
         }
     }
 }

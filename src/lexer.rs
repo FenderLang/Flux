@@ -1,5 +1,5 @@
-use crate::matchers::Matcher;
-use crate::error::{FluxError, Result};
+use crate::error::Result;
+use crate::matchers::{Matcher, TokenOutput};
 use crate::tokens::Token;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -51,7 +51,11 @@ impl Lexer {
 
     pub fn add_rule_for_names(&mut self, names: Vec<&str>, rule: CullStrategy) {
         for matcher in &mut self.matchers {
-            if matcher.name.as_deref().map_or(false, |name| names.contains(&name)) {
+            if matcher
+                .name
+                .as_deref()
+                .map_or(false, |name| names.contains(&name))
+            {
                 matcher.cull_strategy = rule;
             }
         }
@@ -71,16 +75,17 @@ impl Lexer {
         let input = input.as_ref();
         let source: Arc<[char]> = input.chars().collect();
         let pos = 0;
-        let mut output = vec![];
-        let range = root.apply(source.clone(), &mut output, &self.matchers, pos, 0)?;
-        let token = (!output.is_empty()).then_some(output.remove(0));
-        if range.len() < input.len() {
-            if let Some(Token {failure: Some(err), ..}) = token {
-                return Err(err);
-            }
-            Err(FluxError::new("unexpected", 0, Some(source)))
+        let mut output = TokenOutput {
+            tokens: vec![],
+            last_success: Default::default(),
+        };
+        let range = root
+            .apply(source.clone(), &mut output, &self.matchers, pos, 0)
+            .ok_or_else(|| output.create_error(source.clone(), &self.matchers))?;
+        if output.tokens.is_empty() || range.end != source.len() {
+            Err(output.create_error(source, &self.matchers))
         } else {
-            Ok(token.unwrap())
+            Ok(output.tokens.remove(0))
         }
     }
 }
