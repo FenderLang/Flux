@@ -45,15 +45,6 @@ impl Token {
         RecursiveIter::new(self)
     }
 
-    /// Get an iterator over all children of `self` with a given `name`, recursively
-    pub fn recursive_children_named<'a, 'b: 'a>(
-        &'a self,
-        name: &'b str,
-    ) -> impl Iterator<Item = &'a Token> + 'a {
-        RecursiveIter::new(self)
-            .filter(move |t| matches!(t.matcher_name.as_ref(), Some(n) if n == name))
-    }
-
     /// Get an iterator over the direct children of `self` with a given name `name`
     pub fn children_named<'a, 'b: 'a>(&'a self, name: &'b str) -> impl Iterator<Item = &'a Token> {
         self.children
@@ -76,7 +67,6 @@ impl Token {
             Some(v) => format!("|--{}", v.clone()),
             None => "|--NO_NAME".into(),
         };
-        // let mut indent = 0;
 
         for c in self.children.iter() {
             rec_str += "\n";

@@ -1,5 +1,7 @@
 use crate::tokens::Token;
 
+use super::GetDepthTokenIter;
+
 #[derive(Debug)]
 pub struct IgnoreSingleTokenIterator<'a, I>
 where
@@ -11,7 +13,7 @@ where
 
 impl<'a, I> Iterator for IgnoreSingleTokenIterator<'a, I>
 where
-    I: Iterator<Item = &'a Token>,
+    I: Iterator<Item = &'a Token> + GetDepthTokenIter,
 {
     type Item = &'a Token;
 
@@ -24,7 +26,13 @@ where
             .as_ref()
             .map(|name| self.ignore == *name)
         {
-            self.next()
+            let target_depth = self.held_iter.get_depth();
+            loop {
+                let next = self.next();
+                if self.held_iter.get_depth() < target_depth {
+                    return next;
+                }
+            }
         } else {
             Some(next_token)
         }

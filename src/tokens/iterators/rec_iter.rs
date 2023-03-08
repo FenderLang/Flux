@@ -1,5 +1,7 @@
 use crate::tokens::Token;
 
+use super::select_iter::GetDepthTokenIter;
+
 #[derive(Debug)]
 pub struct RecursiveIter<'a> {
     token: &'a Token,
@@ -38,5 +40,11 @@ impl<'a> Iterator for RecursiveIter<'a> {
         self.token = next_child;
 
         Some(self.token)
+    }
+}
+
+impl<'a> GetDepthTokenIter for RecursiveIter<'a> {
+    fn get_depth(&self) -> i32 {
+        self.stack.len() as i32
     }
 }
