@@ -312,6 +312,7 @@ fn apply_choice(
     matchers: &[Matcher],
 ) -> TokenResult {
     let output_start = output.len();
+    output.mark_success(pos, pos, depth, matcher);
     for child in children {
         let child = &matchers[*child];
         let matched = child.apply(
