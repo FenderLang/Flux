@@ -5,7 +5,7 @@ use std::str::FromStr;
 type ResultAlias<T> = Result<T, Box<dyn Error>>;
 
 fn main() {
-    let json_input = include_str!("test.json");
+    let json_input = include_str!("finaltest.json");
     let parsed = json_input.parse::<JSONValue>().unwrap();
     println!("{:#?}", parsed);
 }
