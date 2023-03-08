@@ -1,4 +1,3 @@
 struct Person {name, age}
 
 $john = Person("John", 30)
-
