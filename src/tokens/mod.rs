@@ -1,13 +1,8 @@
+use self::iterators::{iter::Iter, rec_iter::RecursiveIter};
 use crate::matchers::MatcherName;
 use std::{fmt::Debug, ops::Range, sync::Arc};
 
-use self::iterators::{rec_iter::RecursiveIter, iter::Iter};
-
-pub mod iterators {
-    pub mod ignore_iter;
-    pub mod iter;
-    pub mod rec_iter;
-}
+pub mod iterators;
 
 pub struct Token {
     pub matcher_name: MatcherName,
@@ -33,22 +28,6 @@ impl Token {
         self.children.get(0)
     }
 
-    /// Get an iterator over all children of `self`, recursively
-    ///
-    /// Equivalent to calling `self.rec_iter()`
-    pub fn recursive_children(&self) -> RecursiveIter {
-        RecursiveIter::new(self)
-    }
-
-    /// Get an iterator over all children of `self` with a given `name`, recursively
-    pub fn recursive_children_named<'a, 'b: 'a>(
-        &'a self,
-        name: &'b str,
-    ) -> impl Iterator<Item = &'a Token> + 'a {
-        RecursiveIter::new(self)
-            .filter(move |t| matches!(t.matcher_name.as_ref(), Some(n) if n == name))
-    }
-
     /// Get an iterator over the direct children of `self` with a given name `name`
     pub fn children_named<'a, 'b: 'a>(&'a self, name: &'b str) -> impl Iterator<Item = &'a Token> {
         self.children
@@ -64,6 +43,29 @@ impl Token {
     /// Get an iterator over all children in `self`, recursively
     pub fn rec_iter(&self) -> RecursiveIter {
         RecursiveIter::new(self)
+    }
+
+    pub fn tree_display(&self) -> String {
+        let mut rec_str = match self.get_name() {
+            Some(v) => format!("|--{}", v.clone()),
+            None => "|--NO_NAME".into(),
+        };
+
+        if self.children.is_empty(){
+            rec_str.push_str(&format!("({})", self.get_match()));
+        }
+
+        for c in self.children.iter() {
+            rec_str += "\n";
+            rec_str += &c
+                .tree_display()
+                .lines()
+                .map(|line: &str| format!("|  {line}\n"))
+                .collect::<String>();
+            rec_str.pop();
+        }
+
+        rec_str
     }
 }
 
