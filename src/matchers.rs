@@ -175,7 +175,7 @@ impl Matcher {
         output: &mut Vec<Token>,
         start: usize,
     ) {
-        let children: Vec<_> = output.drain(start + 0..).collect();
+        let children: Vec<_> = output.drain(start..).collect();
         let mut token = self.create_token(source, range);
         token.children = children;
         output.push(token);
