@@ -129,7 +129,7 @@ Some(
     },
 )
 ```
-`CullStrategy` is used to define what should be done with a token meeting some parameter checked by the lexer. It says whether the token should be retained or removed, and if it should be removed, it says how. By default the lexer will use `CullStrategy::LiftChildren` for tokens with no name. 
+`CullStrategy` is used to define what should be done with a token meeting some parameter checked by the lexer. It says whether the token should be retained or removed, and if it should be removed, it says how. 
 
 `CullStrategy::None` - Leaves the tokens alone
 

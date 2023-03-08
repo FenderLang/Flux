@@ -13,7 +13,11 @@ fn main() {
         }
     };
 
-    lexer.add_rule_for_names(vec!["sep"], CullStrategy::DeleteAll);
+    lexer.set_unnamed_rule(CullStrategy::LiftChildren);
+    lexer.add_rule_for_names(
+        vec!["sep", "lineSep", "lineBreak", "newLine"],
+        CullStrategy::DeleteAll,
+    );
 
     lexer.add_rule_for_names(
         vec!["pow", "add", "mul", "range", "cmp", "and", "or"],
@@ -25,17 +29,11 @@ fn main() {
     let root_token = match res {
         Ok(token) => token,
         Err(e) => {
-            println!("Pretty error:\n{:#?}", e);
-            println!("user friendly:\n{:+#}", e);
+            println!("{:+#}", e);
             return;
         }
     };
 
-    // println!("{:#?}", root_token);
-
-    root_token
-        .children_named("args")
-        .for_each(|t| println!("{:?}  {}", t.get_name(), t.get_match()));
-    println!("{:#?}", root_token.first());
+    println!("{:#?}", root_token);
 }
 
