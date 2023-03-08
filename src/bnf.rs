@@ -6,13 +6,14 @@ use crate::lexer::{CullStrategy, Lexer};
 use crate::matchers::{Matcher, MatcherType};
 
 const COMMENT_SYMBOL: &str = "//";
+const ERROR_TRANSPARENT_SYMBOL: char = '!';
 
 pub fn parse(input: &str) -> Result<Lexer> {
     let id_map: HashMap<String, usize> = input
         .lines()
         .map(str::trim_start)
         .filter(|s| s.len() > 0 && !s.starts_with(COMMENT_SYMBOL))
-        .map(|s| s.chars().take_while(|c| !c.is_whitespace() && *c != '!').collect())
+        .map(|s| s.chars().take_while(|c| !c.is_whitespace() && *c != ERROR_TRANSPARENT_SYMBOL).collect())
         .filter(|s: &String| !s.contains('<'))
         .enumerate()
         .map(|(i, s)| (s, i))
@@ -123,7 +124,7 @@ impl BNFParserState {
             return Ok(None);
         }
         let name = self.parse_word()?;
-        let show_in_errors = !self.check_char('!');
+        let show_in_errors = !self.check_char(ERROR_TRANSPARENT_SYMBOL);
         let template = self.check_char('<').then(|| self.parse_generic_params());
         self.call_assert("whitespace", Self::consume_whitespace)?;
         self.assert_str("::=")?;
