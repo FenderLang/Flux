@@ -1,12 +1,16 @@
 use crate::{error::FluxError, matchers::MatcherName};
-use std::{fmt::Debug, ops::Range, sync::Arc};
+use std::{
+    fmt::{Debug, Display},
+    ops::Range,
+    sync::Arc,
+};
 
-use self::iterators::{rec_iter::RecursiveIter, iter::Iter};
+use self::iterators::{iter::Iter, rec_iter::RecursiveIter};
 
 pub mod iterators {
-    pub mod ignore_iter;
     pub mod iter;
     pub mod rec_iter;
+    pub mod select_iter;
 }
 
 pub struct Token {
@@ -65,6 +69,26 @@ impl Token {
     /// Get an iterator over all children in `self`, recursively
     pub fn rec_iter(&self) -> RecursiveIter {
         RecursiveIter::new(self)
+    }
+
+    pub fn tree_display(&self) -> String {
+        let mut rec_str = match self.get_name() {
+            Some(v) => format!("|--{}", v.clone()),
+            None => "|--NO_NAME".into(),
+        };
+        // let mut indent = 0;
+
+        for c in self.children.iter() {
+            rec_str += "\n";
+            rec_str += &c
+                .tree_display()
+                .lines()
+                .map(|line: &str| format!("|  {line}\n"))
+                .collect::<String>();
+            rec_str.pop();
+        }
+
+        rec_str
     }
 }
 

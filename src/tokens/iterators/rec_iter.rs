@@ -1,5 +1,6 @@
 use crate::tokens::Token;
 
+#[derive(Debug)]
 pub struct RecursiveIter<'a> {
     token: &'a Token,
     index: usize,

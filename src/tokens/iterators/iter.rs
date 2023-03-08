@@ -1,5 +1,6 @@
 use crate::tokens::Token;
 
+#[derive(Debug)]
 pub struct Iter<'a> {
     token: &'a Token,
     index: usize,
