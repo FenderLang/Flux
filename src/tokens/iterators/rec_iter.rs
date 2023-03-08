@@ -38,8 +38,7 @@ impl<'a> Iterator for RecursiveIter<'a> {
         if self.ignored.contains(
             &self.token.children[self.index]
                 .get_name()
-                .as_ref()
-                .map(|s| s.as_str())
+                .as_deref()
                 .unwrap_or_default(),
         ) {
             self.index += 1;
@@ -52,16 +51,10 @@ impl<'a> Iterator for RecursiveIter<'a> {
         self.index = 0;
         self.token = next_child;
 
-
         if !self.selected.is_empty()
-            && !self.selected.contains(
-                &self
-                    .token
-                    .get_name()
-                    .as_ref()
-                    .map(|s| s.as_str())
-                    .unwrap_or_default(),
-            )
+            && !self
+                .selected
+                .contains(&self.token.get_name().as_deref().unwrap_or_default())
         {
             return self.next();
         }

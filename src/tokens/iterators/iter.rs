@@ -29,8 +29,7 @@ impl<'a> Iterator for Iter<'a> {
         while self.ignored.contains(
             &self.token.children[self.index]
                 .get_name()
-                .as_ref()
-                .map(|s| s.as_str())
+                .as_deref()
                 .unwrap_or_default(),
         ) {
             self.index += 1;
@@ -41,13 +40,9 @@ impl<'a> Iterator for Iter<'a> {
         self.index += 1;
 
         if !self.selected.is_empty()
-            && !self.selected.contains(
-                &next_token
-                    .get_name()
-                    .as_ref()
-                    .map(|s| s.as_str())
-                    .unwrap_or_default(),
-            )
+            && !self
+                .selected
+                .contains(&next_token.get_name().as_deref().unwrap_or_default())
         {
             return self.next();
         }
