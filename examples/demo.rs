@@ -13,12 +13,12 @@ fn main() {
         }
     };
 
-    lexer.add_rule_for_names(
-        vec!["sep"],
-        CullStrategy::LiftChildren,
-    );
+    lexer.add_rule_for_names(vec!["sep"], CullStrategy::DeleteAll);
 
-    // lexer.add_rule_for_names(vec!["pow", "add", "mul", "range", "cmp", "and", "or"], CullStrategy::LiftAtMost(1));
+    lexer.add_rule_for_names(
+        vec!["pow", "add", "mul", "range", "cmp", "and", "or"],
+        CullStrategy::LiftAtMost(1),
+    );
 
     let res = lexer.tokenize(test_input);
 
@@ -33,7 +33,8 @@ fn main() {
 
     // println!("{:#?}", root_token);
 
-    root_token.children_named("args")
+    root_token
+        .children_named("args")
         .for_each(|t| println!("{:?}  {}", t.get_name(), t.get_match()));
     println!("{:#?}", root_token.first());
 }

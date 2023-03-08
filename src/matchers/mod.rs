@@ -1,15 +1,17 @@
 use crate::error::Result;
 use crate::tokens::Token;
-use std::cell::RefCell;
-use std::fmt::{Debug, Display};
-use std::rc::Rc;
 
-pub(crate) type MatcherRef = Rc<dyn Matcher>;
-pub(crate) type MatcherChildren = Vec<RefCell<MatcherRef>>;
-pub(crate) type MatcherName = Rc<Option<String>>;
+use std::fmt::{Debug, Display};
+
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+
+pub(crate) type MatcherRef = Arc<dyn Matcher + Send + Sync>;
+#[derive(Debug)]
+pub(crate) struct MatcherChildren(RwLock<Vec<MatcherRef>>);
+pub(crate) type MatcherName = Arc<Option<String>>;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
-pub struct MatcherMeta { 
+pub struct MatcherMeta {
     pub name: MatcherName,
     pub id: usize,
 }
@@ -17,9 +19,9 @@ pub struct MatcherMeta {
 #[macro_export]
 macro_rules! impl_meta {
     () => {
+        #[allow(clippy::needless_update)]
         fn with_meta(&self, meta: MatcherMeta) -> $crate::matchers::MatcherRef {
-            #[allow(clippy::needless_update)]
-            Rc::new(Self {
+            std::sync::Arc::new(Self {
                 meta,
                 ..self.clone()
             })
@@ -33,19 +35,18 @@ macro_rules! impl_meta {
 impl MatcherMeta {
     pub fn new(name: Option<String>, id: usize) -> MatcherMeta {
         MatcherMeta {
-            name: Rc::new(name),
+            name: Arc::new(name),
             id,
         }
     }
 }
 
 pub trait Matcher: Debug {
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token>;
-    fn min_length(&self) -> usize;
+    fn apply(&self, source: Arc<Vec<char>>, pos: usize, depth: usize) -> Result<Token>;
     fn meta(&self) -> &MatcherMeta;
     fn with_meta(&self, meta: MatcherMeta) -> MatcherRef;
 
-    fn children(&self) -> Option<&MatcherChildren> {
+    fn children(&self) -> Option<RwLockWriteGuard<Vec<MatcherRef>>> {
         None
     }
 
@@ -53,7 +54,7 @@ pub trait Matcher: Debug {
         false
     }
 
-    fn name(&self) -> &Rc<Option<String>> {
+    fn name(&self) -> &Arc<Option<String>> {
         &self.meta().name
     }
 
@@ -72,6 +73,26 @@ pub trait Matcher: Debug {
 impl Display for dyn Matcher {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&format!("{:?}", self))
+    }
+}
+
+impl Clone for MatcherChildren {
+    fn clone(&self) -> Self {
+        Self(RwLock::new(self.0.write().unwrap().clone()))
+    }
+}
+
+impl MatcherChildren {
+    fn new(children: Vec<MatcherRef>) -> MatcherChildren {
+        Self(RwLock::new(children))
+    }
+
+    pub fn get_mut(&self) -> RwLockWriteGuard<Vec<MatcherRef>> {
+        self.0.write().unwrap()
+    }
+
+    pub fn get(&self) -> RwLockReadGuard<Vec<MatcherRef>> {
+        self.0.read().unwrap()
     }
 }
 

@@ -1,12 +1,12 @@
-use super::Token;
+use crate::tokens::Token;
 
-pub struct Iter<'a> {
+pub struct RecursiveIter<'a> {
     token: &'a Token,
     index: usize,
     stack: Vec<(&'a Token, usize)>,
 }
 
-impl<'a> Iter<'a> {
+impl<'a> RecursiveIter<'a> {
     pub fn new(token: &'a Token) -> Self {
         Self {
             token,
@@ -16,7 +16,7 @@ impl<'a> Iter<'a> {
     }
 }
 
-impl<'a> Iterator for Iter<'a> {
+impl<'a> Iterator for RecursiveIter<'a> {
     type Item = &'a Token;
 
     fn next(&mut self) -> Option<Self::Item> {

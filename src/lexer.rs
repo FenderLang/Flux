@@ -2,7 +2,7 @@ use crate::error::{FluxError, Result};
 use crate::matchers::MatcherRef;
 use crate::tokens::Token;
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 use std::vec;
 
 #[derive(Clone, Copy, Debug)]
@@ -25,17 +25,23 @@ pub struct Lexer {
     retain_empty: bool,
     unnamed_rule: CullStrategy,
     names: HashMap<String, usize>,
+    matchers: Vec<MatcherRef>,
     named_rules: Vec<CullStrategy>,
 }
 
 impl Lexer {
-    pub fn new(root: MatcherRef, names: HashMap<String, usize>) -> Lexer {
+    pub fn new(
+        root: MatcherRef,
+        names: HashMap<String, usize>,
+        matchers: Vec<MatcherRef>,
+    ) -> Lexer {
         Lexer {
             root,
             retain_empty: false,
             unnamed_rule: CullStrategy::LiftChildren,
             named_rules: vec![CullStrategy::None; names.len() + 1],
             names,
+            matchers,
         }
     }
 
@@ -55,11 +61,20 @@ impl Lexer {
         }
     }
 
-    pub fn tokenize(&self, input: impl ToString) -> Result<Token> {
-        let input = input.to_string();
-        let source = Rc::new(input.chars().collect::<Vec<char>>());
+    pub fn tokenize(&self, input: impl AsRef<str>) -> Result<Token> {
+        self.do_tokenize(self.root.clone(), input)
+    }
+
+    pub fn tokenize_with(&self, matcher: &str, input: impl AsRef<str>) -> Result<Token> {
+        let matcher = self.matchers[self.names[matcher] - 1].clone();
+        self.do_tokenize(matcher, input)
+    }
+
+    fn do_tokenize(&self, root: MatcherRef, input: impl AsRef<str>) -> Result<Token> {
+        let input = input.as_ref();
+        let source = Arc::new(input.chars().collect::<Vec<char>>());
         let pos = 0;
-        let token = self.root.apply(source.clone(), pos, 0)?;
+        let token = root.apply(source.clone(), pos, 0)?;
         if token.range.len() < input.len() {
             if let Some(err) = token.failure {
                 return Err(err);
@@ -107,6 +122,6 @@ fn apply_cull_strat(cull_strat: CullStrategy, mut token: Token) -> Vec<Token> {
             } else {
                 vec![token]
             }
-        },
+        }
     }
 }

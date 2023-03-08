@@ -1,6 +1,6 @@
 use super::{Matcher, MatcherChildren, MatcherMeta, MatcherRef};
 use crate::{error::FluxError, error::Result, tokens::Token};
-use std::{cell::RefCell, rc::Rc};
+use std::sync::{Arc, RwLockWriteGuard};
 
 #[derive(Debug, Clone)]
 pub struct RepeatingMatcher {
@@ -16,17 +16,17 @@ impl RepeatingMatcher {
             meta,
             min,
             max,
-            child: vec![RefCell::new(child)],
+            child: MatcherChildren::new(vec![child]),
         }
     }
 }
 
 impl Matcher for RepeatingMatcher {
     impl_meta!();
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
-        let mut children: Vec<Token> = Vec::new();
+    fn apply(&self, source: Arc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
+        let mut children: Vec<Token> = Vec::with_capacity(self.min);
 
-        let child = self.child[0].borrow();
+        let child = &self.child.get()[0];
         let mut cursor = pos;
         let mut child_error = None;
         while children.len() < self.max {
@@ -51,7 +51,13 @@ impl Matcher for RepeatingMatcher {
         }
 
         if children.len() < self.min {
-            let mut error = FluxError::new_matcher("expected", cursor, depth, self.name().clone(),Some(source));
+            let mut error = FluxError::new_matcher(
+                "expected",
+                cursor,
+                depth,
+                self.name().clone(),
+                Some(source),
+            );
             if let Some(e) = child_error {
                 error = error.max(e);
             }
@@ -68,11 +74,7 @@ impl Matcher for RepeatingMatcher {
         }
     }
 
-    fn min_length(&self) -> usize {
-        self.child[0].borrow().min_length() * self.min
-    }
-
-    fn children(&self) -> Option<&MatcherChildren> {
-        Some(&self.child)
+    fn children(&self) -> Option<RwLockWriteGuard<Vec<MatcherRef>>> {
+        Some(self.child.get_mut())
     }
 }

@@ -1,6 +1,5 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::error::{FluxError, Result};
 use crate::lexer::Lexer;
@@ -17,21 +16,24 @@ use crate::matchers::{char_set::CharSetMatcher, MatcherRef};
 
 pub fn parse(input: &str) -> Result<Lexer> {
     BNFParserState {
-        source: Rc::new(input.chars().collect()),
+        source: Arc::new(input.chars().collect()),
         pos: 0,
         templates: HashMap::new(),
     }
     .parse()
 }
 
-fn replace_placeholders(rule: &MatcherRef, map: &HashMap<String, MatcherRef>, error_on_fail: bool) -> Result<()> {
-    let Some(children) = rule.children() else {
+fn replace_placeholders(
+    rule: &MatcherRef,
+    map: &HashMap<String, MatcherRef>,
+    error_on_fail: bool,
+) -> Result<()> {
+    let Some(mut children) = rule.children() else {
         return Ok(());
     };
-    for c in children {
-        if c.borrow().is_placeholder() {
-            let borrow = c.borrow();
-            let name = &**borrow.name();
+    for child in children.iter_mut() {
+        if child.is_placeholder() {
+            let name = &**child.name();
             let matcher = name.as_ref().and_then(|n| map.get(n));
             let Some(matcher) = matcher else {
                 if error_on_fail {
@@ -40,10 +42,9 @@ fn replace_placeholders(rule: &MatcherRef, map: &HashMap<String, MatcherRef>, er
                     continue;
                 }
             };
-            drop(borrow);
-            c.replace(matcher.clone());
+            *child = matcher.clone();
         } else {
-            replace_placeholders(&c.borrow(), map, error_on_fail)?;
+            replace_placeholders(child, map, error_on_fail)?;
         }
     }
     Ok(())
@@ -56,21 +57,31 @@ struct TemplateRule {
 
 fn deep_copy(matcher: MatcherRef) -> MatcherRef {
     let matcher = matcher.with_meta(matcher.meta().clone());
-    let Some(children) = matcher.children() else {
+    let Some(mut children) = matcher.children() else {
         return matcher;
     };
-    for child in children {
-        let clone = deep_copy(child.borrow().clone());
-        child.replace(clone);
+    for i in 0..children.len() {
+        let child = &children[i];
+        let clone = deep_copy(child.clone());
+        children[i] = clone;
     }
-    matcher
+    matcher.clone()
 }
 
 impl TemplateRule {
-    fn to_matcher(&self, params: Vec<MatcherRef>, pos: usize, source: Rc<Vec<char>>) -> Result<MatcherRef> {
+    fn to_matcher(
+        &self,
+        params: Vec<MatcherRef>,
+        pos: usize,
+        source: Arc<Vec<char>>,
+    ) -> Result<MatcherRef> {
         let mut names = HashMap::new();
         if params.len() != self.params.len() {
-            return Err(FluxError::new("wrong number of template arguments", pos, Some(source.clone())));
+            return Err(FluxError::new(
+                "wrong number of template arguments",
+                pos,
+                Some(source),
+            ));
         }
         for (matcher, name) in params.into_iter().zip(&self.params) {
             names.insert(name.clone(), matcher);
@@ -88,7 +99,7 @@ enum ParseLineResult {
 
 struct BNFParserState {
     templates: HashMap<String, TemplateRule>,
-    source: Rc<Vec<char>>,
+    source: Arc<Vec<char>>,
     pos: usize,
 }
 
@@ -111,7 +122,7 @@ impl BNFParserState {
                             Some(self.source.clone()),
                         ));
                     }
-                },
+                }
                 Some(Template(rule, params, name)) => {
                     self.templates.insert(name, TemplateRule { params, rule });
                 }
@@ -122,10 +133,10 @@ impl BNFParserState {
         for rule in &rules {
             replace_placeholders(rule, &rule_map, true)?;
         }
-        let root = rule_map
-            .get("root")
-            .ok_or_else(|| FluxError::new("No root matcher specified", 0, Some(self.source.clone())))?;
-        Ok(Lexer::new(root.clone(), id_map))
+        let root = rule_map.get("root").ok_or_else(|| {
+            FluxError::new("No root matcher specified", 0, Some(self.source.clone()))
+        })?;
+        Ok(Lexer::new(root.clone(), id_map, rules))
     }
 
     fn parse_rule(&mut self, id: usize) -> Result<Option<ParseLineResult>> {
@@ -145,10 +156,7 @@ impl BNFParserState {
         self.call_assert("whitespace", Self::consume_whitespace)?;
         let mut matcher = self.parse_list()?;
         if matcher.is_placeholder() {
-            matcher = Rc::new(ListMatcher::new(
-                Default::default(),
-                vec![RefCell::new(matcher)],
-            ));
+            matcher = Arc::new(ListMatcher::new(Default::default(), vec![matcher]));
         }
         self.consume_whitespace();
         if self.check_str("//") {
@@ -176,7 +184,11 @@ impl BNFParserState {
                 _ => break,
             }
         }
-        Err(FluxError::new("Expected >", self.pos, Some(self.source.clone())))
+        Err(FluxError::new(
+            "Expected >",
+            self.pos,
+            Some(self.source.clone()),
+        ))
     }
 
     fn peek(&self) -> Option<char> {
@@ -253,7 +265,7 @@ impl BNFParserState {
     /// Consume all whitespace including line breaks
     fn consume_line_breaks(&mut self) {
         self.consume_whitespace();
-        while self.peek() == Some('\n') {
+        while let Some('\n' | '\r') = self.peek() {
             self.advance();
             self.consume_whitespace();
         }
@@ -282,12 +294,20 @@ impl BNFParserState {
         match self.advance() {
             Some('\\') => self.parse_escape_seq(),
             Some(c) => Ok(c),
-            _ => Err(FluxError::new("Unexpected end of file", self.pos, Some(self.source.clone()))),
+            _ => Err(FluxError::new(
+                "Unexpected end of file",
+                self.pos,
+                Some(self.source.clone()),
+            )),
         }
     }
 
     fn invalid_escape_sequence(&self) -> FluxError {
-        FluxError::new("Invalid escape sequence", self.pos, Some(self.source.clone()))
+        FluxError::new(
+            "Invalid escape sequence",
+            self.pos,
+            Some(self.source.clone()),
+        )
     }
 
     fn parse_escape_seq(&mut self) -> Result<char> {
@@ -340,10 +360,10 @@ impl BNFParserState {
                 self.pos,
                 Some(self.source.clone()),
             ))?;
-            return Ok(template.to_matcher(params, self.pos, self.source.clone())?);
+            return template.to_matcher(params, self.pos, self.source.clone());
         }
         let matcher = PlaceholderMatcher::new(MatcherMeta::new(Some(name), 0));
-        Ok(Rc::new(matcher))
+        Ok(Arc::new(matcher))
     }
 
     fn parse_template_params(&mut self) -> Result<Vec<MatcherRef>> {
@@ -358,7 +378,11 @@ impl BNFParserState {
                 _ => break,
             }
         }
-        Err(FluxError::new("Expected >", self.pos, Some(self.source.clone())))
+        Err(FluxError::new(
+            "Expected >",
+            self.pos,
+            Some(self.source.clone()),
+        ))
     }
 
     fn parse_number(&mut self) -> Result<usize> {
@@ -377,7 +401,7 @@ impl BNFParserState {
         match self.peek() {
             Some('+') => {
                 self.advance();
-                matcher = Rc::new(RepeatingMatcher::new(
+                matcher = Arc::new(RepeatingMatcher::new(
                     Default::default(),
                     1,
                     usize::MAX,
@@ -386,7 +410,7 @@ impl BNFParserState {
             }
             Some('*') => {
                 self.advance();
-                matcher = Rc::new(RepeatingMatcher::new(
+                matcher = Arc::new(RepeatingMatcher::new(
                     Default::default(),
                     0,
                     usize::MAX,
@@ -395,11 +419,11 @@ impl BNFParserState {
             }
             Some('?') => {
                 self.advance();
-                matcher = Rc::new(RepeatingMatcher::new(Default::default(), 0, 1, matcher));
+                matcher = Arc::new(RepeatingMatcher::new(Default::default(), 0, 1, matcher));
             }
             Some('{') => {
                 let bounds = self.parse_repeating_bounds()?;
-                matcher = Rc::new(RepeatingMatcher::new(
+                matcher = Arc::new(RepeatingMatcher::new(
                     Default::default(),
                     bounds.0,
                     bounds.1,
@@ -409,7 +433,7 @@ impl BNFParserState {
             _ => (),
         }
         if inverted {
-            matcher = Rc::new(InvertedMatcher::new(Default::default(), matcher));
+            matcher = Arc::new(InvertedMatcher::new(Default::default(), matcher));
         }
         Ok(matcher)
     }
@@ -453,7 +477,7 @@ impl BNFParserState {
             }
             Some('<') => {
                 self.assert_str("<eof>")?;
-                Ok(Rc::new(EofMatcher::new(Default::default())))
+                Ok(Arc::new(EofMatcher::new(Default::default())))
             }
             Some('"') => self.parse_string(),
             Some('i') if self.source.get(self.pos + 1) == Some(&'"') => self.parse_string(),
@@ -474,7 +498,7 @@ impl BNFParserState {
         let high = self.parse_char_or_escape_seq()?;
         self.assert_char(']')?;
         let matcher = CharRangeMatcher::new(Default::default(), low, high, inverted);
-        Ok(Rc::new(matcher))
+        Ok(Arc::new(matcher))
     }
 
     fn parse_char_set(&mut self) -> Result<MatcherRef> {
@@ -483,7 +507,7 @@ impl BNFParserState {
         let chars = self.parse_str_chars(']')?;
         self.assert_char(']')?;
         let matcher = CharSetMatcher::new(Default::default(), chars.chars().collect(), inverted);
-        Ok(Rc::new(matcher))
+        Ok(Arc::new(matcher))
     }
 
     fn parse_string(&mut self) -> Result<MatcherRef> {
@@ -492,16 +516,15 @@ impl BNFParserState {
         let chars = self.parse_str_chars('"')?;
         self.assert_char('"')?;
         let matcher = StringMatcher::new(Default::default(), chars, case_sensitive);
-        Ok(Rc::new(matcher))
+        Ok(Arc::new(matcher))
     }
 
     fn maybe_list(&mut self, mut list: Vec<MatcherRef>) -> MatcherRef {
         if list.len() == 1 {
             list.remove(0)
         } else {
-            let children = list.into_iter().map(RefCell::new).collect();
-            let list_matcher = ListMatcher::new(Default::default(), children);
-            Rc::new(list_matcher)
+            let list_matcher = ListMatcher::new(Default::default(), list);
+            Arc::new(list_matcher)
         }
     }
 
@@ -528,8 +551,7 @@ impl BNFParserState {
         if !choices.is_empty() {
             let list_matcher = self.maybe_list(matcher_list);
             choices.push(list_matcher);
-            let choices = choices.into_iter().map(RefCell::new).collect();
-            Ok(Rc::new(ChoiceMatcher::new(Default::default(), choices)))
+            Ok(Arc::new(ChoiceMatcher::new(Default::default(), choices)))
         } else {
             Ok(self.maybe_list(matcher_list))
         }

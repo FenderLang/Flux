@@ -1,6 +1,6 @@
 use super::{Matcher, MatcherMeta};
 use crate::{error::FluxError, error::Result, tokens::Token};
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct StringMatcher {
@@ -29,7 +29,7 @@ impl StringMatcher {
 
 impl Matcher for StringMatcher {
     impl_meta!();
-    fn apply(&self, source: Rc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
+    fn apply(&self, source: Arc<Vec<char>>, pos: usize, depth: usize) -> Result<Token> {
         let mut compared_strings_zipped = self.to_match.iter().zip(&source[pos..]);
 
         if compared_strings_zipped.len() == self.to_match.len()
@@ -37,7 +37,7 @@ impl Matcher for StringMatcher {
         {
             Ok(Token {
                 matcher_name: self.name().clone(),
-                children: vec![],
+                children: Vec::with_capacity(0),
                 source,
                 range: pos..pos + self.to_match.len(),
                 matcher_id: self.id(),
@@ -67,9 +67,5 @@ impl Matcher for StringMatcher {
                 Some(source.clone()),
             ))
         }
-    }
-
-    fn min_length(&self) -> usize {
-        self.to_match.len()
     }
 }
