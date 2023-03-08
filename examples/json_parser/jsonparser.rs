@@ -35,8 +35,6 @@ impl FromStr for JSONValue {
     }
 }
 
-
-
 fn parse_token(token: &Token) -> ResultAlias<JSONValue> {
     Ok(match token.get_name().as_deref() {
         Some("integer") => JSONValue::Integer(parse_int(token)?),

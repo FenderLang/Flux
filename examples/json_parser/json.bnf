@@ -3,7 +3,6 @@ sep ::= [ \t\n]*
 object ::= boolean | null | string | decimal | integer | map | list
 strbody ::= (escape | stringChar)*
 string ::= "\"" strbody "\""
-//escape ::= "\\" [^]
 escape ::= "\\" ([\\/\"bfnrt] | "u" ([0-9] | [a-f]){4})
 stringChar ::= [^"]
 integer ::= "-"? [0-9]+
