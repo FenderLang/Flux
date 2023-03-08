@@ -31,13 +31,13 @@ value ::= literal | enclosedExpr | name | lambdaParameter
 
 cmpOp ::= ">=" | "<=" | "==" | "!=" | [<>]
 
-pow ::= delimitedList<term, "^", lineSep>
-mul ::= delimitedList<pow, [*%/], lineSep>
-add ::= delimitedList<mul, [-+], lineSep>
-range ::= delimitedList<add, ".." "="?, lineSep>
-cmp ::= delimitedList<range, cmpOp, lineSep>
-and ::= delimitedList<cmp, "&&", lineSep>
-or ::= delimitedList<and, "||", lineSep>
+pow! ::= delimitedList<term, "^", lineSep>
+mul! ::= delimitedList<pow, [*%/], lineSep>
+add! ::= delimitedList<mul, [-+], lineSep>
+range! ::= delimitedList<add, ".." "="?, lineSep>
+cmp! ::= delimitedList<range, cmpOp, lineSep>
+and! ::= delimitedList<cmp, "&&", lineSep>
+or! ::= delimitedList<and, "||", lineSep>
 
 alpha ::= [a-z] | [A-Z]
 alphanum ::= [a-z] | [A-Z] | [0-9] | "_"
