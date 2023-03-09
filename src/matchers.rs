@@ -294,7 +294,10 @@ fn apply_list(
                 cursor = child_token.end;
                 output.mark_success(pos, cursor, depth, matcher);
             }
-            None => return None,
+            None => {
+                output.tokens.drain(output_start..);
+                return None;
+            },
         }
     }
     let range = pos..cursor;
