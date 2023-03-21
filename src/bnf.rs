@@ -13,7 +13,11 @@ pub fn parse(input: &str) -> Result<Lexer> {
         .lines()
         .map(str::trim_start)
         .filter(|s| s.len() > 0 && !s.starts_with(COMMENT_SYMBOL))
-        .map(|s| s.chars().take_while(|c| !c.is_whitespace() && *c != ERROR_TRANSPARENT_SYMBOL).collect())
+        .map(|s| {
+            s.chars()
+                .take_while(|c| !c.is_whitespace() && *c != ERROR_TRANSPARENT_SYMBOL)
+                .collect()
+        })
         .filter(|s: &String| !s.contains('<'))
         .enumerate()
         .map(|(i, s)| (s, i))
@@ -105,7 +109,12 @@ impl BNFParserState {
         &self.matchers[self.matchers.len() - 1]
     }
 
-    fn add_named_matcher(&mut self, matcher_type: MatcherType, name: String, show_in_errors: bool) -> &Matcher {
+    fn add_named_matcher(
+        &mut self,
+        matcher_type: MatcherType,
+        name: String,
+        show_in_errors: bool,
+    ) -> &Matcher {
         let id = self.id_map[&name];
         let matcher = Matcher {
             name: Some(name).into(),
@@ -191,11 +200,10 @@ impl BNFParserState {
     }
 
     fn check_str(&mut self, match_str: &str) -> bool {
-        if match_str.len() + self.pos < self.source.len()
-            && self.source[self.pos..self.pos + match_str.len()]
-                .iter()
-                .zip(match_str.chars())
-                .all(|(c1, c2)| *c1 == c2)
+        if self.source[self.pos..]
+            .iter()
+            .zip(match_str.chars())
+            .all(|(c1, c2)| *c1 == c2)
         {
             self.pos += match_str.len();
             true
@@ -403,8 +411,13 @@ impl BNFParserState {
                 Ok(matcher)
             }
             Some('<') => {
-                self.assert_str("<eof>")?;
-                Ok(MatcherType::Eof)
+                if self.check_str("<eof>") {
+                    Ok(MatcherType::Eof)
+                } else if self.check_str("<nl>") {
+                    Ok(MatcherType::Newline)
+                } else {
+                    Err(self.create_error("Expected <eof> or <nl>".to_string()))
+                }
             }
             Some('"') => self.parse_string(),
             Some('i') if self.source.get(self.pos + 1) == Some(&'"') => self.parse_string(),
