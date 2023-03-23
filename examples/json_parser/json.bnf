@@ -1,5 +1,5 @@
 root ::= object
-sep ::= [ \t\n]*
+sep ::= [ \t\r\n]*
 object ::= boolean | null | string | decimal | integer | map | list
 strbody ::= (escape | stringChar)*
 string ::= "\"" strbody "\""
