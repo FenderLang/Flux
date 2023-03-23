@@ -81,6 +81,7 @@ pub enum MatcherType {
     Inverted(usize),
     Wrapper(usize),
     Eof,
+    Newline,
     Placeholder,
 }
 
@@ -119,6 +120,7 @@ impl Matcher {
                 apply_wrapper(source, output, pos, depth, *child, matchers)
             }
             MatcherType::Eof => apply_eof(source, pos),
+            MatcherType::Newline => apply_newline(self, output, source, pos),
             MatcherType::Placeholder => unreachable!(),
         }
     }
@@ -135,6 +137,7 @@ impl Matcher {
             MatcherType::Wrapper(child) => Some(vec![child]),
             MatcherType::Eof => None,
             MatcherType::Placeholder => None,
+            MatcherType::Newline => None,
         }
     }
 
@@ -297,7 +300,7 @@ fn apply_list(
             None => {
                 output.tokens.drain(output_start..);
                 return None;
-            },
+            }
         }
     }
     let range = pos..cursor;
@@ -410,6 +413,31 @@ fn apply_inverted(
             matcher.push_token(output, matcher.create_token(source, range.clone()));
             Some(range)
         }
+    }
+}
+
+fn apply_newline(
+    matcher: &Matcher,
+    output: &mut TokenOutput,
+    source: Arc<[char]>,
+    pos: usize,
+) -> TokenResult {
+    match source.get(pos) {
+        Some('\r') => {
+            let range = if let Some('\n') = source.get(pos + 1) {
+                pos..pos + 2
+            } else {
+                pos..pos + 1
+            };
+            matcher.push_token(output, matcher.create_token(source, range.clone()));
+            Some(range)
+        }
+        Some('\n') => {
+            let range = pos..pos + 1;
+            matcher.push_token(output, matcher.create_token(source, range.clone()));
+            Some(range)
+        }
+        _ => None,
     }
 }
 

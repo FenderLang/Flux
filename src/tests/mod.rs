@@ -151,3 +151,11 @@ fn alt_root_test() {
     lexer.tokenize_with("digit", "4").unwrap();
     lexer.tokenize_with("digit", "40").unwrap_err();
 }
+
+#[test]
+fn newline_test() {
+    let lexer = bnf::parse("root ::= <nl>").unwrap();
+    lexer.tokenize("\n").unwrap();
+    lexer.tokenize("\r\n").unwrap();
+    lexer.tokenize("\r").unwrap();
+}

@@ -248,6 +248,8 @@ numberList ::= delimitedList<number, ",", sep>
 
 `<eof>` - Matches the end of the input
 
+`<nl>` - Matches a newline, independent of platform
+
 `"(" [0-9] ")"` - List matcher, any matchers separated by spaces will be applied in sequence
 
 `"hello" | "hey" | "hi"` - Choice matcher, tries all matchers one-by-one until one succeeds

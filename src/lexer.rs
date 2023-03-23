@@ -49,15 +49,13 @@ impl Lexer {
         }
     }
 
-    pub fn add_rule_for_names(&mut self, names: Vec<&str>, rule: CullStrategy) {
-        for matcher in &mut self.matchers {
-            if matcher
-                .name
-                .as_deref()
-                .map_or(false, |name| names.contains(&name))
-            {
-                matcher.cull_strategy = rule;
-            }
+    pub fn add_rule_for_names(
+        &mut self,
+        names: impl IntoIterator<Item = impl AsRef<str>>,
+        rule: CullStrategy,
+    ) {
+        for matcher in names.into_iter().map(|n| self.names[n.as_ref()]) {
+            self.matchers[matcher].cull_strategy = rule;
         }
     }
 
