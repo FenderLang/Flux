@@ -30,8 +30,9 @@ impl FromStr for JSONValue {
             vec!["sep", "object"], 
             CullStrategy::LiftChildren        
         );
+        lexer.set_unnamed_rule(CullStrategy::LiftChildren);
         let token = lexer.tokenize(s)?;
-        parse_root(&token)
+        parse_token(&token)
     }
 }
 
@@ -88,7 +89,7 @@ fn parse_bool(token: &Token) -> bool {
 }
 
 fn parse_list(token: &Token) -> ResultAlias<Vec<JSONValue>>{
-    let mut list = Vec::new();
+    let mut list = Vec::with_capacity(token.children.len());
     for child in &token.children {
         list.push(parse_token(child)?);
     }
@@ -96,17 +97,11 @@ fn parse_list(token: &Token) -> ResultAlias<Vec<JSONValue>>{
 }
 
 fn parse_map(token: &Token) -> ResultAlias<HashMap<String, JSONValue>> {
-    let mut map = HashMap::new();
+    let mut map = HashMap::with_capacity(token.children.len());
     for child in &token.children {
-        let key = child.children[0].get_match();
-        // Trims key to take out extra quotes
-        let key = key[1..key.len()-1].to_string();
+        let key = parse_string(&child.children[0]);
         let value = parse_token(&child.children[1])?;
         map.insert(key, value);
     }
     Ok(map)
-}
-
-fn parse_root(token: &Token) -> ResultAlias<JSONValue> {
-    Ok(parse_token(&token.children[0])?)
 }
