@@ -165,7 +165,7 @@ impl Matcher {
                 }
             }
             CullStrategy::DeleteChildren => {
-                output.tokens.drain(start..);
+                output.tokens.truncate(start);
                 output.tokens.push(self.create_token(source, range));
             }
         }
@@ -298,7 +298,7 @@ fn apply_list(
                 output.mark_success(pos, cursor, depth, matcher);
             }
             None => {
-                output.tokens.drain(output_start..);
+                output.tokens.truncate(output_start);
                 return None;
             }
         }
@@ -366,13 +366,16 @@ fn apply_repeating(
                 cursor = child_token.end;
                 child_count += 1;
                 output.mark_success(pos, cursor, depth, matcher);
+                if child_token.is_empty() {
+                    break;
+                }
             }
             None => break,
         }
     }
 
     if child_count < *range.start() {
-        output.tokens.drain(output_start..);
+        output.tokens.truncate(output_start);
         None
     } else {
         let range = pos..cursor;
@@ -405,7 +408,7 @@ fn apply_inverted(
     let output_start = output.len();
     match matched {
         Some(_) => {
-            output.tokens.drain(output_start..);
+            output.tokens.truncate(output_start);
             None
         }
         None => {
