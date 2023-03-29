@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::matchers::{Matcher, MatcherFuncArgs, TokenOutput};
+use crate::matchers::{Matcher, MatcherContext, TokenOutput};
 use crate::tokens::Token;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -79,7 +79,7 @@ impl Lexer {
         };
         let range = root
             .apply(
-                MatcherFuncArgs {
+                MatcherContext {
                     source: source.clone(),
                     pos,
                     depth: 0,
