@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::matchers::{Matcher, TokenOutput};
+use crate::matchers::{Matcher, MatcherFuncArgs, TokenOutput};
 use crate::tokens::Token;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -78,7 +78,15 @@ impl Lexer {
             last_success: Default::default(),
         };
         let range = root
-            .apply(source.clone(), &mut output, &self.matchers, pos, 0)
+            .apply(
+                MatcherFuncArgs {
+                    source: source.clone(),
+                    pos,
+                    depth: 0,
+                },
+                &mut output,
+                &self.matchers,
+            )
             .ok_or_else(|| output.create_error(source.clone(), &self.matchers))?;
         if output.tokens.is_empty() || range.end != source.len() {
             Err(output.create_error(source, &self.matchers))
