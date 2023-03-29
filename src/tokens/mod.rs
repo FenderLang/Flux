@@ -51,7 +51,7 @@ impl Token {
             None => "|--NO_NAME".into(),
         };
 
-        if self.children.is_empty(){
+        if self.children.is_empty() {
             rec_str.push_str(&format!("({})", self.get_match()));
         }
 

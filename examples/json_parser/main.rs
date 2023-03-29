@@ -1,6 +1,6 @@
-use std::{error::Error, collections::HashMap};
 use flux_bnf::{bnf, lexer::CullStrategy, tokens::Token};
 use std::str::FromStr;
+use std::{collections::HashMap, error::Error};
 
 type ResultAlias<T> = Result<T, Box<dyn Error>>;
 
@@ -26,10 +26,7 @@ impl FromStr for JSONValue {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut lexer = bnf::parse(include_str!("json.bnf")).map_err(|e| format!("{:#}", e))?;
-        lexer.add_rule_for_names(
-            vec!["sep", "object"], 
-            CullStrategy::LiftChildren        
-        );
+        lexer.add_rule_for_names(vec!["sep", "object"], CullStrategy::LiftChildren);
         lexer.set_unnamed_rule(CullStrategy::LiftChildren);
         let token = lexer.tokenize(s)?;
         parse_token(&token)
@@ -40,7 +37,7 @@ fn parse_token(token: &Token) -> ResultAlias<JSONValue> {
     Ok(match token.get_name().as_deref() {
         Some("integer") => JSONValue::Integer(parse_int(token)?),
         Some("decimal") => JSONValue::Decimal(parse_float(token)?),
-        Some("string") => JSONValue::String(parse_string(token)), 
+        Some("string") => JSONValue::String(parse_string(token)),
         Some("boolean") => JSONValue::Boolean(parse_bool(token)),
         Some("list") => JSONValue::List(parse_list(token)?),
         Some("map") => JSONValue::Map(parse_map(token)?),
@@ -59,8 +56,8 @@ fn parse_float(token: &Token) -> ResultAlias<f64> {
 }
 
 fn parse_string(token: &Token) -> String {
-   let token_val = token.get_match();
-    token_val[1..token_val.len()-1].to_string()
+    let token_val = token.get_match();
+    token_val[1..token_val.len() - 1].to_string()
 }
 
 fn parse_escape_sequence(token: &Token) -> String {
@@ -88,7 +85,7 @@ fn parse_bool(token: &Token) -> bool {
     token.get_match().parse().expect("Always Valid Boolean")
 }
 
-fn parse_list(token: &Token) -> ResultAlias<Vec<JSONValue>>{
+fn parse_list(token: &Token) -> ResultAlias<Vec<JSONValue>> {
     let mut list = Vec::with_capacity(token.children.len());
     for child in &token.children {
         list.push(parse_token(child)?);

@@ -20,7 +20,19 @@ fn main() {
     );
 
     lexer.add_rule_for_names(
-        vec!["pow", "add", "mul", "range", "cmp", "and", "or", "term", "expr", "value", "tailOperation"],
+        vec![
+            "pow",
+            "add",
+            "mul",
+            "range",
+            "cmp",
+            "and",
+            "or",
+            "term",
+            "expr",
+            "value",
+            "tailOperation",
+        ],
         CullStrategy::LiftAtMost(1),
     );
 
@@ -36,4 +48,3 @@ fn main() {
 
     println!("{:#?}", root_token);
 }
-
