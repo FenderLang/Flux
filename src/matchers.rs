@@ -101,9 +101,7 @@ impl Matcher {
             MatcherType::String(to_match, case_sensitive) => {
                 self.apply_string(context, to_match, *case_sensitive)
             }
-            MatcherType::CharSet(chars, inverted) => {
-                self.apply_char_set(context, chars, *inverted)
-            }
+            MatcherType::CharSet(chars, inverted) => self.apply_char_set(context, chars, *inverted),
             MatcherType::CharRange(range, inverted) => {
                 self.apply_char_range(context, range, *inverted)
             }
@@ -310,12 +308,7 @@ impl Matcher {
             }
         }
         let range = context.pos..cursor;
-        self.process_children(
-            context.source,
-            range.clone(),
-            context.output,
-            output_start,
-        );
+        self.process_children(context.source, range.clone(), context.output, output_start);
         Some(range)
     }
 
@@ -341,12 +334,7 @@ impl Matcher {
                 matchers,
             );
             if let Some(range) = matched {
-                self.process_children(
-                    context.source,
-                    range.clone(),
-                    context.output,
-                    output_start,
-                );
+                self.process_children(context.source, range.clone(), context.output, output_start);
                 return Some(range);
             }
         }
@@ -394,12 +382,7 @@ impl Matcher {
             None
         } else {
             let range = context.pos..cursor;
-            self.process_children(
-                context.source,
-                range.clone(),
-                context.output,
-                output_start,
-            );
+            self.process_children(context.source, range.clone(), context.output, output_start);
             Some(range)
         }
     }
@@ -467,11 +450,7 @@ impl Matcher {
         }
     }
 
-    fn apply_wrapper(
-        context: MatcherContext,
-        child: usize,
-        matchers: &[Matcher],
-    ) -> TokenResult {
+    fn apply_wrapper(context: MatcherContext, child: usize, matchers: &[Matcher]) -> TokenResult {
         let child = &matchers[child];
         child.apply(
             MatcherContext {
