@@ -83,8 +83,8 @@ impl Lexer {
                     source: source.clone(),
                     pos,
                     depth: 0,
+                    output: &mut output,
                 },
-                &mut output,
                 &self.matchers,
             )
             .ok_or_else(|| output.create_error(source.clone(), &self.matchers))?;

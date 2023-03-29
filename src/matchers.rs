@@ -8,6 +8,7 @@ use crate::tokens::Token;
 pub type MatcherName = Arc<Option<String>>;
 pub type TokenResult = Option<Range<usize>>;
 
+#[derive(Debug)]
 pub struct SuccessMark {
     pub(crate) begin: usize,
     pub(crate) end: usize,
@@ -26,6 +27,7 @@ impl Default for SuccessMark {
     }
 }
 
+#[derive(Debug)]
 pub struct TokenOutput {
     pub(crate) tokens: Vec<Token>,
     pub(crate) last_success: SuccessMark,
@@ -85,44 +87,35 @@ pub enum MatcherType {
     Placeholder,
 }
 
-pub struct MatcherFuncArgs {
+#[derive(Debug)]
+pub struct MatcherFuncArgs<'a> {
     pub source: Arc<[char]>,
     pub pos: usize,
     pub depth: usize,
+    pub output: &'a mut TokenOutput,
 }
 
 impl Matcher {
-    pub fn apply(
-        &self,
-        func_args: MatcherFuncArgs,
-        output: &mut TokenOutput,
-        matchers: &[Matcher],
-    ) -> TokenResult {
+    pub fn apply(&self, func_args: MatcherFuncArgs, matchers: &[Matcher]) -> TokenResult {
         match &self.matcher_type {
             MatcherType::String(to_match, case_sensitive) => {
-                self.apply_string(func_args, output, to_match, *case_sensitive)
+                self.apply_string(func_args, to_match, *case_sensitive)
             }
             MatcherType::CharSet(chars, inverted) => {
-                self.apply_char_set(func_args, output, chars, *inverted)
+                self.apply_char_set(func_args, chars, *inverted)
             }
             MatcherType::CharRange(range, inverted) => {
-                self.apply_char_range(func_args, output, range, *inverted)
+                self.apply_char_range(func_args, range, *inverted)
             }
-            MatcherType::List(children) => self.apply_list(func_args, output, children, matchers),
-            MatcherType::Choice(children) => {
-                self.apply_choice(func_args, output, children, matchers)
-            }
+            MatcherType::List(children) => self.apply_list(func_args, children, matchers),
+            MatcherType::Choice(children) => self.apply_choice(func_args, children, matchers),
             MatcherType::Repeating(child, range) => {
-                self.apply_repeating(func_args, output, *child, range, matchers)
+                self.apply_repeating(func_args, *child, range, matchers)
             }
-            MatcherType::Inverted(child) => {
-                self.apply_inverted(func_args, output, *child, matchers)
-            }
-            MatcherType::Wrapper(child) => {
-                Matcher::apply_wrapper(func_args, output, *child, matchers)
-            }
+            MatcherType::Inverted(child) => self.apply_inverted(func_args, *child, matchers),
+            MatcherType::Wrapper(child) => Matcher::apply_wrapper(func_args, *child, matchers),
             MatcherType::Eof => Matcher::apply_eof(func_args.source, func_args.pos),
-            MatcherType::Newline => self.apply_newline(output, func_args.source, func_args.pos),
+            MatcherType::Newline => self.apply_newline(func_args),
             MatcherType::Placeholder => unreachable!(),
         }
     }
@@ -217,7 +210,6 @@ impl Matcher {
         &self,
         func_args: MatcherFuncArgs,
 
-        output: &mut TokenOutput,
         to_match: &[char],
         case_sensitive: bool,
     ) -> TokenResult {
@@ -228,7 +220,7 @@ impl Matcher {
             .count();
 
         if matched_chars > 0 {
-            output.mark_success(
+            func_args.output.mark_success(
                 func_args.pos,
                 func_args.pos + matched_chars,
                 func_args.depth,
@@ -237,7 +229,10 @@ impl Matcher {
         }
         if matched_chars == to_match.len() {
             let range = func_args.pos..func_args.pos + to_match.len();
-            self.push_token(output, self.create_token(func_args.source, range.clone()));
+            self.push_token(
+                func_args.output,
+                self.create_token(func_args.source, range.clone()),
+            );
             Some(range)
         } else {
             None
@@ -248,14 +243,16 @@ impl Matcher {
         &self,
         func_args: MatcherFuncArgs,
 
-        output: &mut TokenOutput,
         to_match: &[char],
         inverted: bool,
     ) -> TokenResult {
         match func_args.source.get(func_args.pos) {
             Some(c) if to_match.contains(c) ^ inverted => {
                 let range = func_args.pos..func_args.pos + 1;
-                self.push_token(output, self.create_token(func_args.source, range.clone()));
+                self.push_token(
+                    func_args.output,
+                    self.create_token(func_args.source, range.clone()),
+                );
                 Some(range)
             }
             _ => None,
@@ -265,14 +262,16 @@ impl Matcher {
     fn apply_char_range(
         &self,
         func_args: MatcherFuncArgs,
-        output: &mut TokenOutput,
         range: &RangeInclusive<char>,
         inverted: bool,
     ) -> TokenResult {
         match func_args.source.get(func_args.pos) {
             Some(c) if range.contains(c) ^ inverted => {
                 let range = func_args.pos..func_args.pos + 1;
-                self.push_token(output, self.create_token(func_args.source, range.clone()));
+                self.push_token(
+                    func_args.output,
+                    self.create_token(func_args.source, range.clone()),
+                );
                 Some(range)
             }
             _ => None,
@@ -282,12 +281,11 @@ impl Matcher {
     fn apply_list(
         &self,
         func_args: MatcherFuncArgs,
-        output: &mut TokenOutput,
         children: &[usize],
         matchers: &[Matcher],
     ) -> TokenResult {
         let mut cursor = func_args.pos;
-        let output_start = output.len();
+        let output_start = func_args.output.len();
         for child in children {
             let child = &matchers[*child];
             match child.apply(
@@ -295,47 +293,60 @@ impl Matcher {
                     source: func_args.source.clone(),
                     pos: cursor,
                     depth: self.next_depth(func_args.depth),
+                    output: func_args.output,
                 },
-                output,
                 matchers,
             ) {
                 Some(child_token) => {
                     cursor = child_token.end;
-                    output.mark_success(func_args.pos, cursor, func_args.depth, self);
+                    func_args
+                        .output
+                        .mark_success(func_args.pos, cursor, func_args.depth, self);
                 }
                 None => {
-                    output.tokens.truncate(output_start);
+                    func_args.output.tokens.truncate(output_start);
                     return None;
                 }
             }
         }
         let range = func_args.pos..cursor;
-        self.process_children(func_args.source, range.clone(), output, output_start);
+        self.process_children(
+            func_args.source,
+            range.clone(),
+            func_args.output,
+            output_start,
+        );
         Some(range)
     }
 
     fn apply_choice(
         &self,
         func_args: MatcherFuncArgs,
-        output: &mut TokenOutput,
         children: &[usize],
         matchers: &[Matcher],
     ) -> TokenResult {
-        let output_start = output.len();
-        output.mark_success(func_args.pos, func_args.pos, func_args.depth, self);
+        let output_start = func_args.output.len();
+        func_args
+            .output
+            .mark_success(func_args.pos, func_args.pos, func_args.depth, self);
         for child in children {
             let child = &matchers[*child];
             let matched = child.apply(
                 MatcherFuncArgs {
                     source: func_args.source.clone(),
-                    pos: func_args.pos,
                     depth: self.next_depth(func_args.depth),
+                    output: func_args.output,
+                    ..func_args
                 },
-                output,
                 matchers,
             );
             if let Some(range) = matched {
-                self.process_children(func_args.source, range.clone(), output, output_start);
+                self.process_children(
+                    func_args.source,
+                    range.clone(),
+                    func_args.output,
+                    output_start,
+                );
                 return Some(range);
             }
         }
@@ -345,12 +356,11 @@ impl Matcher {
     fn apply_repeating(
         &self,
         func_args: MatcherFuncArgs,
-        output: &mut TokenOutput,
         child: usize,
         range: &RangeInclusive<usize>,
         matchers: &[Matcher],
     ) -> TokenResult {
-        let output_start = output.len();
+        let output_start = func_args.output.len();
         let child = &matchers[child];
         let mut cursor = func_args.pos;
         let mut child_count = 0;
@@ -360,15 +370,17 @@ impl Matcher {
                     source: func_args.source.clone(),
                     pos: cursor,
                     depth: self.next_depth(func_args.depth),
+                    output: func_args.output,
                 },
-                output,
                 matchers,
             );
             match matched {
                 Some(child_token) => {
                     cursor = child_token.end;
                     child_count += 1;
-                    output.mark_success(func_args.pos, cursor, func_args.depth, self);
+                    func_args
+                        .output
+                        .mark_success(func_args.pos, cursor, func_args.depth, self);
                     if child_token.is_empty() {
                         break;
                     }
@@ -378,11 +390,16 @@ impl Matcher {
         }
 
         if child_count < *range.start() {
-            output.tokens.truncate(output_start);
+            func_args.output.tokens.truncate(output_start);
             None
         } else {
             let range = func_args.pos..cursor;
-            self.process_children(func_args.source, range.clone(), output, output_start);
+            self.process_children(
+                func_args.source,
+                range.clone(),
+                func_args.output,
+                output_start,
+            );
             Some(range)
         }
     }
@@ -394,7 +411,6 @@ impl Matcher {
     fn apply_inverted(
         &self,
         func_args: MatcherFuncArgs,
-        output: &mut TokenOutput,
         child: usize,
         matchers: &[Matcher],
     ) -> TokenResult {
@@ -403,44 +419,48 @@ impl Matcher {
             MatcherFuncArgs {
                 source: func_args.source.clone(),
                 depth: self.next_depth(func_args.depth),
+                output: func_args.output,
                 ..func_args
             },
-            output,
             matchers,
         );
-        let output_start = output.len();
+        let output_start = func_args.output.len();
         match matched {
             Some(_) => {
-                output.tokens.truncate(output_start);
+                func_args.output.tokens.truncate(output_start);
                 None
             }
             None => {
                 let range = func_args.pos..func_args.pos;
-                self.push_token(output, self.create_token(func_args.source, range.clone()));
+                self.push_token(
+                    func_args.output,
+                    self.create_token(func_args.source, range.clone()),
+                );
                 Some(range)
             }
         }
     }
 
-    fn apply_newline(
-        &self,
-        output: &mut TokenOutput,
-        source: Arc<[char]>,
-        pos: usize,
-    ) -> TokenResult {
-        match source.get(pos) {
+    fn apply_newline(&self, func_args: MatcherFuncArgs) -> TokenResult {
+        match func_args.source.get(func_args.pos) {
             Some('\r') => {
-                let range = if let Some('\n') = source.get(pos + 1) {
-                    pos..pos + 2
+                let range = if let Some('\n') = func_args.source.get(func_args.pos + 1) {
+                    func_args.pos..func_args.pos + 2
                 } else {
-                    pos..pos + 1
+                    func_args.pos..func_args.pos + 1
                 };
-                self.push_token(output, self.create_token(source, range.clone()));
+                self.push_token(
+                    func_args.output,
+                    self.create_token(func_args.source, range.clone()),
+                );
                 Some(range)
             }
             Some('\n') => {
-                let range = pos..pos + 1;
-                self.push_token(output, self.create_token(source, range.clone()));
+                let range = func_args.pos..func_args.pos + 1;
+                self.push_token(
+                    func_args.output,
+                    self.create_token(func_args.source, range.clone()),
+                );
                 Some(range)
             }
             _ => None,
@@ -449,7 +469,6 @@ impl Matcher {
 
     fn apply_wrapper(
         func_args: MatcherFuncArgs,
-        output: &mut TokenOutput,
         child: usize,
         matchers: &[Matcher],
     ) -> TokenResult {
@@ -460,7 +479,6 @@ impl Matcher {
                 depth: func_args.pos,
                 ..func_args
             },
-            output,
             matchers,
         )
     }
