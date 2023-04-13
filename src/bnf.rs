@@ -1,9 +1,9 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-
+#![allow(clippy::too_many_arguments)]
 use crate::error::{FluxError, Result};
 use crate::lexer::{CullStrategy, Lexer};
 use crate::matchers::{Matcher, MatcherType};
+use std::collections::HashMap;
+use std::sync::Arc;
 
 const COMMENT_SYMBOL: &str = "//";
 const ERROR_TRANSPARENT_SYMBOL: char = '!';
@@ -12,7 +12,7 @@ pub fn parse(input: &str) -> Result<Lexer> {
     let id_map: HashMap<String, usize> = input
         .lines()
         .map(str::trim_start)
-        .filter(|s| s.len() > 0 && !s.starts_with(COMMENT_SYMBOL))
+        .filter(|s| !s.is_empty() && !s.starts_with(COMMENT_SYMBOL))
         .map(|s| {
             s.chars()
                 .take_while(|c| !c.is_whitespace() && *c != ERROR_TRANSPARENT_SYMBOL)
