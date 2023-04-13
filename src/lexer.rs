@@ -55,14 +55,14 @@ impl Lexer {
                             .collect()
                     });
                     self.matchers[i].matcher_type =
-                        MatcherType::Choice(children.clone(), Some(cache));
+                        MatcherType::Choice(children.clone(), Some(cache.into()));
                 }
                 MatcherType::Repeating(child, match_range, None) => {
                     let cache = std::array::from_fn(|i| {
                         self.matchers[*child].can_start_with(i as u8 as char, &self.matchers)
                     });
                     self.matchers[i].matcher_type =
-                        MatcherType::Repeating(*child, match_range.clone(), Some(cache));
+                        MatcherType::Repeating(*child, match_range.clone(), Some(cache.into()));
                 }
                 _ => (),
             }

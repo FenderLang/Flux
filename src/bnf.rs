@@ -1,4 +1,3 @@
-#![allow(clippy::too_many_arguments)]
 use crate::error::{FluxError, Result};
 use crate::lexer::{CullStrategy, Lexer};
 use crate::matchers::{Matcher, MatcherType};

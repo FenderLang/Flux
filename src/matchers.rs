@@ -1,3 +1,4 @@
+#![allow(clippy::too_many_arguments)]
 use std::ops::Range;
 use std::{ops::RangeInclusive, sync::Arc};
 
@@ -78,8 +79,8 @@ pub enum MatcherType {
     CharSet(Vec<char>, bool),
     CharRange(RangeInclusive<char>, bool),
     List(Vec<usize>),
-    Choice(Vec<usize>, Option<[Vec<usize>; 256]>),
-    Repeating(usize, RangeInclusive<usize>, Option<[bool; 256]>),
+    Choice(Vec<usize>, Option<Box<[Vec<usize>; 256]>>),
+    Repeating(usize, RangeInclusive<usize>, Option<Box<[bool; 256]>>),
     Inverted(usize),
     Wrapper(usize),
     Eof,
@@ -424,7 +425,7 @@ impl Matcher {
         depth: usize,
         child: usize,
         range: &RangeInclusive<usize>,
-        cache: &Option<[bool; 256]>,
+        cache: &Option<Box<[bool; 256]>>,
         matchers: &[Matcher],
         alloc: &'a Bump,
     ) -> TokenResult {
