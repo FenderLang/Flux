@@ -1,7 +1,7 @@
 use bumpalo::Bump;
 
 use crate::error::Result;
-use crate::matchers::{Matcher, MatcherType, TokenOutput};
+use crate::matchers::{Matcher, MatcherContext, MatcherType, TokenOutput};
 use crate::tokens::Token;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -68,7 +68,6 @@ impl Lexer {
             }
         }
     }
-
     pub fn set_retain_empty(&mut self, retain_empty: bool) {
         self.retain_empty = retain_empty;
     }
@@ -126,14 +125,20 @@ impl Lexer {
     ) -> Result<T> {
         let input = input.as_ref();
         let source: Arc<[char]> = input.chars().collect();
-        let pos = 0;
         let bump = Rc::new(Bump::with_capacity(10000));
         let mut output = TokenOutput {
             tokens: bumpalo::collections::Vec::new_in(&bump),
             last_success: Default::default(),
         };
+        let context = MatcherContext {
+            source: source.clone(),
+            pos: 0,
+            depth: 0,
+            output: &mut output,
+            alloc: &bump,
+        };
         let range = root
-            .apply(source.clone(), &mut output, &self.matchers, pos, 0, &bump)
+            .apply(context, &self.matchers)
             .ok_or_else(|| output.create_error(source.clone(), &self.matchers))?;
         if output.tokens.is_empty() || range.end != source.len() {
             Err(output.create_error(source, &self.matchers))

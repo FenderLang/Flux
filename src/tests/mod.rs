@@ -10,18 +10,6 @@ fn syntax() {
 }
 
 #[test]
-#[ignore = "not yet implemented"]
-fn self_reference_test1() {
-    bnf::parse("root ::= root").unwrap_err();
-}
-
-#[test]
-#[ignore = "not yet implemented"]
-fn self_reference_test2() {
-    bnf::parse("root ::= test\ntest ::= test").unwrap_err();
-}
-
-#[test]
 fn unicode_escape() {
     let lexer = bnf::parse(r#"root ::= "\u0061""#).unwrap();
     lexer.check("a").unwrap();
