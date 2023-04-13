@@ -20,11 +20,23 @@ fn main() {
     );
 
     lexer.add_rule_for_names(
-        vec!["pow", "add", "mul", "range", "cmp", "and", "or", "term", "expr", "value", "tailOperation"],
+        vec![
+            "pow",
+            "add",
+            "mul",
+            "range",
+            "cmp",
+            "and",
+            "or",
+            "term",
+            "expr",
+            "value",
+            "tailOperation",
+        ],
         CullStrategy::LiftAtMost(1),
     );
 
-    let res = lexer.tokenize(test_input);
+    let res = lexer.tokenize(test_input, |t| format!("{:#?}", t));
 
     let root_token = match res {
         Ok(token) => token,
@@ -34,6 +46,5 @@ fn main() {
         }
     };
 
-    println!("{:#?}", root_token);
+    println!("{}", root_token);
 }
-

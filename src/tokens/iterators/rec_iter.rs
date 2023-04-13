@@ -2,9 +2,9 @@ use crate::tokens::Token;
 
 #[derive(Debug)]
 pub struct RecursiveIter<'a> {
-    token: &'a Token,
+    token: &'a Token<'a>,
     index: usize,
-    stack: Vec<(&'a Token, usize)>,
+    stack: Vec<(&'a Token<'a>, usize)>,
     pub(super) selected: Vec<&'a str>,
     pub(super) ignored: Vec<&'a str>,
 }
@@ -22,7 +22,7 @@ impl<'a> RecursiveIter<'a> {
 }
 
 impl<'a> Iterator for RecursiveIter<'a> {
-    type Item = &'a Token;
+    type Item = &'a Token<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         while self.index >= self.token.children.len() {

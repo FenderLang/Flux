@@ -347,22 +347,22 @@ impl BNFParserState {
             Some('+') => {
                 self.advance();
                 let child = self.add_matcher(matcher);
-                matcher = MatcherType::Repeating(child.id, 1..=usize::MAX);
+                matcher = MatcherType::Repeating(child.id, 1..=usize::MAX, None);
             }
             Some('*') => {
                 self.advance();
                 let child = self.add_matcher(matcher);
-                matcher = MatcherType::Repeating(child.id, 0..=usize::MAX);
+                matcher = MatcherType::Repeating(child.id, 0..=usize::MAX, None);
             }
             Some('?') => {
                 self.advance();
                 let child = self.add_matcher(matcher);
-                matcher = MatcherType::Repeating(child.id, 0..=1);
+                matcher = MatcherType::Repeating(child.id, 0..=1, None);
             }
             Some('{') => {
                 let bounds = self.parse_repeating_bounds()?;
                 let child = self.add_matcher(matcher);
-                matcher = MatcherType::Repeating(child.id, bounds.0..=bounds.1);
+                matcher = MatcherType::Repeating(child.id, bounds.0..=bounds.1, None);
             }
             _ => (),
         }
@@ -536,7 +536,7 @@ impl BNFParserState {
                 .into_iter()
                 .map(|m| self.add_matcher(m).id)
                 .collect();
-            Ok(MatcherType::Choice(choices))
+            Ok(MatcherType::Choice(choices, None))
         } else {
             Ok(self.maybe_list(matcher_list))
         }

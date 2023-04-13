@@ -2,7 +2,7 @@ use crate::tokens::Token;
 
 #[derive(Debug)]
 pub struct Iter<'a> {
-    token: &'a Token,
+    token: &'a Token<'a>,
     index: usize,
     pub(super) selected: Vec<&'a str>,
     pub(super) ignored: Vec<&'a str>,
@@ -20,7 +20,7 @@ impl<'a> Iter<'a> {
 }
 
 impl<'a> Iterator for Iter<'a> {
-    type Item = &'a Token;
+    type Item = &'a Token<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index >= self.token.children.len() {

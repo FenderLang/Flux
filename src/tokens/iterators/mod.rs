@@ -3,13 +3,13 @@ use crate::tokens::Token;
 pub mod iter;
 pub mod rec_iter;
 
-pub trait SelectTokens<'a>: Iterator<Item = &'a Token> {
+pub trait SelectTokens<'a>: Iterator<Item = &'a Token<'a>> {
     fn select_tokens(self, select_list: Vec<&'a str>) -> Self;
 
     fn select_token(self, select: &'a str) -> Self;
 }
 
-pub trait IgnoreTokens<'a>: Iterator<Item = &'a Token> {
+pub trait IgnoreTokens<'a>: Iterator<Item = &'a Token<'a>> {
     fn ignore_tokens(self, ignore_list: Vec<&'a str>) -> Self;
 
     fn ignore_token(self, ignore: &'a str) -> Self;
