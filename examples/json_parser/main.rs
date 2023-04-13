@@ -29,7 +29,7 @@ impl FromStr for JSONValue {
         let mut lexer = bnf::parse(include_str!("json.bnf")).map_err(|e| format!("{:#}", e))?;
         lexer.add_rule_for_names(vec!["sep", "object"], CullStrategy::LiftChildren);
         lexer.set_unnamed_rule(CullStrategy::LiftChildren);
-        lexer.tokenize(s, |t| parse_token(&t))?
+        lexer.tokenize(s, |t| parse_token(t))?
     }
 }
 

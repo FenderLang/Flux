@@ -406,12 +406,9 @@ impl Matcher {
                 next_depth(self, depth),
                 alloc,
             );
-            match matched {
-                Some(range) => {
-                    self.process_children(source, range.clone(), output, output_start, alloc);
-                    return Some(range);
-                }
-                None => (),
+            if let Some(range) = matched {
+                self.process_children(source, range.clone(), output, output_start, alloc);
+                return Some(range);
             }
         }
         None
