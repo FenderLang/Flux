@@ -10,7 +10,6 @@ use crate::tokens::Token;
 pub type MatcherName = Arc<Option<String>>;
 pub type TokenResult = Option<Range<usize>>;
 
-#[derive(Debug)]
 pub struct SuccessMark {
     pub(crate) begin: usize,
     pub(crate) end: usize,
@@ -29,7 +28,6 @@ impl Default for SuccessMark {
     }
 }
 
-#[derive(Debug)]
 pub struct TokenOutput<'a> {
     pub(crate) tokens: bumpalo::collections::Vec<'a, Token<'a>>,
     pub(crate) last_success: SuccessMark,
@@ -89,43 +87,49 @@ pub enum MatcherType {
     Placeholder,
 }
 
-#[derive(Debug)]
-pub struct MatcherContext<'a, 'b: 'a> {
-    pub source: Arc<[char]>,
-    pub pos: usize,
-    pub depth: usize,
-    pub output: &'a mut TokenOutput<'b>,
-    pub alloc: &'b Bump,
-}
-
 impl Matcher {
-    pub fn apply<'a>(&self, context: MatcherContext, matchers: &[Matcher]) -> TokenResult {
+    pub fn apply<'a>(
+        &self,
+        source: Arc<[char]>,
+        output: &mut TokenOutput<'a>,
+        matchers: &[Matcher],
+        pos: usize,
+        depth: usize,
+        alloc: &'a Bump,
+    ) -> TokenResult {
         match &self.matcher_type {
             MatcherType::String(to_match, case_sensitive) => {
-                self.apply_string(context, to_match, *case_sensitive)
+                self.apply_string(source, output, pos, depth, to_match, *case_sensitive, alloc)
             }
-            MatcherType::CharSet(chars, inverted) => self.apply_char_set(context, chars, *inverted),
+            MatcherType::CharSet(chars, inverted) => {
+                self.apply_char_set(source, output, pos, chars, *inverted, alloc)
+            }
             MatcherType::CharRange(range, inverted) => {
-                self.apply_char_range(context, range, *inverted)
+                self.apply_char_range(source, output, pos, range, *inverted, alloc)
             }
-            MatcherType::List(children) => self.apply_list(context, children, matchers),
+            MatcherType::List(children) => {
+                self.apply_list(source, output, pos, depth, children, matchers, alloc)
+            }
             MatcherType::Choice(children, cache) => {
-                let choice_children = context
-                    .source
-                    .get(context.pos)
+                let choice_children = source
+                    .get(pos)
                     .filter(|c| c.is_ascii())
                     .map(|c| *c as u32 as usize)
                     .and_then(|c| cache.as_ref().map(|cache| &cache[c]))
                     .unwrap_or(children);
-                self.apply_choice(context, choice_children, matchers)
+                self.apply_choice(source, output, pos, depth, choice_children, matchers, alloc)
             }
-            MatcherType::Repeating(child, range, cache) => {
-                self.apply_repeating(context, *child, range, cache, matchers)
+            MatcherType::Repeating(child, range, cache) => self.apply_repeating(
+                source, output, pos, depth, *child, range, cache, matchers, alloc,
+            ),
+            MatcherType::Inverted(child) => {
+                self.apply_inverted(source, output, pos, depth, *child, matchers, alloc)
             }
-            MatcherType::Inverted(child) => self.apply_inverted(context, *child, matchers),
-            MatcherType::Wrapper(child) => Self::apply_wrapper(context, *child, matchers),
-            MatcherType::Eof => Self::apply_eof(context.source, context.pos),
-            MatcherType::Newline => self.apply_newline(context),
+            MatcherType::Wrapper(child) => {
+                Self::apply_wrapper(source, output, pos, depth, *child, matchers, alloc)
+            }
+            MatcherType::Eof => Self::apply_eof(source, pos),
+            MatcherType::Newline => self.apply_newline(output, source, pos, alloc),
             MatcherType::Placeholder => unreachable!(),
         }
     }
@@ -278,30 +282,26 @@ fn next_depth(matcher: &Matcher, depth: usize) -> usize {
 impl Matcher {
     fn apply_string<'a>(
         &self,
-        context: MatcherContext<'_, 'a>,
+        source: Arc<[char]>,
+        output: &mut TokenOutput<'a>,
+        pos: usize,
+        depth: usize,
         to_match: &[char],
         case_sensitive: bool,
+        alloc: &'a Bump,
     ) -> TokenResult {
         let matched_chars = to_match
             .iter()
-            .zip(&context.source[context.pos..])
+            .zip(&source[pos..])
             .take_while(|(a, b)| char_matches(a, b, case_sensitive))
             .count();
 
         if matched_chars > 0 {
-            context.output.mark_success(
-                context.pos,
-                context.pos + matched_chars,
-                context.depth,
-                self,
-            );
+            output.mark_success(pos, pos + matched_chars, depth, self);
         }
         if matched_chars == to_match.len() {
-            let range = context.pos..context.pos + to_match.len();
-            self.push_token(
-                context.output,
-                self.create_token(context.source.clone(), range.clone(), &context.alloc),
-            );
+            let range = pos..pos + to_match.len();
+            self.push_token(output, self.create_token(source, range.clone(), alloc));
             Some(range)
         } else {
             None
@@ -310,17 +310,17 @@ impl Matcher {
 
     fn apply_char_set<'a>(
         &self,
-        context: MatcherContext<'_, 'a>,
+        source: Arc<[char]>,
+        output: &mut TokenOutput<'a>,
+        pos: usize,
         to_match: &[char],
         inverted: bool,
+        alloc: &'a Bump,
     ) -> TokenResult {
-        match context.source.get(context.pos) {
+        match source.get(pos) {
             Some(c) if to_match.contains(c) ^ inverted => {
-                let range = context.pos..context.pos + 1;
-                self.push_token(
-                    context.output,
-                    self.create_token(context.source, range.clone(), context.alloc),
-                );
+                let range = pos..pos + 1;
+                self.push_token(output, self.create_token(source, range.clone(), alloc));
                 Some(range)
             }
             _ => None,
@@ -329,17 +329,17 @@ impl Matcher {
 
     fn apply_char_range<'a>(
         &self,
-        context: MatcherContext<'_, 'a>,
+        source: Arc<[char]>,
+        output: &mut TokenOutput<'a>,
+        pos: usize,
         range: &RangeInclusive<char>,
         inverted: bool,
+        alloc: &'a Bump,
     ) -> TokenResult {
-        match context.source.get(context.pos) {
+        match source.get(pos) {
             Some(c) if range.contains(c) ^ inverted => {
-                let range = context.pos..context.pos + 1;
-                self.push_token(
-                    context.output,
-                    self.create_token(context.source, range.clone(), context.alloc),
-                );
+                let range = pos..pos + 1;
+                self.push_token(output, self.create_token(source, range.clone(), alloc));
                 Some(range)
             }
             _ => None,
@@ -348,78 +348,66 @@ impl Matcher {
 
     fn apply_list<'a>(
         &self,
-        mut context: MatcherContext<'_, 'a>,
+        source: Arc<[char]>,
+        output: &mut TokenOutput<'a>,
+        pos: usize,
+        depth: usize,
         children: &[usize],
         matchers: &[Matcher],
+        alloc: &'a Bump,
     ) -> TokenResult {
-        let mut cursor = context.pos;
-        let output_start = context.output.len();
+        let mut cursor = pos;
+        let output_start = output.len();
         for child in children {
             let child = &matchers[*child];
             match child.apply(
-                MatcherContext {
-                    source: context.source.clone(),
-                    pos: cursor,
-                    depth: next_depth(self, context.depth),
-                    output: context.output,
-                    alloc: &context.alloc,
-                },
+                source.clone(),
+                output,
                 matchers,
+                cursor,
+                next_depth(self, depth),
+                alloc,
             ) {
                 Some(child_token) => {
                     cursor = child_token.end;
-                    context
-                        .output
-                        .mark_success(context.pos, cursor, context.depth, self);
+                    output.mark_success(pos, cursor, depth, self);
                 }
                 None => {
-                    context.output.tokens.truncate(output_start);
+                    output.tokens.truncate(output_start);
                     return None;
                 }
             }
         }
-        let range = context.pos..cursor;
-        self.process_children(
-            context.source.clone(),
-            range.clone(),
-            &mut context.output,
-            output_start,
-            context.alloc,
-        );
+        let range = pos..cursor;
+        self.process_children(source, range.clone(), output, output_start, alloc);
         Some(range)
     }
 
     fn apply_choice<'a>(
         &self,
-        mut context: MatcherContext<'_, 'a>,
+        source: Arc<[char]>,
+        output: &mut TokenOutput<'a>,
+        pos: usize,
+        depth: usize,
         children: &[usize],
         matchers: &[Matcher],
+        alloc: &'a Bump,
     ) -> TokenResult {
-        let output_start = context.output.len();
-        context
-            .output
-            .mark_success(context.pos, context.pos, context.depth, self);
+        let output_start = output.len();
+        output.mark_success(pos, pos, depth, self);
         for child in children {
             let child = &matchers[*child];
             let matched = child.apply(
-                MatcherContext {
-                    source: context.source.clone(),
-                    pos: context.pos,
-                    depth: next_depth(self, context.depth),
-                    output: &mut context.output,
-                    alloc: &context.alloc,
-                },
+                source.clone(),
+                output,
                 matchers,
+                pos,
+                next_depth(self, depth),
+                alloc,
             );
             match matched {
                 Some(range) => {
-                    self.process_children(
-                        context.source,
-                        range.clone(),
-                        context.output,
-                        output_start,
-                        context.alloc,
-                    );
+                    self.process_children(source, range.clone(), output, output_start, alloc);
                     return Some(range);
                 }
                 None => (),
@@ -430,20 +418,23 @@ impl Matcher {
 
     fn apply_repeating<'a>(
         &self,
-        mut context: MatcherContext<'_, 'a>,
+        source: Arc<[char]>,
+        output: &mut TokenOutput<'a>,
+        pos: usize,
+        depth: usize,
         child: usize,
         range: &RangeInclusive<usize>,
         cache: &Option<[bool; 256]>,
         matchers: &[Matcher],
+        alloc: &'a Bump,
     ) -> TokenResult {
-        let output_start = context.output.len();
+        let output_start = output.len();
         let child = &matchers[child];
-        let mut cursor = context.pos;
+        let mut cursor = pos;
         let mut child_count = 0;
         while child_count < *range.end() {
-            if context
-                .source
-                .get(context.pos)
+            if source
+                .get(pos)
                 .filter(|c| c.is_ascii())
                 .and_then(|c| cache.as_ref().map(|cache| cache[*c as u32 as usize]))
                 == Some(false)
@@ -451,22 +442,18 @@ impl Matcher {
                 break;
             }
             let matched = child.apply(
-                MatcherContext {
-                    source: context.source.clone(),
-                    pos: cursor,
-                    depth: context.depth,
-                    output: &mut context.output,
-                    alloc: context.alloc,
-                },
+                source.clone(),
+                output,
                 matchers,
+                cursor,
+                next_depth(self, depth),
+                alloc,
             );
             match matched {
                 Some(child_token) => {
                     cursor = child_token.end;
                     child_count += 1;
-                    context
-                        .output
-                        .mark_success(context.pos, cursor, context.depth, self);
+                    output.mark_success(pos, cursor, depth, self);
                     if child_token.is_empty() {
                         break;
                     }
@@ -476,17 +463,11 @@ impl Matcher {
         }
 
         if child_count < *range.start() {
-            context.output.tokens.truncate(output_start);
+            output.tokens.truncate(output_start);
             None
         } else {
-            let range = context.pos..cursor;
-            self.process_children(
-                context.source,
-                range.clone(),
-                &mut context.output,
-                output_start,
-                context.alloc,
-            );
+            let range = pos..cursor;
+            self.process_children(source, range.clone(), output, output_start, alloc);
             Some(range)
         }
     }
@@ -497,58 +478,57 @@ impl Matcher {
 
     fn apply_inverted<'a>(
         &self,
-        mut context: MatcherContext<'_, 'a>,
+        source: Arc<[char]>,
+        output: &mut TokenOutput<'a>,
+        pos: usize,
+        depth: usize,
         child: usize,
         matchers: &[Matcher],
+        alloc: &'a Bump,
     ) -> TokenResult {
         let child = &matchers[child];
         let matched = child.apply(
-            MatcherContext {
-                source: context.source.clone(),
-                pos: context.pos,
-                depth: context.depth,
-                output: &mut context.output,
-                alloc: context.alloc,
-            },
+            source.clone(),
+            output,
             matchers,
+            pos,
+            next_depth(self, depth),
+            alloc,
         );
-        let output_start = context.output.len();
+        let output_start = output.len();
         match matched {
             Some(_) => {
-                context.output.tokens.truncate(output_start);
+                output.tokens.truncate(output_start);
                 None
             }
             None => {
-                let range = context.pos..context.pos;
-                self.push_token(
-                    context.output,
-                    self.create_token(context.source, range.clone(), context.alloc),
-                );
+                let range = pos..pos;
+                self.push_token(output, self.create_token(source, range.clone(), alloc));
                 Some(range)
             }
         }
     }
 
-    fn apply_newline<'a>(&self, context: MatcherContext<'_, 'a>) -> TokenResult {
-        match context.source.get(context.pos) {
+    fn apply_newline<'a>(
+        &self,
+        output: &mut TokenOutput<'a>,
+        source: Arc<[char]>,
+        pos: usize,
+        alloc: &'a Bump,
+    ) -> TokenResult {
+        match source.get(pos) {
             Some('\r') => {
-                let range = if let Some('\n') = context.source.get(context.pos + 1) {
-                    context.pos..context.pos + 2
+                let range = if let Some('\n') = source.get(pos + 1) {
+                    pos..pos + 2
                 } else {
-                    context.pos..context.pos + 1
+                    pos..pos + 1
                 };
-                self.push_token(
-                    context.output,
-                    self.create_token(context.source, range.clone(), context.alloc),
-                );
+                self.push_token(output, self.create_token(source, range.clone(), alloc));
                 Some(range)
             }
             Some('\n') => {
-                let range = context.pos..context.pos + 1;
-                self.push_token(
-                    context.output,
-                    self.create_token(context.source, range.clone(), context.alloc),
-                );
+                let range = pos..pos + 1;
+                self.push_token(output, self.create_token(source, range.clone(), alloc));
                 Some(range)
             }
             _ => None,
@@ -556,11 +536,15 @@ impl Matcher {
     }
 
     fn apply_wrapper<'a>(
-        context: MatcherContext<'_, 'a>,
+        source: Arc<[char]>,
+        output: &mut TokenOutput<'a>,
+        pos: usize,
+        depth: usize,
         child: usize,
         matchers: &[Matcher],
+        alloc: &'a Bump,
     ) -> TokenResult {
         let child = &matchers[child];
-        child.apply(context, matchers)
+        child.apply(source, output, matchers, pos, depth, alloc)
     }
 }
