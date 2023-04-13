@@ -5,9 +5,9 @@ use std::{collections::HashMap, error::Error};
 type ResultAlias<T> = Result<T, Box<dyn Error>>;
 
 fn main() {
-    let json_input = include_str!("/home/redempt/Downloads/large-file.json");
+    let json_input = include_str!("finaltest.json");
     let parsed = json_input.parse::<JSONValue>().unwrap();
-    // println!("{:#?}", parsed);
+    println!("{:#?}", parsed);
     drop(parsed);
 }
 
