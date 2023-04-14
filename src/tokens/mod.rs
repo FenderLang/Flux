@@ -1,18 +1,19 @@
 use self::iterators::{iter::Iter, rec_iter::RecursiveIter};
 use crate::matchers::MatcherName;
+use bumpalo::collections::Vec;
 use std::{fmt::Debug, ops::Range, sync::Arc};
 
 pub mod iterators;
 
-pub struct Token {
+pub struct Token<'a> {
     pub matcher_name: MatcherName,
     pub matcher_id: usize,
-    pub children: Vec<Token>,
+    pub children: Vec<'a, Token<'a>>,
     pub source: Arc<[char]>,
     pub range: Range<usize>,
 }
 
-impl Token {
+impl<'a> Token<'a> {
     /// Get the content the token is matching from the source.
     pub fn get_match(&self) -> String {
         self.source[self.range.clone()].iter().collect()
@@ -29,7 +30,10 @@ impl Token {
     }
 
     /// Get an iterator over the direct children of `self` with a given name `name`
-    pub fn children_named<'a, 'b: 'a>(&'a self, name: &'b str) -> impl Iterator<Item = &'a Token> {
+    pub fn children_named<'b, 'c: 'b>(
+        &'b self,
+        name: &'c str,
+    ) -> impl Iterator<Item = &'b Token<'a>> {
         self.children
             .iter()
             .filter(move |t| matches!(t.matcher_name.as_ref(), Some(n) if n == name))
@@ -69,7 +73,7 @@ impl Token {
     }
 }
 
-impl Debug for Token {
+impl<'a> Debug for Token<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut debug = f.debug_struct("Token");
 
@@ -85,8 +89,8 @@ impl Debug for Token {
     }
 }
 
-impl<'a> IntoIterator for &'a Token {
-    type Item = &'a Token;
+impl<'a, 'b: 'a> IntoIterator for &'b Token<'a> {
+    type Item = &'b Token<'a>;
 
     type IntoIter = RecursiveIter<'a>;
 

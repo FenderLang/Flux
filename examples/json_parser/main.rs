@@ -8,6 +8,7 @@ fn main() {
     let json_input = include_str!("finaltest.json");
     let parsed = json_input.parse::<JSONValue>().unwrap();
     println!("{:#?}", parsed);
+    drop(parsed);
 }
 
 #[derive(Debug)]
@@ -28,8 +29,7 @@ impl FromStr for JSONValue {
         let mut lexer = bnf::parse(include_str!("json.bnf")).map_err(|e| format!("{:#}", e))?;
         lexer.add_rule_for_names(vec!["sep", "object"], CullStrategy::LiftChildren);
         lexer.set_unnamed_rule(CullStrategy::LiftChildren);
-        let token = lexer.tokenize(s)?;
-        parse_token(&token)
+        lexer.tokenize(s, |t| parse_token(t))?
     }
 }
 
